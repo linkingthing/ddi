@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/zdnscloud/g53/util"
+	"github.com/ben-han-cn/g53/util"
 )
 
 type NSEC3 struct {

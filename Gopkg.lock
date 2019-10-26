@@ -3,30 +3,37 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c6f9e3001f99331fb244203dc450d12903fa8c11775b3044f5d1a56aec611ecb"
+  digest = "1:e51d656dcac5ff7600b80f356574b9fe50527caf0b898c9bd5cb2fd30ddced21"
   name = "github.com/ben-han-cn/cement"
   packages = [
     "shell",
+    "slice",
+    "stringtool",
     "unittest",
   ]
   pruneopts = "UT"
-  revision = "3a0cbe2f3addcc2f07c7d3509a04e35409dac945"
+  revision = "ea8b889a2ecc64b860a03ede307718172d32ca71"
 
 [[projects]]
   branch = "master"
-  digest = "1:39681894d8bab329fb66bceeb2ae1eb52360fc873076b191cca23542154a7fe2"
+  digest = "1:00b776dddc63c4ad451b2480eab36edb64770759324a5e8b07dd4c3f6571056a"
   name = "github.com/ben-han-cn/g53"
-  packages = ["."]
+  packages = [
+    ".",
+    "util",
+  ]
   pruneopts = "UT"
-  revision = "5619cac8e3b3e11d7feff7146a545d52957a6b51"
+  revision = "7b2b968c7aaf9048384ac9539d8f4c917a74701a"
 
 [[projects]]
   branch = "master"
-  digest = "1:284deeeea0e8fe1a3cbf07cc2a724ae170dea5a3e1c139f7ea9b3ae57702f387"
+  digest = "1:adbaa184ac18a6b985a83ce3a05deae502e5dd4a7ffd16cbe839bb008774f3dc"
   name = "github.com/insomniacslk/dhcp"
   packages = [
+    "dhcpv4",
     "dhcpv6",
     "iana",
+    "interfaces",
     "rfc1035label",
   ]
   pruneopts = "UT"
@@ -62,14 +69,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d3bf07d82f25207ac7051c436c154ba7f5f5fd990373e6c3526dbdfaad58e6d2"
-  name = "github.com/zdnscloud/g53"
-  packages = ["util"]
-  pruneopts = "UT"
-  revision = "e59e91c2d63e28bfba62e3cede2e06b4418ff494"
-
-[[projects]]
-  branch = "master"
   digest = "1:56068728488986584e5a2f3576cb84d52bad7ec7fbe63a14b0d3b26bfdb41b8b"
   name = "golang.org/x/sys"
   packages = ["unix"]
@@ -81,8 +80,11 @@
   analyzer-version = 1
   input-imports = [
     "github.com/ben-han-cn/cement/shell",
+    "github.com/ben-han-cn/cement/slice",
+    "github.com/ben-han-cn/cement/stringtool",
     "github.com/ben-han-cn/cement/unittest",
     "github.com/ben-han-cn/g53",
+    "github.com/insomniacslk/dhcp/dhcpv4",
     "github.com/insomniacslk/dhcp/dhcpv6",
     "github.com/sirupsen/logrus",
   ]

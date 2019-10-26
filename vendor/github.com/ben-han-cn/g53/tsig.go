@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zdnscloud/g53/util"
+	"github.com/ben-han-cn/g53/util"
 )
 
 type TSIGAlgorithm string

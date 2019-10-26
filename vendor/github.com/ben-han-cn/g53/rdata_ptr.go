@@ -2,7 +2,7 @@ package g53
 
 import (
 	"errors"
-	"github.com/zdnscloud/g53/util"
+	"github.com/ben-han-cn/g53/util"
 )
 
 type PTR struct {
