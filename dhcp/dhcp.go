@@ -17,8 +17,6 @@ func cmd(command string) (string, error) {
 	return result, err
 }
 
-var err error
-
 //service: dhcp4, dhcp6, ctrl_agent, ddns
 func StartDHCP(service string) error {
 	var command string = "ps -eaf|grep kea-" + service + "|grep -v grep"
@@ -47,7 +45,7 @@ func StopDHCP(service string) error {
 	if ret, err := cmd(command); err != nil {
 		fmt.Println(service + " hasn't started!start now!")
 
-		if ret, err = cmd(service); err != nil {
+		if ret, err := cmd(service); err != nil {
 			fmt.Printf("start fail! return message:%s\n", ret)
 			fmt.Println(err)
 			return err
