@@ -1,71 +1,62 @@
 package dhcp
 
 import (
+	"github.com/sirupsen/logrus"
 	"fmt"
-	"os/exec"
 )
 
-func Output() {
+const (
+	host = "10.0.0.15"
+	port = "8081"
+)
 
-	fmt.Print("%d, test", 10)
+type DHCPConfig struct{
+	ver map[string]interface{}
 }
 
-func cmd(command string) (string, error) {
-	cmd := exec.Command("bash", "-c", command)
-	out, err := cmd.CombinedOutput()
-	result := string(out)
-	return result, err
-}
 
 //service: dhcp4, dhcp6, ctrl_agent, ddns
 func StartDHCP(service string) error {
-	var command string = "ps -eaf|grep kea-" + service + "|grep -v grep"
-	if ret, err := cmd(command); err != nil {
-		fmt.Println(service + " hasn't started!start now!")
-
-		if ret, err := cmd(service); err != nil {
-			fmt.Printf("start fail! return message:%s\n", ret)
-			fmt.Println(err)
+	isRunning := isServiceRunning("kea-" + service)
+	if(isRunning == false){
+		startCmd := "nohup keactrl start -s " + service + " >/dev/null 2>&1 &"
+		_, err := cmd(startCmd);
+		if err != nil {
+			logrus.Error("keactrl start -s kea-" + service + " failed")
 			return err
-		} else {
-			fmt.Printf("start success! return message:%s\n", ret)
 		}
-
-	} else if len(ret) > 0 {
-		fmt.Println("had started!")
-	} else {
-		fmt.Println("Nothing done!")
+	}else{
+		logrus.Error("keactrl start -s kea-" + service + " failed")
 	}
 	return nil
 }
 
 //service: dhcp4, dhcp6, ctrl_agent, ddns
-func StopDHCP(service string) error {
-	var command string = "ps -eaf|grep kea-" + service + "|grep -v grep"
-	if ret, err := cmd(command); err != nil {
-		fmt.Println(service + " hasn't started!start now!")
+func StopDHCP(service string) error{
 
-		if ret, err := cmd(service); err != nil {
-			fmt.Printf("start fail! return message:%s\n", ret)
-			fmt.Println(err)
+	isRunning := isServiceRunning("kea-" + service)
+	if(isRunning){
+		startCmd := "keactrl stop -s kea-" + service + " >/dev/null 2>&1 &"
+		_, err := cmd(startCmd);
+		if err != nil {
+			logrus.Error("keactrl stop -s kea-" + service + " failed")
 			return err
-		} else {
-			fmt.Printf("start success! return message:%s\n", ret)
 		}
-
-	} else if len(ret) > 0 {
-		fmt.Println("had started!")
-	} else {
-		fmt.Println("Nothing done!")
 	}
+	logrus.Error("not running, no need to stop service: kea-" + service)
 	return nil
 }
 
-func CreateSubnet(v46 string) error {
+//service: dhcp4, dhcp6, ctrl_agent, ddns
+func CreateSubnet(service string, subnetIp string, subnetMask string ) error {
+
+	configJson,err := getConfig(service)
+	if(err != nil){
+		return err
+	}
+
+	fmt.Println("service: " + service + ", configJson: " + configJson)
 
 	return nil
 }
-func UpdateSubnet(v46 string) error {
 
-	return nil
-}
