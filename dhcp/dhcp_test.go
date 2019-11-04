@@ -10,7 +10,7 @@ func TestStartDHCP(t *testing.T) {
 
 func TestCreateSubnet(t *testing.T) {
 
-	if CreateSubnet("dhcp4", "192.166.1.0", "255.255.255.0") != nil {
+	if CreateSubnet("dhcp4", "192.166.1.0/24", "192.166.1.10-192.168.1.20") != nil {
 		t.Error(`create subnet4 failed`)
 	}
 }

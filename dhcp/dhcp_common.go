@@ -38,3 +38,20 @@ func getConfig(service string) (string,error) {
 	}
 	return configJson, nil
 }
+
+func setConfig(service string, newJson []byte) error {
+	postData := map[string]interface{}{
+		"command" : "config-set",
+		"arguments" : []string{service},
+	}
+	postStr, _ := json.Marshal(postData)
+
+	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
+		string(postStr) + "' http://"+host+":"+port + " 2>/dev/null"
+	_, err := cmd(getCmd)
+	if(err != nil) {
+		return err
+	}
+	return nil
+}
+
