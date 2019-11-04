@@ -4,11 +4,8 @@ package dhcp
 // service: dhcp4, dhcp6, ctrl_agent, ddns
 
 import (
-	"fmt"
 	"os/exec"
 	"encoding/json"
-	"github.com/ben-han-cn/cement/shell"
-	"github.com/sirupsen/logrus"
 )
 
 func cmd(command string) (string, error) {
@@ -20,33 +17,24 @@ func cmd(command string) (string, error) {
 
 
 func isServiceRunning(service string) bool {
-	command := "ps -eaf | grep " + service + " | grep -v grep"
-	ret, err := cmd(command)
-	if (err != nil) {
-		return false
-	}
 
-	fmt.Println("ps -eaf ret: " + ret)
 	return true
 }
 
 
-func getConfig(service string) (string,error) {
 
-	postData := make(map[string]interface{})
-	postData["command"] = "config-get"
-	postData["service"] = []string{service}
-	postStr, err := json.Marshal(postData)
+func getConfig(service string) (string,error) {
+	postData := map[string]interface{}{
+		"command" : "config-get",
+		"service" : []string{service},
+	}
+	postStr, _ := json.Marshal(postData)
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://"+host+":"+port
-	configJson, err := shell.Shell(getCmd)
+		string(postStr) + "' http://"+host+":"+port + " 2>/dev/null"
+	configJson, err := cmd(getCmd)
 	if(err != nil) {
-
-		logrus.Error("config get error, service: "+service)
 		return "",err
 	}
-
-	fmt.Println("configGet: " + configJson)
 	return configJson, nil
 }
