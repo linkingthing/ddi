@@ -2,7 +2,6 @@ package dhcp
 
 import (
 	"github.com/sirupsen/logrus"
-	"fmt"
 	"encoding/json"
 )
 
@@ -57,30 +56,27 @@ type Subnet4Config struct{
 	Four4o6Interface string `json:"4o6-interface"`
 	Four4o6InterfaceId string `json:"4o6-interface-id"`
 	Four4o6Subnet string `json:"4o6-subnet"`
-	Authoritative string `json:"authoritative"`
+	Authoritative bool `json:"authoritative"`
 	CalculateTeeTimes string `"calculate-tee-times"`
 	Id json.Number
 	MatchClientId bool `json:"match-client-id"`
 	NextServer string `json:"next-server"`
 	OptionData []Subnet4OptionData `json:"option-data"`
-	pools []Subnet4Pools
+	Pools []Subnet4Pools
 	RebindTimer json.Number `json:"rebind-timer"`
-	//Relay interface{}
+	Relay interface{}
 	RenewTimer json.Number `json:"renew-timer"`
 	ReservationMode string `json:"reservation-mode"`
 	Reservations []Subnet4Reservations
 	Subnet string
+
 	T1Percent json.Number `json:"t1-percent"`
 	T2Percent json.Number `json:"t2-percent"`
 	ValidLifetime json.Number `json:"valid-lifetime"`
 }
-type Subnet4Subnet struct{
 
-
-
-}
 type Subnet4OptionData struct{
-	AlwaysSend bool
+	AlwaysSend bool `json:"always-send"`
 	Code json.Number
 	CsvFormat bool `json:"csv-format"`
 	Data string
@@ -93,7 +89,14 @@ type Subnet4Pools struct{
 }
 type Subnet4Reservations struct{
 	BootFileName string `json:"boot-file-name"`
+	ClientClasses []interface{}
+	ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
+	Duid string
+	Hostname string
+	IpAddress string `json:"ip-address"`
+	NextServer string `json:"next-server"`
 	OptionData []Subnet4OptionData
+	ServerHostname string `json:"server-hostname"`
 }
 
 
@@ -132,22 +135,22 @@ func StopDHCP(service string) error{
 	return nil
 }
 
-func CreateSubnet(service string, subnetIp string, subnetMask string ) error {
+func CreateSubnet(service string, subnetName string, pools string ) error {
 
 	configJson,err := getConfig(service)
 	if(err != nil){
 		return err
 	}
+
 	var configArr ParseConfig
-	err2 := json.Unmarshal([]byte(string(configJson[2:len(configJson)-2])), &configArr)
-	if(err2 != nil){
-		fmt.Println("configJson unmarshall failed")
+	err = json.Unmarshal([]byte(string(configJson[2:len(configJson)-2])), &configArr)
+	if(err != nil){
+		return err
 	}
 
-	fmt.Printf("configArr: $+v", configArr)
-	//subnet4 := configArr["arguments"]["Dhcp4"]
+	//subnet4Config := configArr.Arguments.Dhcp4.Subnet4
+
 
 
 	return nil
 }
-
