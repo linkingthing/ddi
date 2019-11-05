@@ -4,8 +4,9 @@ package dhcp
 // service: dhcp4, dhcp6, ctrl_agent, ddns
 
 import (
-	"os/exec"
 	"encoding/json"
+	"os/exec"
+	"fmt"
 )
 
 func cmd(command string) (string, error) {
@@ -15,43 +16,46 @@ func cmd(command string) (string, error) {
 	return result, err
 }
 
-
-func isServiceRunning(service string) bool {
-
-	return true
-}
-
-
-
-func getConfig(service string) (string,error) {
+func getConfig(service string, conf *ParseConfig) error {
 	postData := map[string]interface{}{
-		"command" : "config-get",
-		"service" : []string{service},
+		"command": "config-get",
+		"service": []string{service},
 	}
 	postStr, _ := json.Marshal(postData)
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://"+host+":"+port + " 2>/dev/null"
+		string(postStr) + "' http://" + host + ":" + port + " 2>/dev/null"
 	configJson, err := cmd(getCmd)
-	if(err != nil) {
-		return "",err
+
+	if err != nil {
+		return err
 	}
-	return configJson, nil
+
+	err = json.Unmarshal([]byte(string(configJson[2:len(configJson)-2])), conf)
+	if err != nil {
+		return err
+	}
+
+
+	return nil
 }
 
-func setConfig(service string, newJson []byte) error {
+func setConfig(service string, conf *DHCPConfig) error {
+
 	postData := map[string]interface{}{
-		"command" : "config-set",
-		"arguments" : []string{service},
+		"command":   "config-set",
+		"service": []string{service},
+		"arguments": &conf,
 	}
 	postStr, _ := json.Marshal(postData)
 
-	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://"+host+":"+port + " 2>/dev/null"
-	_, err := cmd(getCmd)
-	if(err != nil) {
+	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
+		string(postStr) + "' http://" + host + ":" + port + " 2>/dev/null"
+	result, err := cmd(curlCmd)
+
+	if err != nil {
+		fmt.Printf("setConfig error, result: %s\n", result)
 		return err
 	}
 	return nil
 }
-
