@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package pb;
+
+message DNSStartReq{
+	string config = 1;
+}
+
+message DNSStopReq{
+}
+
+message CreateACLReq{
+string aCLName = 1;
+string aCLID = 2;
+repeated string ipList = 3;
+}
+
+message DeleteACLReq{
+string aCLID = 1;
+}
+
+message CreateViewReq{
+string viewName = 1;
+string viewID = 2;
+int32 priority = 3;
+string aCLID = 4;
+}
+
+message UpdateViewReq{
+string viewID = 1;
+int32 priority = 2;
+string aCLID = 3;
+repeated string deleteIPList = 4;
+repeated string newIPList = 5;
+}
+
+message DeleteViewReq{
+string viewID = 1;
+}
+
+message CreateZoneReq{
+string viewID = 1;
+string zoneID = 2;
+string zoneName = 3;
+}
+
+message DeleteZoneReq{
+string viewID = 1;
+string zoneID = 2;
+}
+
+message CreateRRReq{
+string viewID = 1;
+string zoneID = 2;
+string rrID = 3;
+string rrdata = 4;
+}
+
+message UpdateRRReq{
+string viewID = 1;
+string zoneID = 2;
+string rrID = 3;
+string newrrData = 4;
+}
+
+message DeleteRRReq{
+string viewID = 1;
+string zoneID = 2;
+string rrID = 3;
+}
+
+
