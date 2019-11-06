@@ -6,7 +6,6 @@ package dhcp
 import (
 	"encoding/json"
 	"os/exec"
-	"fmt"
 )
 
 func cmd(command string) (string, error) {
@@ -51,10 +50,9 @@ func setConfig(service string, conf *DHCPConfig) error {
 
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + host + ":" + port + " 2>/dev/null"
-	result, err := cmd(curlCmd)
+	_, err := cmd(curlCmd)
 
 	if err != nil {
-		fmt.Printf("setConfig error, result: %s\n", result)
 		return err
 	}
 	return nil

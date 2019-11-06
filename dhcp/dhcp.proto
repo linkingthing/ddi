@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package pb;
+
+message DHCPStartReq{
+	string service = 1;
+	string configFile = 2;
+}
+message DHCPStopReq{
+	string service = 1;
+}
+message CreateSubnet4Req{
+string service = 1;
+string subnetName = 2;
+repeated string pools = 3;
+}
