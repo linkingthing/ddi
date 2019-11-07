@@ -5,12 +5,23 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"time"
+	"github.com/linkingthing.com/ddi/pb"
 )
 
 const (
 	host = "10.0.0.15"
 	port = "8081"
+	configPath = "/usr/local/etc/kea/"
+	configFileDHCP4 = "kea-dhcp4.conf"
 )
+
+type KEAHandler struct {
+	ConfigPath   string
+	MainConfName string
+	//ConfContent  string
+	//ViewList     []View
+	//FreeACLList  map[string]ACL
+}
 
 type ParseConfig struct {
 	Result    json.Number
@@ -86,12 +97,12 @@ type Subnet4Reservations struct {
 	ServerHostname string              `json:"server-hostname"`
 }
 
-func StartDHCP(service string) error {
-	startCmd := "nohup keactrl start -s " + service + " >/dev/null 2>&1 &"
+func (t *KEAHandler) StartDHCP(req pb.DHCPStartReq) error {
+	startCmd := "nohup keactrl start -s " + req.Service + " >/dev/null 2>&1 &"
 
 	_, err := cmd(startCmd)
 	if err != nil {
-		logrus.Error("keactrl start -s kea-" + service + " failed")
+		logrus.Error("keactrl start -s kea-" + req.ConfigFile + " failed")
 		return err
 	}
 
@@ -99,9 +110,9 @@ func StartDHCP(service string) error {
 	return nil
 }
 
-func StopDHCP(service string) error {
+func (t *KEAHandler) StopDHCP(req pb.DHCPStopReq) error {
 
-	stopCmd := "keactrl stop -s " + service
+	stopCmd := "keactrl stop -s " + req.Service
 
 	ret, err := cmd(stopCmd)
 
