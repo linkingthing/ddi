@@ -1,25 +1,33 @@
 package dns
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/boltdb/bolt"
 	"github.com/linkingthing/ddi/pb"
 	"io/ioutil"
 	"os"
+	"text/template"
 )
 
 type BindHandler struct {
 	ConfigPath   string
 	MainConfName string
 	ConfContent  string
-	ViewList     map[int]View
+	ViewList     []View
 	FreeACLList  map[string]ACL
 }
 
 func (t *BindHandler) StartDNS(req pb.DNSStartReq) error {
-	if len(req.Config) > 0 {
-		t.ConfContent = req.Config
+	tmpl, err := template.ParseFiles(t.ConfigPath + "/templates/named.tpl")
+	if err != nil {
+		return err
+	}
+	buffer := new(bytes.Buffer)
+	tmpl.Execute(buffer, t)
+	t.ConfContent = string(buffer.Bytes())
+	if len(t.ConfContent) > 0 {
 		if err := ioutil.WriteFile(t.ConfigPath+"/"+t.MainConfName, []byte(t.ConfContent), 0644); err != nil {
 			return err
 		}
@@ -37,7 +45,7 @@ func (t *BindHandler) StartDNS(req pb.DNSStartReq) error {
 					return err
 				}
 			}
-			err = b.Put([]byte(t.MainConfName), []byte(req.Config))
+			err = b.Put([]byte(t.MainConfName), []byte(t.ConfContent))
 			if err != nil {
 				return err
 			}
@@ -74,16 +82,15 @@ func (t *BindHandler) CreateACL(req pb.CreateACLReq) error {
 	if err := ioutil.WriteFile(t.ConfigPath+"/"+req.ACLName+".conf", []byte(fileContent), 0644); err != nil {
 		return err
 	}
-	t.ConfContent += "include \"" + t.ConfigPath + "/" + req.ACLName + ".conf\";\n"
-	if err := ioutil.WriteFile(t.ConfigPath+"/"+t.MainConfName, []byte(t.ConfContent), 0644); err != nil {
-		return err
-	}
 
 	return nil
 }
 
 func (t *BindHandler) DeleteACL(req pb.DeleteACLReq) error {
-	os.RemoveALL(t.ConfigPath + t.FreeACLList[req.ACLID].Name + ".conf")
+	name := t.ConfigPath + "/" + t.FreeACLList[req.ACLID].Name + ".conf"
+	if err := os.Remove(name); err != nil {
+		return err
+	}
 	delete(t.FreeACLList, req.ACLID)
 	return nil
 }

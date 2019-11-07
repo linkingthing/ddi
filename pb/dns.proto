@@ -42,6 +42,7 @@ message CreateZoneReq{
 string viewID = 1;
 string zoneID = 2;
 string zoneName = 3;
+string zoneFileName = 4;
 }
 
 message DeleteZoneReq{
