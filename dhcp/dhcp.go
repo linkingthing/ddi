@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	host = "10.0.0.15"
-	port = "8081"
-	configPath = "/usr/local/etc/kea/"
-	configFileDHCP4 = "kea-dhcp4.conf"
+	DhcpHost = "10.0.0.15"
+	DhcpPort = "8081"
+	DhcpConfigPath = "/usr/local/etc/kea/"
+	Dhcp4ConfigFile = "kea-dhcp4.conf"
+	Dhcp6ConfigFile = "kea-dhcp6.conf"
 )
 
 type KEAHandler struct {
@@ -124,7 +125,7 @@ func (t *KEAHandler) StopDHCP(req pb.DHCPStopReq) error {
 	return nil
 }
 
-func CreateSubnet4(service string, subnetName string, pools string) error {
+func (t *KEAHandler) CreateSubnet4(service string, subnetName string, pools string) error {
 	var conf ParseConfig
 	err := getConfig(service, &conf)
 	if err != nil {

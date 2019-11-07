@@ -1,34 +1,65 @@
 package dhcp
 
 import (
-	ut "github.com/ben-han-cn/cement/unittest"
 	"testing"
-	"time"
 	"github.com/linkingthing.com/ddi/pb"
+	"encoding/json"
+	"github.com/segmentio/kafka-go"
+	"fmt"
+	"time"
+	ut "github.com/ben-han-cn/cement/unittest"
 )
 
-var handler DHCPHandler
-func init(){
-
-	p := &KEAHandler{
-		ConfigPath: "/usr/local/etc/kea/",
-		MainConfName: "kea-dhcp4.conf",
-	}
-	handler = p
+var handler = &KEAHandler{
+	ConfigPath: 	DhcpConfigPath,
+	MainConfName: 	Dhcp4ConfigFile,
 }
+
+func TestKafka(t *testing.T) {
+	configFile 	:= DhcpConfigPath + Dhcp4ConfigFile
+	msg 		:= &pb.DHCPStartReq{Service:"dhcp4", ConfigFile:configFile}
+	pData, err 	:= json.Marshal(msg)
+
+	postData := kafka.Message{
+		Key: []byte("DHCPStart"),
+		Value: pData,
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	produce(postData)
+
+	fmt.Printf("kafka send data")
+	time.Sleep(time.Second)
+	consumer()
+}
+
+
 func TestStopDHCP(t *testing.T) {
 	service := pb.DHCPStopReq{Service:"dhcp4"}
 	err := handler.StopDHCP(service)
-	ut.Assert(t, err == nil, "stop successfully!")
+	ut.Assert(t, err == nil, "dhcp4 stop successfully!")
+
+	service = pb.DHCPStopReq{Service:"dhcp6"}
+	err = handler.StopDHCP(service)
+	ut.Assert(t, err == nil, "dhcp6 stop successfully!")
+
 	time.Sleep(2 * time.Second)
 }
 
 func TestStartDHCP(t *testing.T) {
 
-	configFile := configPath + configFileDHCP4
+	configFile := DhcpConfigPath + Dhcp4ConfigFile
 	service := pb.DHCPStartReq{Service:"dhcp4", ConfigFile:configFile}
 	err := handler.StartDHCP(service)
-	ut.Assert(t, err == nil, "start successfully!")
+	ut.Assert(t, err == nil, "dhcp4 start successfully!")
+
+	configFile = DhcpConfigPath + Dhcp6ConfigFile
+	service = pb.DHCPStartReq{Service:"dhcp6", ConfigFile:configFile}
+	err = handler.StartDHCP(service)
+	ut.Assert(t, err == nil, "dhcp6 start successfully!")
+
 	time.Sleep(2 * time.Second)
 }
 

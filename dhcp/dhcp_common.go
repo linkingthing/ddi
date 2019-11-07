@@ -23,7 +23,7 @@ func getConfig(service string, conf *ParseConfig) error {
 	postStr, _ := json.Marshal(postData)
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + host + ":" + port + " 2>/dev/null"
+		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
@@ -49,7 +49,7 @@ func setConfig(service string, conf *DHCPConfig) error {
 	postStr, _ := json.Marshal(postData)
 
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + host + ":" + port + " 2>/dev/null"
+		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	_, err := cmd(curlCmd)
 
 	if err != nil {

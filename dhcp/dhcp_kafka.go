@@ -8,21 +8,17 @@ import (
 
 var(
 	kafkaServer = "localhost:9092"
-	dhcpTopic = "dhcp"
+	dhcpTopic = "test"
 )
 
-func produce(){
+func produce(msg kafka.Message){
+	fmt.Printf("into produce\n")
 	w := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{kafkaServer},
 		Topic:   dhcpTopic,
 	})
 
-	w.WriteMessages(context.Background(),
-		kafka.Message{
-			Key:   []byte("Key-A"),
-			Value: []byte("Hello World!"),
-		},
-	)
+	w.WriteMessages(context.Background(), msg)
 }
 
 
@@ -39,7 +35,9 @@ func consumer(){
 		if err != nil {
 			break
 		}
-		fmt.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+		fmt.Printf("message at offset %d: key: %s = value: %s\n", m.Offset, string(m.Key), string(m.Value))
+
+		//todo
 	}
 
 	r.Close()
