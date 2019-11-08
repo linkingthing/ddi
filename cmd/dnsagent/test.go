@@ -15,11 +15,14 @@ func main() {
 	aclsNorth["acl003"] = dns.ACL{ID: "acl003", Name: "liantongnorth", IpList: []string{"10.2.1.5", "10.2.1.6"}}
 	aclsNorth["acl004"] = dns.ACL{ID: "acl004", Name: "dianxinnorth", IpList: []string{"10.2.1.7", "10.2.1.8"}}
 	rrmap := make(map[string]dns.RR, 2)
-	rrmap["rr001"] = dns.RR{"rr001", "test"}
-	zones := make(map[string]dns.Zone, 2)
-	zones["zone001"] = dns.Zone{"zone001", "baidu.com", "baidu.com.zone1", rrmap}
-	zones["zone002"] = dns.Zone{"zone002", "qq.com", "baidu.com.zone2", rrmap}
-	views := []dns.View{dns.View{"001", "SouthChinaView", aclsSouth, zones}, dns.View{"002", "NorthChinaView", aclsNorth, zones}}
+	rrmap["rr001"] = dns.RR{"rr001", "www	AAAA	fe80::723d:53e5:f4d0:519f"}
+	zonesSouth := make(map[string]dns.Zone, 2)
+	zonesSouth["zone001"] = dns.Zone{"zone001", "baidu.com", "baidu.com.zone1", rrmap}
+	zonesSouth["zone002"] = dns.Zone{"zone002", "qq.com", "qq.com.zone1", rrmap}
+	zonesNorth := make(map[string]dns.Zone, 2)
+	zonesNorth["zone001"] = dns.Zone{"zone001", "baidu.com", "baidu.com.zone2", rrmap}
+	zonesNorth["zone002"] = dns.Zone{"zone002", "qq.com", "qq.com.zone2", rrmap}
+	views := []dns.View{dns.View{"001", "SouthChinaView", aclsSouth, zonesSouth}, dns.View{"002", "NorthChinaView", aclsNorth, zonesNorth}}
 	p := &dns.BindHandler{ConfContent: "", ConfigPath: "/root/bindtest", MainConfName: "named.conf", ViewList: views, FreeACLList: make(map[string]dns.ACL, 2)}
 	handler = p
 	var config string = "options {\n\tdirectory \"/root/bindtest/\";\n\tpid-file \"named.pid\";\n\tallow-new-zones yes;\n\tallow-query {any;};\n};\n" +
@@ -45,7 +48,7 @@ func main() {
 		ViewName: "DianXinView",
 		ViewID:   "viewID001",
 		Priority: 1,
-		ACLID:    "ACL001"}
+		ACLIDs:   []string{"ACL001"}}
 	handler.CreateView(createViewReq)
 
 	var deleteIPList = []string{"192.168.199.0/24", "192.168.198.0/24"}
