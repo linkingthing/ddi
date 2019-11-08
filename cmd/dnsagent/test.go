@@ -15,7 +15,7 @@ func main() {
 	aclsNorth["acl003"] = dns.ACL{ID: "acl003", Name: "liantongnorth", IpList: []string{"10.2.1.5", "10.2.1.6"}}
 	aclsNorth["acl004"] = dns.ACL{ID: "acl004", Name: "dianxinnorth", IpList: []string{"10.2.1.7", "10.2.1.8"}}
 	rrmap := make(map[string]dns.RR, 2)
-	rrmap["rr001"] = dns.RR{"rr001", "test"}
+	rrmap["rr001"] = dns.RR{"rr001", "www	AAAA	fe80::723d:53e5:f4d0:519f"}
 	zonesSouth := make(map[string]dns.Zone, 2)
 	zonesSouth["zone001"] = dns.Zone{"zone001", "baidu.com", "baidu.com.zone1", rrmap}
 	zonesSouth["zone002"] = dns.Zone{"zone002", "qq.com", "qq.com.zone1", rrmap}

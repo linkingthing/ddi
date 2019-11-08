@@ -176,7 +176,7 @@ func (t *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
 	for _, view := range t.ViewList {
 		if view.ID == req.ViewID {
 			zone := view.ZoneList[req.ZoneID]
-			name := t.ConfigPath + "/" + zone.ZoneFileName + ".conf"
+			name := t.ConfigPath + "/" + zone.ZoneFileName + ".zone"
 			if err := os.Remove(name); err != nil {
 				return err
 			}
@@ -189,14 +189,39 @@ func (t *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
 }
 
 func (t *BindHandler) CreateRR(req pb.CreateRRReq) error {
+	for _, view := range t.ViewList {
+		if view.ID == req.ViewID {
+			zone, ok := view.ZoneList[req.ZoneID]
+			if ok == true {
+				rr := RR{ID: req.RrID, Data: req.Rrdata}
+				zone.RRList[req.RrID] = rr
+			}
+
+			break
+		}
+	}
+	UpdateConfigFile(t)
 	return nil
 }
 
 func (t *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
+	r := pb.CreateRRReq{ViewID: req.ViewID, ZoneID: req.ZoneID, RrID: req.RrID, Rrdata: req.NewrrData}
+	t.CreateRR(r)
 	return nil
 }
 
 func (t *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
+	for _, view := range t.ViewList {
+		if view.ID == req.ViewID {
+			zone, ok := view.ZoneList[req.ZoneID]
+			if ok == true {
+				delete(zone.RRList, req.RrID)
+			}
+
+			break
+		}
+	}
+	UpdateConfigFile(t)
 	return nil
 }
 
@@ -241,7 +266,7 @@ func UpdateConfigFile(t *BindHandler) error {
 		for _, zone := range view.ZoneList {
 			buffer := new(bytes.Buffer)
 			tmpl.ExecuteTemplate(buffer, "zone.tpl", zone)
-			if err := ioutil.WriteFile(t.ConfigPath+"/"+zone.ZoneFileName+".conf", buffer.Bytes(), 0644); err != nil {
+			if err := ioutil.WriteFile(t.ConfigPath+"/"+zone.ZoneFileName+".zone", buffer.Bytes(), 0644); err != nil {
 				return err
 			}
 

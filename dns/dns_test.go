@@ -142,3 +142,34 @@ func TestDeleteZone(t *testing.T) {
 	err := handler.DeleteZone(delZoneReq)
 	ut.Assert(t, err == nil, "Create Delete Zone Success!")
 }
+
+func TestCreateRR(t *testing.T) {
+	TestCreateZone(t)
+
+	createRRReq := pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RrID: "rr002", Rrdata: "mail	A	10.2.21.1"}
+	err := handler.CreateRR(createRRReq)
+	ut.Assert(t, err == nil, "Create RR Success!")
+
+	createRRReq = pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RrID: "rr003", Rrdata: "mail	A	10.2.21.2"}
+	err = handler.CreateRR(createRRReq)
+	ut.Assert(t, err == nil, "Create RR Success!")
+}
+
+func TestUpdateRR(t *testing.T) {
+	TestCreateRR(t)
+
+	updateRRReq := pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RrID: "rr002", NewrrData: "mail    A       10.2.21.3"}
+	err := handler.UpdateRR(updateRRReq)
+	ut.Assert(t, err == nil, "Update RR Success!")
+
+	updateRRReq = pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RrID: "rr003", NewrrData: "mail    A       10.2.21.4"}
+	err = handler.UpdateRR(updateRRReq)
+	ut.Assert(t, err == nil, "Update RR Success!")
+}
+
+func TestDeleteRR(t *testing.T) {
+	TestUpdateRR(t)
+	delRRReq := pb.DeleteRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RrID: "rr002"}
+	err := handler.DeleteRR(delRRReq)
+	ut.Assert(t, err == nil, "Delete RR Success!")
+}

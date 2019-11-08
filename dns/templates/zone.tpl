@@ -14,6 +14,5 @@ $ORIGIN {{.ZoneName}}
 			)
 ; type syntax
 ; host ttl class type data
-{{range $k,$rr := .RRList}}
-{{$rr.Data}}
+{{range $k,$rr := .RRList}}{{$rr.Data}}
 {{end}}
