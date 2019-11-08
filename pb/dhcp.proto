@@ -9,8 +9,29 @@ message DHCPStartReq{
 message DHCPStopReq{
 	string service = 1;
 }
+message Subnet4OptionData{
+bool AlwaysSend = 1;
+int32 Code = 2;
+bool CsvFormat = 3;
+string Data = 4;
+string Name = 5;
+string Space = 6;
+}
+message Subnet4Pools{
+repeated Subnet4OptionData OptionData = 1;
+string pool = 2;
+}
 message CreateSubnet4Req{
 string service = 1;
 string subnetName = 2;
-repeated string pools = 3;
+string pools = 3;
+}
+message UpdateSubnet4Req{
+string service = 1;
+string subnetName = 2;
+string pools = 3;
+}
+message DeleteSubnet4Req{
+string service = 1;
+string subnetName = 2;
 }

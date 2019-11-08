@@ -125,16 +125,17 @@ func (t *KEAHandler) StopDHCP(req pb.DHCPStopReq) error {
 	return nil
 }
 
-func (t *KEAHandler) CreateSubnet4(service string, subnetName string, pools string) error {
+func (t *KEAHandler) CreateSubnet4(req pb.CreateSubnet4Req) error {
+	//CreateSubnet4(service string, subnetName string, pools string)
 	var conf ParseConfig
-	err := getConfig(service, &conf)
+	err := getConfig(req.Service, &conf)
 	if err != nil {
 		return err
 	}
 
 	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
-		if v.Subnet == subnetName {
-			return fmt.Errorf("subnet %s exists, create failed", subnetName)
+		if v.Subnet == req.SubnetName {
+			return fmt.Errorf("subnet %s exists, create failed", req.SubnetName)
 		}
 	}
 
@@ -142,63 +143,63 @@ func (t *KEAHandler) CreateSubnet4(service string, subnetName string, pools stri
 		ReservationMode: "all",
 		Reservations:    []Subnet4Reservations{},
 		OptionData:      []Subnet4OptionData{},
-		Subnet:          subnetName,
+		Subnet:          req.SubnetName,
 		Relay: Subnet4Relay{
 			IpAddresses: []string{},
 		},
 		Pools: []Subnet4Pools{
 			{
 				[]Subnet4OptionData{},
-				pools,
+				req.Pools,
 			},
 		},
 	}
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
-	setErr := setConfig(service, &conf.Arguments)
+	setErr := setConfig(req.SubnetName, &conf.Arguments)
 	if setErr != nil {
 		return setErr
 	}
 	return nil
 }
 
-func updateSubnet4(service string, subnetName string, pools string) error {
+func (t *KEAHandler) updateSubnet4(req pb.UpdateSubnet4Req) error {
 	var conf ParseConfig
-	err := getConfig(service, &conf)
+	err := getConfig(req.Service, &conf)
 	if err != nil {
 		return err
 	}
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		if v.Subnet == subnetName {
+		if v.Subnet == req.SubnetName {
 			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Subnet4Pools{
 				{
 					[]Subnet4OptionData{},
-					pools,
+					req.Pools,
 				},
 			}
-			err = setConfig(service, &conf.Arguments)
+			err = setConfig(req.Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("subnet %s not exist, update error", subnetName)
+	return fmt.Errorf("subnet %s not exist, update error", req.SubnetName)
 }
 
-func deleteSubnet4(service string, subnetName string) error {
+func (t *KEAHandler) deleteSubnet4(req pb.DeleteSubnet4Req) error {
 	var conf ParseConfig
-	err := getConfig(service, &conf)
+	err := getConfig(req.Service, &conf)
 	if err != nil {
 		return err
 	}
 
 	tmp := conf.Arguments.Dhcp4.Subnet4
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		if v.Subnet == subnetName {
+		if v.Subnet == req.SubnetName {
 			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
-			err = setConfig(service, &conf.Arguments)
+			err = setConfig(req.Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
