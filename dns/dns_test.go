@@ -1,12 +1,22 @@
 package dns
 
 import (
+	"context"
+	"fmt"
 	ut "github.com/ben-han-cn/cement/unittest"
+	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/pb"
+	kg "github.com/segmentio/kafka-go"
 	"testing"
 )
 
-var handler DNSHandler
+var (
+	handler     DNSHandler
+	kafkaServer = "localhost:9092"
+	dhcpTopic   = "test"
+	kafkaWriter *kg.Writer
+	kafkaReader *kg.Reader
+)
 
 func init() {
 	aclsSouth := make(map[string]ACL, 2)
@@ -17,11 +27,26 @@ func init() {
 	aclsNorth["acl004"] = ACL{ID: "acl004", Name: "dianxinnorth", IpList: []string{"10.2.1.7", "10.2.1.8"}}
 	rrmap := make(map[string]RR, 2)
 	rrmap["rr001"] = RR{"rr001", "test"}
-	zones := make(map[string]Zone, 2)
-	zones["zone001"] = Zone{"zone001", "baidu.com", "baidu.com.zone1", rrmap}
-	views := []View{View{"001", "SouthChinaView", aclsSouth, zones}, View{"002", "NorthChinaView", aclsNorth, zones}}
+	zonesSouth := make(map[string]Zone, 2)
+	zonesSouth["zone001"] = Zone{"zone001", "baidu.com", "baidu.com.zone1", rrmap}
+	zonesSouth["zone002"] = Zone{"zone002", "qq.com", "qq.com.zone1", rrmap}
+	zonesNorth := make(map[string]Zone, 2)
+	zonesNorth["zone001"] = Zone{"zone001", "baidu.com", "baidu.com.zone2", rrmap}
+	zonesNorth["zone002"] = Zone{"zone002", "qq.com", "qq.com.zone2", rrmap}
+	views := []View{View{"001", "SouthChinaView", aclsSouth, zonesSouth}, View{"002", "NorthChinaView", aclsNorth, zonesNorth}}
 	p := &BindHandler{ConfContent: "", ConfigPath: "/root/bindtest", MainConfName: "named.conf", ViewList: views, FreeACLList: make(map[string]ACL, 2)}
+
 	handler = p
+	kafkaWriter = kg.NewWriter(kg.WriterConfig{
+		Brokers: []string{kafkaServer},
+		Topic:   dhcpTopic,
+	})
+	kafkaReader = kg.NewReader(kg.ReaderConfig{
+
+		Brokers: []string{kafkaServer},
+		Topic:   dhcpTopic,
+	})
+
 }
 
 func TestStartDNS(t *testing.T) {
@@ -45,8 +70,32 @@ func TestStartDNS(t *testing.T) {
 		"controls {\n\tinet 127.0.0.1 port 953\n\tallow { 127.0.0.1; } keys { \"rndc-key\"; };\n};\n" +
 		"include \"/root/bindtest/named.rfc1912.zones\";\n"
 	dnsStartReq := pb.DNSStartReq{Config: config}
-	err := handler.StartDNS(dnsStartReq)
-	ut.Assert(t, err == nil, "start successfully!")
+	data, err := proto.Marshal(&dnsStartReq)
+	ut.Assert(t, err == nil, "StarDNS Marshal success!")
+	postData := kg.Message{
+		Key:   []byte("DNSStart"),
+		Value: data,
+	}
+	err = kafkaWriter.WriteMessages(context.Background(), postData)
+	ut.Assert(t, err == nil, "StarDNS WriteMessages success!")
+
+	for {
+		m, err := kafkaReader.ReadMessage(context.Background())
+		var target pb.DNSStartReq
+		s := string(m.Key)
+		fmt.Println(s)
+		if string(m.Key) == "DNSStart" {
+			fmt.Println("is StartDNS!")
+			err = proto.Unmarshal(m.Value, &target)
+			ut.Assert(t, err == nil, "StarDNS Unmarshal success!")
+			err = handler.StartDNS(target)
+			ut.Assert(t, err == nil, "start successfully!")
+			break
+		} else {
+			fmt.Println("is not StarDNS! ")
+		}
+	}
+
 }
 
 func TestStopDNS(t *testing.T) {
@@ -81,7 +130,7 @@ func TestCreateACL(t *testing.T) {
 }
 
 func TestDeleteACL(t *testing.T) {
-	/*var handler DNSHandler
+	var handler DNSHandler
 	aclsSouth := make(map[string]ACL, 2)
 	aclsSouth["acl001"] = ACL{ID: "acl001", Name: "liantongsouth", IpList: []string{"10.2.1.1", "10.2.1.2"}}
 	aclsSouth["acl002"] = ACL{ID: "acl002", Name: "dianxinsouth", IpList: []string{"10.2.1.3", "10.2.1.4"}}
@@ -104,9 +153,20 @@ func TestDeleteACL(t *testing.T) {
 	acls["ACL001"] = oneAcl
 
 	p := &BindHandler{ConfContent: config, ConfigPath: "/root/bindtest", MainConfName: "named.conf", ViewList: views, FreeACLList: acls}
-	handler = p*/
+	handler = p
 
 	deleteACLReq := pb.DeleteACLReq{ACLID: "ACL001"}
 	err := handler.DeleteACL(deleteACLReq)
 	ut.Assert(t, err == nil, "Delete ACL successfully!")
+}
+
+func TestCreateView(t *testing.T) {
+	createViewReq := pb.CreateViewReq{
+		ViewName: "DianXinView",
+		ViewID:   "viewID001",
+		Priority: 1,
+		ACLIDs:   []string{"ACL001"}}
+	err := handler.CreateView(createViewReq)
+	ut.Assert(t, err == nil, "Create View Success!")
+
 }

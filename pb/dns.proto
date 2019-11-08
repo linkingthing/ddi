@@ -23,7 +23,7 @@ message CreateViewReq{
 string viewName = 1;
 string viewID = 2;
 int32 priority = 3;
-string aCLID = 4;
+repeated string aCLIDs = 4;
 }
 
 message UpdateViewReq{
