@@ -95,7 +95,7 @@ func (t *BindHandler) CreateView(req pb.CreateViewReq) error {
 		list[v] = oneACL
 		delete(t.FreeACLList, v)
 	}
-	oneView := View{ID: req.ViewID, ViewName: req.ViewName, ACLList: list}
+	oneView := View{ID: req.ViewID, ViewName: req.ViewName, ACLList: list, ZoneList: make(map[string]Zone, 5)}
 	if int(req.Priority) > len(t.ViewList) {
 		t.ViewList = append(t.ViewList, oneView)
 	} else if req.Priority >= 1 {
@@ -141,7 +141,7 @@ func (t *BindHandler) UpdateView(req pb.UpdateViewReq) error {
 	if int(req.Priority-1) != i {
 		view = t.ViewList[i]
 		t.ViewList = append(t.ViewList[:i], t.ViewList[i+1:]...)
-		t.ViewList = append(t.ViewList[:req.Priority-1], append([]View{view}, t.ViewList[req.Priority:]...)...)
+		t.ViewList = append(t.ViewList[:req.Priority-1], append([]View{view}, t.ViewList[req.Priority-1:]...)...)
 	}
 
 	if err := UpdateConfigFile(t); err != nil {
@@ -151,14 +151,40 @@ func (t *BindHandler) UpdateView(req pb.UpdateViewReq) error {
 }
 
 func (t *BindHandler) DeleteView(req pb.DeleteViewReq) error {
+	for k, v := range t.ViewList {
+		if v.ID == req.ViewID {
+			t.ViewList = append(t.ViewList[:k], t.ViewList[k+1:]...)
+		}
+	}
+	UpdateConfigFile(t)
 	return nil
 }
 
 func (t *BindHandler) CreateZone(req pb.CreateZoneReq) error {
+	zone := Zone{ID: req.ZoneID, ZoneName: req.ZoneName, ZoneFileName: req.ZoneFileName, RRList: make(map[string]RR, 10)}
+	for k, view := range t.ViewList {
+		if view.ID == req.ViewID {
+			t.ViewList[k].ZoneList[req.ZoneID] = zone
+			break
+		}
+	}
+	UpdateConfigFile(t)
 	return nil
 }
 
 func (t *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
+	for _, view := range t.ViewList {
+		if view.ID == req.ViewID {
+			zone := view.ZoneList[req.ZoneID]
+			name := t.ConfigPath + "/" + zone.ZoneFileName + ".conf"
+			if err := os.Remove(name); err != nil {
+				return err
+			}
+			delete(view.ZoneList, req.ZoneID)
+			break
+		}
+	}
+	UpdateConfigFile(t)
 	return nil
 }
 
@@ -180,6 +206,10 @@ func UpdateConfigFile(t *BindHandler) error {
 		return err
 	}
 	tmpl, err = tmpl.ParseFiles(t.ConfigPath + "/templates/acl.tpl")
+	if err != nil {
+		return err
+	}
+	tmpl, err = tmpl.ParseFiles(t.ConfigPath + "/templates/zone.tpl")
 	if err != nil {
 		return err
 	}
@@ -205,6 +235,16 @@ func UpdateConfigFile(t *BindHandler) error {
 		tmpl.ExecuteTemplate(buffer, "acl.tpl", acl)
 		if err := ioutil.WriteFile(t.ConfigPath+"/"+acl.Name+".conf", buffer.Bytes(), 0644); err != nil {
 			return err
+		}
+	}
+	for _, view := range t.ViewList {
+		for _, zone := range view.ZoneList {
+			buffer := new(bytes.Buffer)
+			tmpl.ExecuteTemplate(buffer, "zone.tpl", zone)
+			if err := ioutil.WriteFile(t.ConfigPath+"/"+zone.ZoneFileName+".conf", buffer.Bytes(), 0644); err != nil {
+				return err
+			}
+
 		}
 	}
 	return nil
