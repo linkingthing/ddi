@@ -13,7 +13,7 @@
     "unittest",
   ]
   pruneopts = "UT"
-  revision = "d922e34cc396f7509658cd72b8952990e22bb37c"
+  revision = "507c086c3f27a5b43bf6e9c6806821fb8b77c884"
 
 [[projects]]
   branch = "master"
@@ -28,7 +28,26 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:adbaa184ac18a6b985a83ce3a05deae502e5dd4a7ffd16cbe839bb008774f3dc"
+  digest = "1:f050d627780c1ceae42b17491bd6d2edfcbb78041a5f44ca0087df55c1ae2ddf"
+  name = "github.com/ben-han-cn/kvzoo"
+  packages = [
+    ".",
+    "backend/bolt",
+  ]
+  pruneopts = "UT"
+  revision = "5dc1198904afeae99559059964442e3837b62858"
+
+[[projects]]
+  branch = "master"
+  digest = "1:965fa961ce7d2a2b0586ff1510c7268d9a8db78c0f08e15c3510ce7cceb963a9"
+  name = "github.com/boltdb/bolt"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5"
+
+[[projects]]
+  branch = "master"
+  digest = "1:da9478c5e301d3ef973ce49c248e92bee763c827b0f72887a510267041ea0603"
   name = "github.com/insomniacslk/dhcp"
   packages = [
     "dhcpv4",
@@ -38,7 +57,7 @@
     "rfc1035label",
   ]
   pruneopts = "UT"
-  revision = "fe3f5c4e2b53c09c4796523e24addf25568256d5"
+  revision = "8249c7314fb30aca426139aae111bb0a3488a236"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -81,11 +100,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:999c8e6b10ddb08bc4ea3a56d4e838194c4884eac6ecf90a9aa98ed8475fdf37"
+  digest = "1:824b4d14e35e35e821d3127319e51eb838f72434100750ad395db96d00b5a871"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "f43be2a4598cf3a47be9f94f0c28197ed9eae611"
+  revision = "c1f44814a5cd81a6d1cb589ef1e528bc5d305e07"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -96,6 +115,8 @@
     "github.com/ben-han-cn/cement/stringtool",
     "github.com/ben-han-cn/cement/unittest",
     "github.com/ben-han-cn/g53",
+    "github.com/ben-han-cn/kvzoo",
+    "github.com/ben-han-cn/kvzoo/backend/bolt",
     "github.com/insomniacslk/dhcp/dhcpv4",
     "github.com/insomniacslk/dhcp/dhcpv6",
     "github.com/segmentio/kafka-go",
