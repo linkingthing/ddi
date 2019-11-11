@@ -3,27 +3,28 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e51d656dcac5ff7600b80f356574b9fe50527caf0b898c9bd5cb2fd30ddced21"
+  digest = "1:d69557bb6c74a231e2eca1b1a956f0349fb25c7ccc1bae7bf31c4cab5209e059"
   name = "github.com/ben-han-cn/cement"
   packages = [
+    "randomdata",
     "shell",
     "slice",
     "stringtool",
     "unittest",
   ]
   pruneopts = "UT"
-  revision = "ea8b889a2ecc64b860a03ede307718172d32ca71"
+  revision = "d922e34cc396f7509658cd72b8952990e22bb37c"
 
 [[projects]]
   branch = "master"
-  digest = "1:00b776dddc63c4ad451b2480eab36edb64770759324a5e8b07dd4c3f6571056a"
+  digest = "1:8ecc7e8d289a2e1842136557bcb74122427e79d8b344f941a48fe426d5a71fc5"
   name = "github.com/ben-han-cn/g53"
   packages = [
     ".",
     "util",
   ]
   pruneopts = "UT"
-  revision = "7b2b968c7aaf9048384ac9539d8f4c917a74701a"
+  revision = "d8b9b09c5327d920d8b9d21b2ebdf738888901a4"
 
 [[projects]]
   branch = "master"
@@ -48,6 +49,17 @@
   version = "v1.0.2"
 
 [[projects]]
+  digest = "1:90c46bfc05873658e35df09db29aeb98b988d98efd732331e7ddb4bf941c3627"
+  name = "github.com/segmentio/kafka-go"
+  packages = [
+    ".",
+    "sasl",
+  ]
+  pruneopts = "UT"
+  revision = "80057ad8a16187e6bb557b5e6faa08da52c45d9a"
+  version = "v0.3.4"
+
+[[projects]]
   digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -69,11 +81,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:56068728488986584e5a2f3576cb84d52bad7ec7fbe63a14b0d3b26bfdb41b8b"
+  digest = "1:999c8e6b10ddb08bc4ea3a56d4e838194c4884eac6ecf90a9aa98ed8475fdf37"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "53bf42e6b339f7ed00535fc6915737b3959eac89"
+  revision = "f43be2a4598cf3a47be9f94f0c28197ed9eae611"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -86,6 +98,7 @@
     "github.com/ben-han-cn/g53",
     "github.com/insomniacslk/dhcp/dhcpv4",
     "github.com/insomniacslk/dhcp/dhcpv6",
+    "github.com/segmentio/kafka-go",
     "github.com/sirupsen/logrus",
   ]
   solver-name = "gps-cdcl"
