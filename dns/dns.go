@@ -74,7 +74,7 @@ func (t *BindHandler) StopDNS() error {
 func (t *BindHandler) CreateACL(req pb.CreateACLReq) error {
 	acl := ACL{ID: req.ACLID, Name: req.ACLName, IpList: req.IpList}
 	t.FreeACLList[req.ACLID] = acl
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 
 	return nil
 }
@@ -108,8 +108,8 @@ func (t *BindHandler) CreateView(req pb.CreateViewReq) error {
 	}
 	buffer := new(bytes.Buffer)
 	tmpl.Execute(buffer, t)
-	t.ConfContent = string(buffer.Bytes())
-	if err := ioutil.WriteFile(t.ConfigPath+"/"+t.MainConfName, []byte(t.ConfContent), 0644); err != nil {
+	t.ConfContent = buffer.String()
+	if err := ioutil.WriteFile(t.ConfigPath+"/"+t.MainConfName, buffer.Bytes(), 0644); err != nil {
 		return err
 	}
 	return nil
@@ -144,7 +144,7 @@ func (t *BindHandler) UpdateView(req pb.UpdateViewReq) error {
 		t.ViewList = append(t.ViewList[:req.Priority-1], append([]View{view}, t.ViewList[req.Priority-1:]...)...)
 	}
 
-	if err := UpdateConfigFile(t); err != nil {
+	if err := t.updateConfigFile(); err != nil {
 		return err
 	}
 	return nil
@@ -156,7 +156,7 @@ func (t *BindHandler) DeleteView(req pb.DeleteViewReq) error {
 			t.ViewList = append(t.ViewList[:k], t.ViewList[k+1:]...)
 		}
 	}
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 	return nil
 }
 
@@ -168,7 +168,7 @@ func (t *BindHandler) CreateZone(req pb.CreateZoneReq) error {
 			break
 		}
 	}
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 	return nil
 }
 
@@ -184,7 +184,7 @@ func (t *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
 			break
 		}
 	}
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (t *BindHandler) CreateRR(req pb.CreateRRReq) error {
 			break
 		}
 	}
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 	return nil
 }
 
@@ -221,11 +221,11 @@ func (t *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 			break
 		}
 	}
-	UpdateConfigFile(t)
+	t.updateConfigFile()
 	return nil
 }
 
-func UpdateConfigFile(t *BindHandler) error {
+func (t *BindHandler) updateConfigFile() error {
 	tmpl, err := template.ParseFiles(t.ConfigPath + "/templates/named.tpl")
 	if err != nil {
 		return err
