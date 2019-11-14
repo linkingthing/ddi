@@ -3,13 +3,13 @@ syntax = "proto3";
 package pb;
 
 message DHCPStartReq{
-	string service = 1;
-	string configFile = 2;
+string service = 1;
+string configFile = 2;
 }
 message DHCPStopReq{
-	string service = 1;
+string service = 1;
 }
-message Subnet4OptionData{
+message SubnetOptionData{
 bool AlwaysSend = 1;
 int32 Code = 2;
 bool CsvFormat = 3;
@@ -17,21 +17,21 @@ string Data = 4;
 string Name = 5;
 string Space = 6;
 }
-message Subnet4Pools{
-repeated Subnet4OptionData OptionData = 1;
+message SubnetPools{
+repeated SubnetOptionData OptionData = 1;
 string pool = 2;
 }
-message CreateSubnet4Req{
+message CreateSubnetReq{
 string service = 1;
 string subnetName = 2;
-string pools = 3;
+repeated SubnetPools pools = 3;
 }
-message UpdateSubnet4Req{
+message UpdateSubnetReq{
 string service = 1;
 string subnetName = 2;
-string pools = 3;
+repeated SubnetPools pools = 3;
 }
-message DeleteSubnet4Req{
+message DeleteSubnetReq{
 string service = 1;
 string subnetName = 2;
 }

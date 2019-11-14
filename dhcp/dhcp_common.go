@@ -1,8 +1,5 @@
 package dhcp
 
-//in this package, func param values
-// service: dhcp4, dhcp6, ctrl_agent, ddns
-
 import (
 	"encoding/json"
 	"os/exec"
@@ -16,6 +13,7 @@ func cmd(command string) (string, error) {
 }
 
 func getConfig(service string, conf *ParseConfig) error {
+
 	postData := map[string]interface{}{
 		"command": "config-get",
 		"service": []string{service},
@@ -24,6 +22,7 @@ func getConfig(service string, conf *ParseConfig) error {
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
@@ -35,7 +34,6 @@ func getConfig(service string, conf *ParseConfig) error {
 		return err
 	}
 
-
 	return nil
 }
 
@@ -43,7 +41,7 @@ func setConfig(service string, conf *DHCPConfig) error {
 
 	postData := map[string]interface{}{
 		"command":   "config-set",
-		"service": []string{service},
+		"service":   []string{service},
 		"arguments": &conf,
 	}
 	postStr, _ := json.Marshal(postData)

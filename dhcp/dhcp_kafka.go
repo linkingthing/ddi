@@ -1,33 +1,34 @@
 package dhcp
 
 import (
-	"github.com/segmentio/kafka-go"
 	"context"
 	"fmt"
+
+	"github.com/segmentio/kafka-go"
 )
 
-var(
-	kafkaServer = "localhost:9092"
-	dhcpTopic = "test"
+const (
+	KafkaServer = "localhost:9092"
+	DhcpTopic   = "test"
 )
 
-func produce(msg kafka.Message){
+func produce(msg kafka.Message) {
 	fmt.Printf("into produce\n")
 	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{kafkaServer},
-		Topic:   dhcpTopic,
+		Brokers: []string{KafkaServer},
+		Topic:   DhcpTopic,
 	})
 
 	w.WriteMessages(context.Background(), msg)
 }
 
-
-func consumer(){
+func consumer() {
 
 	r := kafka.NewReader(kafka.ReaderConfig{
 
-		Brokers: []string{kafkaServer},
-		Topic: dhcpTopic,
+		Brokers:     []string{KafkaServer},
+		Topic:       DhcpTopic,
+		StartOffset: 34,
 	})
 
 	for {

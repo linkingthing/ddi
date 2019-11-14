@@ -3,17 +3,25 @@ package dhcp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"time"
+
 	"github.com/linkingthing.com/ddi/pb"
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	DhcpHost = "10.0.0.15"
-	DhcpPort = "8081"
-	DhcpConfigPath = "/usr/local/etc/kea/"
+	DhcpHost        = "10.0.0.15"
+	DhcpPort        = "8081"
+	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
 	Dhcp6ConfigFile = "kea-dhcp6.conf"
+)
+const (
+	IntfStartDHCP = 1 + iota
+	IntfStopDHCP
+	IntfCreateSubnet
+	IntfUpdateSubnet
+	IntfDeleteSubnet
 )
 
 type KEAHandler struct {
@@ -125,11 +133,12 @@ func (t *KEAHandler) StopDHCP(req pb.DHCPStopReq) error {
 	return nil
 }
 
-func (t *KEAHandler) CreateSubnet4(req pb.CreateSubnet4Req) error {
-	//CreateSubnet4(service string, subnetName string, pools string)
+func (t *KEAHandler) CreateSubnet(req pb.CreateSubnetReq) error {
+
 	var conf ParseConfig
 	err := getConfig(req.Service, &conf)
 	if err != nil {
+
 		return err
 	}
 
@@ -150,20 +159,22 @@ func (t *KEAHandler) CreateSubnet4(req pb.CreateSubnet4Req) error {
 		Pools: []Subnet4Pools{
 			{
 				[]Subnet4OptionData{},
-				req.Pools,
+				req.Pools[0].Pool,
 			},
 		},
 	}
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
-	setErr := setConfig(req.SubnetName, &conf.Arguments)
+
+	setErr := setConfig(req.Service, &conf.Arguments)
 	if setErr != nil {
+
 		return setErr
 	}
 	return nil
 }
 
-func (t *KEAHandler) updateSubnet4(req pb.UpdateSubnet4Req) error {
+func (t *KEAHandler) UpdateSubnet4(req pb.UpdateSubnetReq) error {
 	var conf ParseConfig
 	err := getConfig(req.Service, &conf)
 	if err != nil {
@@ -175,7 +186,7 @@ func (t *KEAHandler) updateSubnet4(req pb.UpdateSubnet4Req) error {
 			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Subnet4Pools{
 				{
 					[]Subnet4OptionData{},
-					req.Pools,
+					req.Pools[0].Pool,
 				},
 			}
 			err = setConfig(req.Service, &conf.Arguments)
@@ -188,7 +199,7 @@ func (t *KEAHandler) updateSubnet4(req pb.UpdateSubnet4Req) error {
 	return fmt.Errorf("subnet %s not exist, update error", req.SubnetName)
 }
 
-func (t *KEAHandler) deleteSubnet4(req pb.DeleteSubnet4Req) error {
+func (t *KEAHandler) DeleteSubnet4(req pb.DeleteSubnetReq) error {
 	var conf ParseConfig
 	err := getConfig(req.Service, &conf)
 	if err != nil {
