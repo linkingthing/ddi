@@ -1,3 +1,3 @@
-acl "{{.Name}}"{ {{range $k, $ip := .IpList}}
+acl "{{.Name}}"{ {{range $k, $ip := .IPs}}
 {{$ip}};{{end}}
 };
