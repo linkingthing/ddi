@@ -1,18 +1,14 @@
 options {
-	directory "{{.ConfigPath}}/";
+	directory "{{.ConfigPath}}";
 	pid-file "named.pid";
 	allow-new-zones yes;
 	allow-query {any;};
 };
-{{range $k, $view := .ViewList}}
-view "{{$view.ViewName}}" {
-	match-clients {	{{range $kk, $acl := $view.ACLList}}
+{{range $k, $view := .Views}}
+view "{{$view.Name}}" {
+	match-clients {	{{range $kk, $acl := $view.ACLs}}
 	{{$acl.Name}};	{{end}}
-	};{{range $kkk, $zone := $view.ZoneList}}	
-	zone "{{$zone.ZoneName}}" {
-	type master;
-	file "{{$zone.ZoneFileName}}.zone";
-	};	{{end}}
+	};
 };{{end}}
 
 view "default" {
@@ -28,6 +24,6 @@ controls {
         inet 127.0.0.1 port 953
         allow { 127.0.0.1; } keys { "rndc-key"; };
 };
-{{range $k, $view := .ViewList}}{{range $kk, $acl := $view.ACLList}}
+{{range $k, $view := .Views}}{{range $kk, $acl := $view.ACLs}}
 include "/root/bindtest/{{$acl.Name}}.conf";{{end}}{{end}}
 

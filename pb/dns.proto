@@ -12,7 +12,7 @@ message DNSStopReq{
 message CreateACLReq{
 string aCLName = 1;
 string aCLID = 2;
-repeated string ipList = 3;
+repeated string iPList = 3;
 }
 
 message DeleteACLReq{
@@ -53,21 +53,21 @@ string zoneID = 2;
 message CreateRRReq{
 string viewID = 1;
 string zoneID = 2;
-string rrID = 3;
-string rrdata = 4;
+string rRID = 3;
+string rRData = 4;
 }
 
 message UpdateRRReq{
 string viewID = 1;
 string zoneID = 2;
-string rrID = 3;
-string newrrData = 4;
+string rRID = 3;
+string newRRData = 4;
 }
 
 message DeleteRRReq{
 string viewID = 1;
 string zoneID = 2;
-string rrID = 3;
+string rRID = 3;
 }
 
 
