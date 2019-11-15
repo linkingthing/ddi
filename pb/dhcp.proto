@@ -21,10 +21,23 @@ message SubnetPools{
 repeated SubnetOptionData OptionData = 1;
 string pool = 2;
 }
+
+message Reservation{
+repeated string ClientClasses = 1;
+string hostname = 2;
+optional string duid = 3;
+string ipAddresses = 4;
+optional string nextServer = 5;
+repeated SubnetOptionData OptionData = 6;
+optional string ServerHostname = 7;
+optional string prefixes = 8;
+}
 message CreateSubnetReq{
 string service = 1;
 string subnetName = 2;
 repeated SubnetPools pools = 3;
+repeated Reservation reservations = 4;
+
 }
 message UpdateSubnetReq{
 string service = 1;

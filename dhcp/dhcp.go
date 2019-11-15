@@ -32,13 +32,34 @@ type KEAHandler struct {
 	//FreeACLList  map[string]ACL
 }
 
-type ParseConfig struct {
+type Parse6Config struct {
 	Result    json.Number
-	Arguments DHCPConfig
+	Arguments DHCP6Conf
 }
-type DHCPConfig struct {
+type DHCP6Conf struct {
+	Dhcp6 Dhcp6Config
+}
+type Dhcp6Config struct {
+	Authoritative bool   `json:"authoritative"`
+	BootFileName  string `json:"boot-file-name"`
+	//ClientClasses map[string]interface{} `json:"client-classes"`
+	ControlSocket ControlSocket       `json:"control-socket"`
+	OptionData    []Subnet4OptionData `json:"option-data"`
+	Subnet6       []Subnet4Config     `json:"subnet4"`
+	//PreferredLifetime json.Number         `json:"preferred-lifetime"`
+	//T1Percent json.Number `json:"t1-percent"`
+	//T2Percent json.Number `json:"t2-percent"`
+	ValidLifetime json.Number `json:"valid-lifetime"`
+}
+
+type Parse4Config struct {
+	Result    json.Number
+	Arguments DHCP4Conf
+}
+type DHCP4Conf struct {
 	Dhcp4 Dhcp4Config
 }
+
 type Dhcp4Config struct {
 	Authoritative bool   `json:"authoritative"`
 	BootFileName  string `json:"boot-file-name"`
@@ -133,9 +154,9 @@ func (t *KEAHandler) StopDHCP(req pb.DHCPStopReq) error {
 	return nil
 }
 
-func (t *KEAHandler) CreateSubnet(req pb.CreateSubnetReq) error {
+func (t *KEAHandler) CreateSubnet4(req pb.CreateSubnetReq) error {
 
-	var conf ParseConfig
+	var conf Parse4Config
 	err := getConfig(req.Service, &conf)
 	if err != nil {
 
@@ -175,7 +196,7 @@ func (t *KEAHandler) CreateSubnet(req pb.CreateSubnetReq) error {
 }
 
 func (t *KEAHandler) UpdateSubnet4(req pb.UpdateSubnetReq) error {
-	var conf ParseConfig
+	var conf Parse4Config
 	err := getConfig(req.Service, &conf)
 	if err != nil {
 		return err
@@ -200,7 +221,7 @@ func (t *KEAHandler) UpdateSubnet4(req pb.UpdateSubnetReq) error {
 }
 
 func (t *KEAHandler) DeleteSubnet4(req pb.DeleteSubnetReq) error {
-	var conf ParseConfig
+	var conf Parse4Config
 	err := getConfig(req.Service, &conf)
 	if err != nil {
 		return err
