@@ -1,7 +1,6 @@
 package main
 
 import (
-	//"fmt"
 	"github.com/linkingthing/ddi/dns"
 	"github.com/linkingthing/ddi/pb"
 )
