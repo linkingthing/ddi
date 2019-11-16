@@ -4,8 +4,12 @@
 package pb
 
 import (
+	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -20,407 +24,2210 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type DHCPStartReq struct {
-	Service              string   `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	ConfigFile           string   `protobuf:"bytes,2,opt,name=configFile,proto3" json:"configFile,omitempty"`
+type OperResult struct {
+	RetCode              int32    `protobuf:"varint,1,opt,name=ret_code,json=retCode,proto3" json:"ret_code,omitempty"`
+	RetMsg               string   `protobuf:"bytes,2,opt,name=ret_msg,json=retMsg,proto3" json:"ret_msg,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DHCPStartReq) Reset()         { *m = DHCPStartReq{} }
-func (m *DHCPStartReq) String() string { return proto.CompactTextString(m) }
-func (*DHCPStartReq) ProtoMessage()    {}
-func (*DHCPStartReq) Descriptor() ([]byte, []int) {
+func (m *OperResult) Reset()         { *m = OperResult{} }
+func (m *OperResult) String() string { return proto.CompactTextString(m) }
+func (*OperResult) ProtoMessage()    {}
+func (*OperResult) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0b4c6fed4d91e328, []int{0}
 }
 
-func (m *DHCPStartReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DHCPStartReq.Unmarshal(m, b)
+func (m *OperResult) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OperResult.Unmarshal(m, b)
 }
-func (m *DHCPStartReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DHCPStartReq.Marshal(b, m, deterministic)
+func (m *OperResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OperResult.Marshal(b, m, deterministic)
 }
-func (m *DHCPStartReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DHCPStartReq.Merge(m, src)
+func (m *OperResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OperResult.Merge(m, src)
 }
-func (m *DHCPStartReq) XXX_Size() int {
-	return xxx_messageInfo_DHCPStartReq.Size(m)
+func (m *OperResult) XXX_Size() int {
+	return xxx_messageInfo_OperResult.Size(m)
 }
-func (m *DHCPStartReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_DHCPStartReq.DiscardUnknown(m)
+func (m *OperResult) XXX_DiscardUnknown() {
+	xxx_messageInfo_OperResult.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DHCPStartReq proto.InternalMessageInfo
+var xxx_messageInfo_OperResult proto.InternalMessageInfo
 
-func (m *DHCPStartReq) GetService() string {
+func (m *OperResult) GetRetCode() int32 {
 	if m != nil {
-		return m.Service
+		return m.RetCode
+	}
+	return 0
+}
+
+func (m *OperResult) GetRetMsg() string {
+	if m != nil {
+		return m.RetMsg
 	}
 	return ""
 }
 
-func (m *DHCPStartReq) GetConfigFile() string {
-	if m != nil {
-		return m.ConfigFile
-	}
-	return ""
-}
-
-type DHCPStopReq struct {
-	Service              string   `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+type Option struct {
+	AlwaysSend           bool     `protobuf:"varint,1,opt,name=alwaysSend,proto3" json:"alwaysSend,omitempty"`
+	Code                 int32    `protobuf:"varint,2,opt,name=code,proto3" json:"code,omitempty"`
+	CsvFormat            bool     `protobuf:"varint,3,opt,name=csvFormat,proto3" json:"csvFormat,omitempty"`
+	Data                 string   `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	Name                 string   `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Space                string   `protobuf:"bytes,6,opt,name=space,proto3" json:"space,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DHCPStopReq) Reset()         { *m = DHCPStopReq{} }
-func (m *DHCPStopReq) String() string { return proto.CompactTextString(m) }
-func (*DHCPStopReq) ProtoMessage()    {}
-func (*DHCPStopReq) Descriptor() ([]byte, []int) {
+func (m *Option) Reset()         { *m = Option{} }
+func (m *Option) String() string { return proto.CompactTextString(m) }
+func (*Option) ProtoMessage()    {}
+func (*Option) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0b4c6fed4d91e328, []int{1}
 }
 
-func (m *DHCPStopReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DHCPStopReq.Unmarshal(m, b)
+func (m *Option) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Option.Unmarshal(m, b)
 }
-func (m *DHCPStopReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DHCPStopReq.Marshal(b, m, deterministic)
+func (m *Option) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Option.Marshal(b, m, deterministic)
 }
-func (m *DHCPStopReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DHCPStopReq.Merge(m, src)
+func (m *Option) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Option.Merge(m, src)
 }
-func (m *DHCPStopReq) XXX_Size() int {
-	return xxx_messageInfo_DHCPStopReq.Size(m)
+func (m *Option) XXX_Size() int {
+	return xxx_messageInfo_Option.Size(m)
 }
-func (m *DHCPStopReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_DHCPStopReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DHCPStopReq proto.InternalMessageInfo
-
-func (m *DHCPStopReq) GetService() string {
-	if m != nil {
-		return m.Service
-	}
-	return ""
+func (m *Option) XXX_DiscardUnknown() {
+	xxx_messageInfo_Option.DiscardUnknown(m)
 }
 
-type SubnetOptionData struct {
-	AlwaysSend           bool     `protobuf:"varint,1,opt,name=AlwaysSend,proto3" json:"AlwaysSend,omitempty"`
-	Code                 int32    `protobuf:"varint,2,opt,name=Code,proto3" json:"Code,omitempty"`
-	CsvFormat            bool     `protobuf:"varint,3,opt,name=CsvFormat,proto3" json:"CsvFormat,omitempty"`
-	Data                 string   `protobuf:"bytes,4,opt,name=Data,proto3" json:"Data,omitempty"`
-	Name                 string   `protobuf:"bytes,5,opt,name=Name,proto3" json:"Name,omitempty"`
-	Space                string   `protobuf:"bytes,6,opt,name=Space,proto3" json:"Space,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
+var xxx_messageInfo_Option proto.InternalMessageInfo
 
-func (m *SubnetOptionData) Reset()         { *m = SubnetOptionData{} }
-func (m *SubnetOptionData) String() string { return proto.CompactTextString(m) }
-func (*SubnetOptionData) ProtoMessage()    {}
-func (*SubnetOptionData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b4c6fed4d91e328, []int{2}
-}
-
-func (m *SubnetOptionData) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SubnetOptionData.Unmarshal(m, b)
-}
-func (m *SubnetOptionData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SubnetOptionData.Marshal(b, m, deterministic)
-}
-func (m *SubnetOptionData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SubnetOptionData.Merge(m, src)
-}
-func (m *SubnetOptionData) XXX_Size() int {
-	return xxx_messageInfo_SubnetOptionData.Size(m)
-}
-func (m *SubnetOptionData) XXX_DiscardUnknown() {
-	xxx_messageInfo_SubnetOptionData.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_SubnetOptionData proto.InternalMessageInfo
-
-func (m *SubnetOptionData) GetAlwaysSend() bool {
+func (m *Option) GetAlwaysSend() bool {
 	if m != nil {
 		return m.AlwaysSend
 	}
 	return false
 }
 
-func (m *SubnetOptionData) GetCode() int32 {
+func (m *Option) GetCode() int32 {
 	if m != nil {
 		return m.Code
 	}
 	return 0
 }
 
-func (m *SubnetOptionData) GetCsvFormat() bool {
+func (m *Option) GetCsvFormat() bool {
 	if m != nil {
 		return m.CsvFormat
 	}
 	return false
 }
 
-func (m *SubnetOptionData) GetData() string {
+func (m *Option) GetData() string {
 	if m != nil {
 		return m.Data
 	}
 	return ""
 }
 
-func (m *SubnetOptionData) GetName() string {
+func (m *Option) GetName() string {
 	if m != nil {
 		return m.Name
 	}
 	return ""
 }
 
-func (m *SubnetOptionData) GetSpace() string {
+func (m *Option) GetSpace() string {
 	if m != nil {
 		return m.Space
 	}
 	return ""
 }
 
-type SubnetPools struct {
-	OptionData           []*SubnetOptionData `protobuf:"bytes,1,rep,name=OptionData,proto3" json:"OptionData,omitempty"`
-	Pool                 string              `protobuf:"bytes,2,opt,name=pool,proto3" json:"pool,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+type Reservation struct {
+	Prefixes             string    `protobuf:"bytes,1,opt,name=prefixes,proto3" json:"prefixes,omitempty"`
+	Hostname             string    `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	Duid                 string    `protobuf:"bytes,3,opt,name=duid,proto3" json:"duid,omitempty"`
+	IpAddresses          string    `protobuf:"bytes,4,opt,name=ipAddresses,proto3" json:"ipAddresses,omitempty"`
+	NextServer           string    `protobuf:"bytes,5,opt,name=nextServer,proto3" json:"nextServer,omitempty"`
+	OptData              []*Option `protobuf:"bytes,6,rep,name=optData,proto3" json:"optData,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *SubnetPools) Reset()         { *m = SubnetPools{} }
-func (m *SubnetPools) String() string { return proto.CompactTextString(m) }
-func (*SubnetPools) ProtoMessage()    {}
-func (*SubnetPools) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b4c6fed4d91e328, []int{3}
+func (m *Reservation) Reset()         { *m = Reservation{} }
+func (m *Reservation) String() string { return proto.CompactTextString(m) }
+func (*Reservation) ProtoMessage()    {}
+func (*Reservation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{2}
 }
 
-func (m *SubnetPools) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_SubnetPools.Unmarshal(m, b)
+func (m *Reservation) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Reservation.Unmarshal(m, b)
 }
-func (m *SubnetPools) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_SubnetPools.Marshal(b, m, deterministic)
+func (m *Reservation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Reservation.Marshal(b, m, deterministic)
 }
-func (m *SubnetPools) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SubnetPools.Merge(m, src)
+func (m *Reservation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Reservation.Merge(m, src)
 }
-func (m *SubnetPools) XXX_Size() int {
-	return xxx_messageInfo_SubnetPools.Size(m)
+func (m *Reservation) XXX_Size() int {
+	return xxx_messageInfo_Reservation.Size(m)
 }
-func (m *SubnetPools) XXX_DiscardUnknown() {
-	xxx_messageInfo_SubnetPools.DiscardUnknown(m)
+func (m *Reservation) XXX_DiscardUnknown() {
+	xxx_messageInfo_Reservation.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_SubnetPools proto.InternalMessageInfo
+var xxx_messageInfo_Reservation proto.InternalMessageInfo
 
-func (m *SubnetPools) GetOptionData() []*SubnetOptionData {
+func (m *Reservation) GetPrefixes() string {
 	if m != nil {
-		return m.OptionData
+		return m.Prefixes
+	}
+	return ""
+}
+
+func (m *Reservation) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *Reservation) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *Reservation) GetIpAddresses() string {
+	if m != nil {
+		return m.IpAddresses
+	}
+	return ""
+}
+
+func (m *Reservation) GetNextServer() string {
+	if m != nil {
+		return m.NextServer
+	}
+	return ""
+}
+
+func (m *Reservation) GetOptData() []*Option {
+	if m != nil {
+		return m.OptData
 	}
 	return nil
 }
 
-func (m *SubnetPools) GetPool() string {
+type Pools struct {
+	Options              []*Option `protobuf:"bytes,1,rep,name=options,proto3" json:"options,omitempty"`
+	Pool                 string    `protobuf:"bytes,2,opt,name=pool,proto3" json:"pool,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *Pools) Reset()         { *m = Pools{} }
+func (m *Pools) String() string { return proto.CompactTextString(m) }
+func (*Pools) ProtoMessage()    {}
+func (*Pools) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{3}
+}
+
+func (m *Pools) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Pools.Unmarshal(m, b)
+}
+func (m *Pools) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Pools.Marshal(b, m, deterministic)
+}
+func (m *Pools) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Pools.Merge(m, src)
+}
+func (m *Pools) XXX_Size() int {
+	return xxx_messageInfo_Pools.Size(m)
+}
+func (m *Pools) XXX_DiscardUnknown() {
+	xxx_messageInfo_Pools.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Pools proto.InternalMessageInfo
+
+func (m *Pools) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *Pools) GetPool() string {
 	if m != nil {
 		return m.Pool
 	}
 	return ""
 }
 
-type CreateSubnetReq struct {
-	Service              string         `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	SubnetName           string         `protobuf:"bytes,2,opt,name=subnetName,proto3" json:"subnetName,omitempty"`
-	Pools                []*SubnetPools `protobuf:"bytes,3,rep,name=pools,proto3" json:"pools,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *CreateSubnetReq) Reset()         { *m = CreateSubnetReq{} }
-func (m *CreateSubnetReq) String() string { return proto.CompactTextString(m) }
-func (*CreateSubnetReq) ProtoMessage()    {}
-func (*CreateSubnetReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b4c6fed4d91e328, []int{4}
-}
-
-func (m *CreateSubnetReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateSubnetReq.Unmarshal(m, b)
-}
-func (m *CreateSubnetReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateSubnetReq.Marshal(b, m, deterministic)
-}
-func (m *CreateSubnetReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateSubnetReq.Merge(m, src)
-}
-func (m *CreateSubnetReq) XXX_Size() int {
-	return xxx_messageInfo_CreateSubnetReq.Size(m)
-}
-func (m *CreateSubnetReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateSubnetReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CreateSubnetReq proto.InternalMessageInfo
-
-func (m *CreateSubnetReq) GetService() string {
-	if m != nil {
-		return m.Service
-	}
-	return ""
-}
-
-func (m *CreateSubnetReq) GetSubnetName() string {
-	if m != nil {
-		return m.SubnetName
-	}
-	return ""
-}
-
-func (m *CreateSubnetReq) GetPools() []*SubnetPools {
-	if m != nil {
-		return m.Pools
-	}
-	return nil
-}
-
-type UpdateSubnetReq struct {
-	Service              string         `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	SubnetName           string         `protobuf:"bytes,2,opt,name=subnetName,proto3" json:"subnetName,omitempty"`
-	Pools                []*SubnetPools `protobuf:"bytes,3,rep,name=pools,proto3" json:"pools,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *UpdateSubnetReq) Reset()         { *m = UpdateSubnetReq{} }
-func (m *UpdateSubnetReq) String() string { return proto.CompactTextString(m) }
-func (*UpdateSubnetReq) ProtoMessage()    {}
-func (*UpdateSubnetReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b4c6fed4d91e328, []int{5}
-}
-
-func (m *UpdateSubnetReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateSubnetReq.Unmarshal(m, b)
-}
-func (m *UpdateSubnetReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateSubnetReq.Marshal(b, m, deterministic)
-}
-func (m *UpdateSubnetReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateSubnetReq.Merge(m, src)
-}
-func (m *UpdateSubnetReq) XXX_Size() int {
-	return xxx_messageInfo_UpdateSubnetReq.Size(m)
-}
-func (m *UpdateSubnetReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateSubnetReq.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UpdateSubnetReq proto.InternalMessageInfo
-
-func (m *UpdateSubnetReq) GetService() string {
-	if m != nil {
-		return m.Service
-	}
-	return ""
-}
-
-func (m *UpdateSubnetReq) GetSubnetName() string {
-	if m != nil {
-		return m.SubnetName
-	}
-	return ""
-}
-
-func (m *UpdateSubnetReq) GetPools() []*SubnetPools {
-	if m != nil {
-		return m.Pools
-	}
-	return nil
-}
-
-type DeleteSubnetReq struct {
-	Service              string   `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
-	SubnetName           string   `protobuf:"bytes,2,opt,name=subnetName,proto3" json:"subnetName,omitempty"`
+type StartDHCPv4Req struct {
+	Config               string   `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DeleteSubnetReq) Reset()         { *m = DeleteSubnetReq{} }
-func (m *DeleteSubnetReq) String() string { return proto.CompactTextString(m) }
-func (*DeleteSubnetReq) ProtoMessage()    {}
-func (*DeleteSubnetReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b4c6fed4d91e328, []int{6}
+func (m *StartDHCPv4Req) Reset()         { *m = StartDHCPv4Req{} }
+func (m *StartDHCPv4Req) String() string { return proto.CompactTextString(m) }
+func (*StartDHCPv4Req) ProtoMessage()    {}
+func (*StartDHCPv4Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{4}
 }
 
-func (m *DeleteSubnetReq) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DeleteSubnetReq.Unmarshal(m, b)
+func (m *StartDHCPv4Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StartDHCPv4Req.Unmarshal(m, b)
 }
-func (m *DeleteSubnetReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DeleteSubnetReq.Marshal(b, m, deterministic)
+func (m *StartDHCPv4Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StartDHCPv4Req.Marshal(b, m, deterministic)
 }
-func (m *DeleteSubnetReq) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteSubnetReq.Merge(m, src)
+func (m *StartDHCPv4Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StartDHCPv4Req.Merge(m, src)
 }
-func (m *DeleteSubnetReq) XXX_Size() int {
-	return xxx_messageInfo_DeleteSubnetReq.Size(m)
+func (m *StartDHCPv4Req) XXX_Size() int {
+	return xxx_messageInfo_StartDHCPv4Req.Size(m)
 }
-func (m *DeleteSubnetReq) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeleteSubnetReq.DiscardUnknown(m)
+func (m *StartDHCPv4Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_StartDHCPv4Req.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_DeleteSubnetReq proto.InternalMessageInfo
+var xxx_messageInfo_StartDHCPv4Req proto.InternalMessageInfo
 
-func (m *DeleteSubnetReq) GetService() string {
+func (m *StartDHCPv4Req) GetConfig() string {
 	if m != nil {
-		return m.Service
+		return m.Config
 	}
 	return ""
 }
 
-func (m *DeleteSubnetReq) GetSubnetName() string {
+type StopDHCPv4Req struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *StopDHCPv4Req) Reset()         { *m = StopDHCPv4Req{} }
+func (m *StopDHCPv4Req) String() string { return proto.CompactTextString(m) }
+func (*StopDHCPv4Req) ProtoMessage()    {}
+func (*StopDHCPv4Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{5}
+}
+
+func (m *StopDHCPv4Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StopDHCPv4Req.Unmarshal(m, b)
+}
+func (m *StopDHCPv4Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StopDHCPv4Req.Marshal(b, m, deterministic)
+}
+func (m *StopDHCPv4Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopDHCPv4Req.Merge(m, src)
+}
+func (m *StopDHCPv4Req) XXX_Size() int {
+	return xxx_messageInfo_StopDHCPv4Req.Size(m)
+}
+func (m *StopDHCPv4Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_StopDHCPv4Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StopDHCPv4Req proto.InternalMessageInfo
+
+type CreateSubnetv4Req struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservations         []*Reservation `protobuf:"bytes,4,rep,name=reservations,proto3" json:"reservations,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	Pool                 []*Pools       `protobuf:"bytes,6,rep,name=pool,proto3" json:"pool,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateSubnetv4Req) Reset()         { *m = CreateSubnetv4Req{} }
+func (m *CreateSubnetv4Req) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv4Req) ProtoMessage()    {}
+func (*CreateSubnetv4Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{6}
+}
+
+func (m *CreateSubnetv4Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv4Req.Unmarshal(m, b)
+}
+func (m *CreateSubnetv4Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv4Req.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv4Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv4Req.Merge(m, src)
+}
+func (m *CreateSubnetv4Req) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv4Req.Size(m)
+}
+func (m *CreateSubnetv4Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv4Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv4Req proto.InternalMessageInfo
+
+func (m *CreateSubnetv4Req) GetId() string {
 	if m != nil {
-		return m.SubnetName
+		return m.Id
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4Req) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv4Req) GetReservations() []*Reservation {
+	if m != nil {
+		return m.Reservations
+	}
+	return nil
+}
+
+func (m *CreateSubnetv4Req) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4Req) GetPool() []*Pools {
+	if m != nil {
+		return m.Pool
+	}
+	return nil
+}
+
+type UpdateSubnetv4Req struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservations         []*Reservation `protobuf:"bytes,4,rep,name=reservations,proto3" json:"reservations,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	Pool                 []*Pools       `protobuf:"bytes,6,rep,name=pool,proto3" json:"pool,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *UpdateSubnetv4Req) Reset()         { *m = UpdateSubnetv4Req{} }
+func (m *UpdateSubnetv4Req) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv4Req) ProtoMessage()    {}
+func (*UpdateSubnetv4Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{7}
+}
+
+func (m *UpdateSubnetv4Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv4Req.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv4Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv4Req.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv4Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv4Req.Merge(m, src)
+}
+func (m *UpdateSubnetv4Req) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv4Req.Size(m)
+}
+func (m *UpdateSubnetv4Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv4Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv4Req proto.InternalMessageInfo
+
+func (m *UpdateSubnetv4Req) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4Req) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv4Req) GetReservations() []*Reservation {
+	if m != nil {
+		return m.Reservations
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv4Req) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4Req) GetPool() []*Pools {
+	if m != nil {
+		return m.Pool
+	}
+	return nil
+}
+
+type DeleteSubnetv4Req struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Id                   string   `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv4Req) Reset()         { *m = DeleteSubnetv4Req{} }
+func (m *DeleteSubnetv4Req) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv4Req) ProtoMessage()    {}
+func (*DeleteSubnetv4Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{8}
+}
+
+func (m *DeleteSubnetv4Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv4Req.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv4Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv4Req.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv4Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv4Req.Merge(m, src)
+}
+func (m *DeleteSubnetv4Req) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv4Req.Size(m)
+}
+func (m *DeleteSubnetv4Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv4Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv4Req proto.InternalMessageInfo
+
+func (m *DeleteSubnetv4Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv4Req) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+type CreateSubnetv4PoolReq struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservs              []*Reservation `protobuf:"bytes,4,rep,name=reservs,proto3" json:"reservs,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateSubnetv4PoolReq) Reset()         { *m = CreateSubnetv4PoolReq{} }
+func (m *CreateSubnetv4PoolReq) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv4PoolReq) ProtoMessage()    {}
+func (*CreateSubnetv4PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{9}
+}
+
+func (m *CreateSubnetv4PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv4PoolReq.Unmarshal(m, b)
+}
+func (m *CreateSubnetv4PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv4PoolReq.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv4PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv4PoolReq.Merge(m, src)
+}
+func (m *CreateSubnetv4PoolReq) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv4PoolReq.Size(m)
+}
+func (m *CreateSubnetv4PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv4PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv4PoolReq proto.InternalMessageInfo
+
+func (m *CreateSubnetv4PoolReq) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4PoolReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4PoolReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv4PoolReq) GetReservs() []*Reservation {
+	if m != nil {
+		return m.Reservs
+	}
+	return nil
+}
+
+func (m *CreateSubnetv4PoolReq) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+type UpdateSubnetv4PoolReq struct {
+	Id                   string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Options              []*Option `protobuf:"bytes,2,rep,name=options,proto3" json:"options,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *UpdateSubnetv4PoolReq) Reset()         { *m = UpdateSubnetv4PoolReq{} }
+func (m *UpdateSubnetv4PoolReq) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv4PoolReq) ProtoMessage()    {}
+func (*UpdateSubnetv4PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{10}
+}
+
+func (m *UpdateSubnetv4PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv4PoolReq.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv4PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv4PoolReq.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv4PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv4PoolReq.Merge(m, src)
+}
+func (m *UpdateSubnetv4PoolReq) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv4PoolReq.Size(m)
+}
+func (m *UpdateSubnetv4PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv4PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv4PoolReq proto.InternalMessageInfo
+
+func (m *UpdateSubnetv4PoolReq) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4PoolReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+type DeleteSubnetv4PoolReq struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv4PoolReq) Reset()         { *m = DeleteSubnetv4PoolReq{} }
+func (m *DeleteSubnetv4PoolReq) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv4PoolReq) ProtoMessage()    {}
+func (*DeleteSubnetv4PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{11}
+}
+
+func (m *DeleteSubnetv4PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv4PoolReq.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv4PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv4PoolReq.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv4PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv4PoolReq.Merge(m, src)
+}
+func (m *DeleteSubnetv4PoolReq) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv4PoolReq.Size(m)
+}
+func (m *DeleteSubnetv4PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv4PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv4PoolReq proto.InternalMessageInfo
+
+func (m *DeleteSubnetv4PoolReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+type CreateSubnetv4ReservationReq struct {
+	Subnet               string    `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string    `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	Hostname             string    `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	IpAddr               string    `protobuf:"bytes,4,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	NextServer           string    `protobuf:"bytes,5,opt,name=nextServer,proto3" json:"nextServer,omitempty"`
+	Options              []*Option `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	BootFileName         string    `protobuf:"bytes,7,opt,name=bootFileName,proto3" json:"bootFileName,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *CreateSubnetv4ReservationReq) Reset()         { *m = CreateSubnetv4ReservationReq{} }
+func (m *CreateSubnetv4ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv4ReservationReq) ProtoMessage()    {}
+func (*CreateSubnetv4ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{12}
+}
+
+func (m *CreateSubnetv4ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv4ReservationReq.Unmarshal(m, b)
+}
+func (m *CreateSubnetv4ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv4ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv4ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv4ReservationReq.Merge(m, src)
+}
+func (m *CreateSubnetv4ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv4ReservationReq.Size(m)
+}
+func (m *CreateSubnetv4ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv4ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv4ReservationReq proto.InternalMessageInfo
+
+func (m *CreateSubnetv4ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4ReservationReq) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4ReservationReq) GetNextServer() string {
+	if m != nil {
+		return m.NextServer
+	}
+	return ""
+}
+
+func (m *CreateSubnetv4ReservationReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv4ReservationReq) GetBootFileName() string {
+	if m != nil {
+		return m.BootFileName
+	}
+	return ""
+}
+
+type UpdateSubnetv4ReservationReq struct {
+	Subnet               string    `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string    `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	Hostname             string    `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	IpAddr               string    `protobuf:"bytes,4,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	NextServer           string    `protobuf:"bytes,5,opt,name=nextServer,proto3" json:"nextServer,omitempty"`
+	Options              []*Option `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	BootFileName         string    `protobuf:"bytes,7,opt,name=bootFileName,proto3" json:"bootFileName,omitempty"`
+	ServerHostname       string    `protobuf:"bytes,8,opt,name=serverHostname,proto3" json:"serverHostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *UpdateSubnetv4ReservationReq) Reset()         { *m = UpdateSubnetv4ReservationReq{} }
+func (m *UpdateSubnetv4ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv4ReservationReq) ProtoMessage()    {}
+func (*UpdateSubnetv4ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{13}
+}
+
+func (m *UpdateSubnetv4ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv4ReservationReq.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv4ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv4ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv4ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv4ReservationReq.Merge(m, src)
+}
+func (m *UpdateSubnetv4ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv4ReservationReq.Size(m)
+}
+func (m *UpdateSubnetv4ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv4ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv4ReservationReq proto.InternalMessageInfo
+
+func (m *UpdateSubnetv4ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetNextServer() string {
+	if m != nil {
+		return m.NextServer
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetBootFileName() string {
+	if m != nil {
+		return m.BootFileName
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv4ReservationReq) GetServerHostname() string {
+	if m != nil {
+		return m.ServerHostname
+	}
+	return ""
+}
+
+type DeleteSubnetv4ReservationReq struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string   `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	IpAddr               string   `protobuf:"bytes,3,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	ServerHostname       string   `protobuf:"bytes,4,opt,name=serverHostname,proto3" json:"serverHostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv4ReservationReq) Reset()         { *m = DeleteSubnetv4ReservationReq{} }
+func (m *DeleteSubnetv4ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv4ReservationReq) ProtoMessage()    {}
+func (*DeleteSubnetv4ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{14}
+}
+
+func (m *DeleteSubnetv4ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv4ReservationReq.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv4ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv4ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv4ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv4ReservationReq.Merge(m, src)
+}
+func (m *DeleteSubnetv4ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv4ReservationReq.Size(m)
+}
+func (m *DeleteSubnetv4ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv4ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv4ReservationReq proto.InternalMessageInfo
+
+func (m *DeleteSubnetv4ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv4ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv4ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv4ReservationReq) GetServerHostname() string {
+	if m != nil {
+		return m.ServerHostname
+	}
+	return ""
+}
+
+/// start of dhcpv6
+type StartDHCPv6Req struct {
+	Config               string   `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *StartDHCPv6Req) Reset()         { *m = StartDHCPv6Req{} }
+func (m *StartDHCPv6Req) String() string { return proto.CompactTextString(m) }
+func (*StartDHCPv6Req) ProtoMessage()    {}
+func (*StartDHCPv6Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{15}
+}
+
+func (m *StartDHCPv6Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StartDHCPv6Req.Unmarshal(m, b)
+}
+func (m *StartDHCPv6Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StartDHCPv6Req.Marshal(b, m, deterministic)
+}
+func (m *StartDHCPv6Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StartDHCPv6Req.Merge(m, src)
+}
+func (m *StartDHCPv6Req) XXX_Size() int {
+	return xxx_messageInfo_StartDHCPv6Req.Size(m)
+}
+func (m *StartDHCPv6Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_StartDHCPv6Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StartDHCPv6Req proto.InternalMessageInfo
+
+func (m *StartDHCPv6Req) GetConfig() string {
+	if m != nil {
+		return m.Config
+	}
+	return ""
+}
+
+type StopDHCPv6Req struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *StopDHCPv6Req) Reset()         { *m = StopDHCPv6Req{} }
+func (m *StopDHCPv6Req) String() string { return proto.CompactTextString(m) }
+func (*StopDHCPv6Req) ProtoMessage()    {}
+func (*StopDHCPv6Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{16}
+}
+
+func (m *StopDHCPv6Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StopDHCPv6Req.Unmarshal(m, b)
+}
+func (m *StopDHCPv6Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StopDHCPv6Req.Marshal(b, m, deterministic)
+}
+func (m *StopDHCPv6Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopDHCPv6Req.Merge(m, src)
+}
+func (m *StopDHCPv6Req) XXX_Size() int {
+	return xxx_messageInfo_StopDHCPv6Req.Size(m)
+}
+func (m *StopDHCPv6Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_StopDHCPv6Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StopDHCPv6Req proto.InternalMessageInfo
+
+type CreateSubnetv6Req struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservations         []*Reservation `protobuf:"bytes,4,rep,name=reservations,proto3" json:"reservations,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	Pool                 []*Pools       `protobuf:"bytes,6,rep,name=pool,proto3" json:"pool,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateSubnetv6Req) Reset()         { *m = CreateSubnetv6Req{} }
+func (m *CreateSubnetv6Req) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv6Req) ProtoMessage()    {}
+func (*CreateSubnetv6Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{17}
+}
+
+func (m *CreateSubnetv6Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv6Req.Unmarshal(m, b)
+}
+func (m *CreateSubnetv6Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv6Req.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv6Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv6Req.Merge(m, src)
+}
+func (m *CreateSubnetv6Req) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv6Req.Size(m)
+}
+func (m *CreateSubnetv6Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv6Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv6Req proto.InternalMessageInfo
+
+func (m *CreateSubnetv6Req) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6Req) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv6Req) GetReservations() []*Reservation {
+	if m != nil {
+		return m.Reservations
+	}
+	return nil
+}
+
+func (m *CreateSubnetv6Req) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6Req) GetPool() []*Pools {
+	if m != nil {
+		return m.Pool
+	}
+	return nil
+}
+
+type UpdateSubnetv6Req struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservations         []*Reservation `protobuf:"bytes,4,rep,name=reservations,proto3" json:"reservations,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	Pool                 []*Pools       `protobuf:"bytes,6,rep,name=pool,proto3" json:"pool,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *UpdateSubnetv6Req) Reset()         { *m = UpdateSubnetv6Req{} }
+func (m *UpdateSubnetv6Req) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv6Req) ProtoMessage()    {}
+func (*UpdateSubnetv6Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{18}
+}
+
+func (m *UpdateSubnetv6Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv6Req.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv6Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv6Req.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv6Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv6Req.Merge(m, src)
+}
+func (m *UpdateSubnetv6Req) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv6Req.Size(m)
+}
+func (m *UpdateSubnetv6Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv6Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv6Req proto.InternalMessageInfo
+
+func (m *UpdateSubnetv6Req) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6Req) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv6Req) GetReservations() []*Reservation {
+	if m != nil {
+		return m.Reservations
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv6Req) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6Req) GetPool() []*Pools {
+	if m != nil {
+		return m.Pool
+	}
+	return nil
+}
+
+type DeleteSubnetv6Req struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Id                   string   `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv6Req) Reset()         { *m = DeleteSubnetv6Req{} }
+func (m *DeleteSubnetv6Req) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv6Req) ProtoMessage()    {}
+func (*DeleteSubnetv6Req) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{19}
+}
+
+func (m *DeleteSubnetv6Req) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv6Req.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv6Req) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv6Req.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv6Req) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv6Req.Merge(m, src)
+}
+func (m *DeleteSubnetv6Req) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv6Req.Size(m)
+}
+func (m *DeleteSubnetv6Req) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv6Req.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv6Req proto.InternalMessageInfo
+
+func (m *DeleteSubnetv6Req) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv6Req) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+type CreateSubnetv6PoolReq struct {
+	Id                   string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Subnet               string         `protobuf:"bytes,2,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Options              []*Option      `protobuf:"bytes,3,rep,name=options,proto3" json:"options,omitempty"`
+	Reservs              []*Reservation `protobuf:"bytes,4,rep,name=reservs,proto3" json:"reservs,omitempty"`
+	ValidLifetime        string         `protobuf:"bytes,5,opt,name=validLifetime,proto3" json:"validLifetime,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *CreateSubnetv6PoolReq) Reset()         { *m = CreateSubnetv6PoolReq{} }
+func (m *CreateSubnetv6PoolReq) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv6PoolReq) ProtoMessage()    {}
+func (*CreateSubnetv6PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{20}
+}
+
+func (m *CreateSubnetv6PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv6PoolReq.Unmarshal(m, b)
+}
+func (m *CreateSubnetv6PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv6PoolReq.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv6PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv6PoolReq.Merge(m, src)
+}
+func (m *CreateSubnetv6PoolReq) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv6PoolReq.Size(m)
+}
+func (m *CreateSubnetv6PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv6PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv6PoolReq proto.InternalMessageInfo
+
+func (m *CreateSubnetv6PoolReq) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6PoolReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6PoolReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv6PoolReq) GetReservs() []*Reservation {
+	if m != nil {
+		return m.Reservs
+	}
+	return nil
+}
+
+func (m *CreateSubnetv6PoolReq) GetValidLifetime() string {
+	if m != nil {
+		return m.ValidLifetime
+	}
+	return ""
+}
+
+type UpdateSubnetv6PoolReq struct {
+	Id                   string    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Options              []*Option `protobuf:"bytes,2,rep,name=options,proto3" json:"options,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *UpdateSubnetv6PoolReq) Reset()         { *m = UpdateSubnetv6PoolReq{} }
+func (m *UpdateSubnetv6PoolReq) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv6PoolReq) ProtoMessage()    {}
+func (*UpdateSubnetv6PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{21}
+}
+
+func (m *UpdateSubnetv6PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv6PoolReq.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv6PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv6PoolReq.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv6PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv6PoolReq.Merge(m, src)
+}
+func (m *UpdateSubnetv6PoolReq) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv6PoolReq.Size(m)
+}
+func (m *UpdateSubnetv6PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv6PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv6PoolReq proto.InternalMessageInfo
+
+func (m *UpdateSubnetv6PoolReq) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6PoolReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+type DeleteSubnetv6PoolReq struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv6PoolReq) Reset()         { *m = DeleteSubnetv6PoolReq{} }
+func (m *DeleteSubnetv6PoolReq) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv6PoolReq) ProtoMessage()    {}
+func (*DeleteSubnetv6PoolReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{22}
+}
+
+func (m *DeleteSubnetv6PoolReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv6PoolReq.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv6PoolReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv6PoolReq.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv6PoolReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv6PoolReq.Merge(m, src)
+}
+func (m *DeleteSubnetv6PoolReq) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv6PoolReq.Size(m)
+}
+func (m *DeleteSubnetv6PoolReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv6PoolReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv6PoolReq proto.InternalMessageInfo
+
+func (m *DeleteSubnetv6PoolReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+type CreateSubnetv6ReservationReq struct {
+	Subnet               string    `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string    `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	Hostname             string    `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	IpAddr               string    `protobuf:"bytes,4,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	NextServer           string    `protobuf:"bytes,5,opt,name=nextServer,proto3" json:"nextServer,omitempty"`
+	Options              []*Option `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	BootFileName         string    `protobuf:"bytes,7,opt,name=bootFileName,proto3" json:"bootFileName,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *CreateSubnetv6ReservationReq) Reset()         { *m = CreateSubnetv6ReservationReq{} }
+func (m *CreateSubnetv6ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*CreateSubnetv6ReservationReq) ProtoMessage()    {}
+func (*CreateSubnetv6ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{23}
+}
+
+func (m *CreateSubnetv6ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateSubnetv6ReservationReq.Unmarshal(m, b)
+}
+func (m *CreateSubnetv6ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateSubnetv6ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *CreateSubnetv6ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSubnetv6ReservationReq.Merge(m, src)
+}
+func (m *CreateSubnetv6ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_CreateSubnetv6ReservationReq.Size(m)
+}
+func (m *CreateSubnetv6ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateSubnetv6ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateSubnetv6ReservationReq proto.InternalMessageInfo
+
+func (m *CreateSubnetv6ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6ReservationReq) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6ReservationReq) GetNextServer() string {
+	if m != nil {
+		return m.NextServer
+	}
+	return ""
+}
+
+func (m *CreateSubnetv6ReservationReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *CreateSubnetv6ReservationReq) GetBootFileName() string {
+	if m != nil {
+		return m.BootFileName
+	}
+	return ""
+}
+
+type UpdateSubnetv6ReservationReq struct {
+	Subnet               string    `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string    `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	Hostname             string    `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	IpAddr               string    `protobuf:"bytes,4,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	NextServer           string    `protobuf:"bytes,5,opt,name=nextServer,proto3" json:"nextServer,omitempty"`
+	Options              []*Option `protobuf:"bytes,6,rep,name=options,proto3" json:"options,omitempty"`
+	BootFileName         string    `protobuf:"bytes,7,opt,name=bootFileName,proto3" json:"bootFileName,omitempty"`
+	ServerHostname       string    `protobuf:"bytes,8,opt,name=serverHostname,proto3" json:"serverHostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *UpdateSubnetv6ReservationReq) Reset()         { *m = UpdateSubnetv6ReservationReq{} }
+func (m *UpdateSubnetv6ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*UpdateSubnetv6ReservationReq) ProtoMessage()    {}
+func (*UpdateSubnetv6ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{24}
+}
+
+func (m *UpdateSubnetv6ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateSubnetv6ReservationReq.Unmarshal(m, b)
+}
+func (m *UpdateSubnetv6ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateSubnetv6ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *UpdateSubnetv6ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateSubnetv6ReservationReq.Merge(m, src)
+}
+func (m *UpdateSubnetv6ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_UpdateSubnetv6ReservationReq.Size(m)
+}
+func (m *UpdateSubnetv6ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateSubnetv6ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateSubnetv6ReservationReq proto.InternalMessageInfo
+
+func (m *UpdateSubnetv6ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetNextServer() string {
+	if m != nil {
+		return m.NextServer
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetOptions() []*Option {
+	if m != nil {
+		return m.Options
+	}
+	return nil
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetBootFileName() string {
+	if m != nil {
+		return m.BootFileName
+	}
+	return ""
+}
+
+func (m *UpdateSubnetv6ReservationReq) GetServerHostname() string {
+	if m != nil {
+		return m.ServerHostname
+	}
+	return ""
+}
+
+type DeleteSubnetv6ReservationReq struct {
+	Subnet               string   `protobuf:"bytes,1,opt,name=subnet,proto3" json:"subnet,omitempty"`
+	Duid                 string   `protobuf:"bytes,2,opt,name=duid,proto3" json:"duid,omitempty"`
+	IpAddr               string   `protobuf:"bytes,3,opt,name=ipAddr,proto3" json:"ipAddr,omitempty"`
+	ServerHostname       string   `protobuf:"bytes,4,opt,name=serverHostname,proto3" json:"serverHostname,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteSubnetv6ReservationReq) Reset()         { *m = DeleteSubnetv6ReservationReq{} }
+func (m *DeleteSubnetv6ReservationReq) String() string { return proto.CompactTextString(m) }
+func (*DeleteSubnetv6ReservationReq) ProtoMessage()    {}
+func (*DeleteSubnetv6ReservationReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0b4c6fed4d91e328, []int{25}
+}
+
+func (m *DeleteSubnetv6ReservationReq) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteSubnetv6ReservationReq.Unmarshal(m, b)
+}
+func (m *DeleteSubnetv6ReservationReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteSubnetv6ReservationReq.Marshal(b, m, deterministic)
+}
+func (m *DeleteSubnetv6ReservationReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteSubnetv6ReservationReq.Merge(m, src)
+}
+func (m *DeleteSubnetv6ReservationReq) XXX_Size() int {
+	return xxx_messageInfo_DeleteSubnetv6ReservationReq.Size(m)
+}
+func (m *DeleteSubnetv6ReservationReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteSubnetv6ReservationReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteSubnetv6ReservationReq proto.InternalMessageInfo
+
+func (m *DeleteSubnetv6ReservationReq) GetSubnet() string {
+	if m != nil {
+		return m.Subnet
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv6ReservationReq) GetDuid() string {
+	if m != nil {
+		return m.Duid
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv6ReservationReq) GetIpAddr() string {
+	if m != nil {
+		return m.IpAddr
+	}
+	return ""
+}
+
+func (m *DeleteSubnetv6ReservationReq) GetServerHostname() string {
+	if m != nil {
+		return m.ServerHostname
 	}
 	return ""
 }
 
 func init() {
-	proto.RegisterType((*DHCPStartReq)(nil), "pb.DHCPStartReq")
-	proto.RegisterType((*DHCPStopReq)(nil), "pb.DHCPStopReq")
-	proto.RegisterType((*SubnetOptionData)(nil), "pb.SubnetOptionData")
-	proto.RegisterType((*SubnetPools)(nil), "pb.SubnetPools")
-	proto.RegisterType((*CreateSubnetReq)(nil), "pb.CreateSubnetReq")
-	proto.RegisterType((*UpdateSubnetReq)(nil), "pb.UpdateSubnetReq")
-	proto.RegisterType((*DeleteSubnetReq)(nil), "pb.DeleteSubnetReq")
+	proto.RegisterType((*OperResult)(nil), "pb.OperResult")
+	proto.RegisterType((*Option)(nil), "pb.Option")
+	proto.RegisterType((*Reservation)(nil), "pb.Reservation")
+	proto.RegisterType((*Pools)(nil), "pb.Pools")
+	proto.RegisterType((*StartDHCPv4Req)(nil), "pb.startDHCPv4Req")
+	proto.RegisterType((*StopDHCPv4Req)(nil), "pb.stopDHCPv4Req")
+	proto.RegisterType((*CreateSubnetv4Req)(nil), "pb.CreateSubnetv4Req")
+	proto.RegisterType((*UpdateSubnetv4Req)(nil), "pb.UpdateSubnetv4Req")
+	proto.RegisterType((*DeleteSubnetv4Req)(nil), "pb.DeleteSubnetv4Req")
+	proto.RegisterType((*CreateSubnetv4PoolReq)(nil), "pb.CreateSubnetv4PoolReq")
+	proto.RegisterType((*UpdateSubnetv4PoolReq)(nil), "pb.UpdateSubnetv4PoolReq")
+	proto.RegisterType((*DeleteSubnetv4PoolReq)(nil), "pb.DeleteSubnetv4PoolReq")
+	proto.RegisterType((*CreateSubnetv4ReservationReq)(nil), "pb.CreateSubnetv4ReservationReq")
+	proto.RegisterType((*UpdateSubnetv4ReservationReq)(nil), "pb.UpdateSubnetv4ReservationReq")
+	proto.RegisterType((*DeleteSubnetv4ReservationReq)(nil), "pb.DeleteSubnetv4ReservationReq")
+	proto.RegisterType((*StartDHCPv6Req)(nil), "pb.startDHCPv6Req")
+	proto.RegisterType((*StopDHCPv6Req)(nil), "pb.stopDHCPv6Req")
+	proto.RegisterType((*CreateSubnetv6Req)(nil), "pb.CreateSubnetv6Req")
+	proto.RegisterType((*UpdateSubnetv6Req)(nil), "pb.UpdateSubnetv6Req")
+	proto.RegisterType((*DeleteSubnetv6Req)(nil), "pb.DeleteSubnetv6Req")
+	proto.RegisterType((*CreateSubnetv6PoolReq)(nil), "pb.CreateSubnetv6PoolReq")
+	proto.RegisterType((*UpdateSubnetv6PoolReq)(nil), "pb.UpdateSubnetv6PoolReq")
+	proto.RegisterType((*DeleteSubnetv6PoolReq)(nil), "pb.DeleteSubnetv6PoolReq")
+	proto.RegisterType((*CreateSubnetv6ReservationReq)(nil), "pb.CreateSubnetv6ReservationReq")
+	proto.RegisterType((*UpdateSubnetv6ReservationReq)(nil), "pb.UpdateSubnetv6ReservationReq")
+	proto.RegisterType((*DeleteSubnetv6ReservationReq)(nil), "pb.DeleteSubnetv6ReservationReq")
 }
 
 func init() { proto.RegisterFile("dhcp.proto", fileDescriptor_0b4c6fed4d91e328) }
 
 var fileDescriptor_0b4c6fed4d91e328 = []byte{
-	// 308 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x52, 0xcd, 0x4a, 0xc3, 0x40,
-	0x10, 0x26, 0x6d, 0x53, 0xed, 0x54, 0xa8, 0x2c, 0x3d, 0xec, 0x41, 0xa4, 0x04, 0xc4, 0x9e, 0x7a,
-	0x50, 0x5f, 0x40, 0x52, 0x4a, 0x41, 0xd0, 0xb2, 0x41, 0x3c, 0x6f, 0x92, 0x51, 0x03, 0x69, 0x76,
-	0xdd, 0x5d, 0x2b, 0xbe, 0x8e, 0x4f, 0x2a, 0x3b, 0x5b, 0x49, 0xf0, 0xa0, 0x17, 0xf1, 0xf6, 0xed,
-	0x37, 0xf3, 0xfd, 0x64, 0x08, 0x40, 0xf9, 0x5c, 0xe8, 0x85, 0x36, 0xca, 0x29, 0xd6, 0xd3, 0x79,
-	0xb2, 0x86, 0xa3, 0xe5, 0x3a, 0xdd, 0x64, 0x4e, 0x1a, 0x27, 0xf0, 0x85, 0x71, 0x38, 0xb0, 0x68,
-	0x76, 0x55, 0x81, 0x3c, 0x9a, 0x45, 0xf3, 0x91, 0xf8, 0x7a, 0xb2, 0x53, 0x80, 0x42, 0x35, 0x8f,
-	0xd5, 0xd3, 0xaa, 0xaa, 0x91, 0xf7, 0x68, 0xd8, 0x61, 0x92, 0x73, 0x18, 0x07, 0x27, 0xa5, 0x7f,
-	0x34, 0x4a, 0x3e, 0x22, 0x38, 0xce, 0x5e, 0xf3, 0x06, 0xdd, 0x9d, 0x76, 0x95, 0x6a, 0x96, 0xd2,
-	0x49, 0xef, 0x7e, 0x5d, 0xbf, 0xc9, 0x77, 0x9b, 0x61, 0x53, 0x92, 0xe2, 0x50, 0x74, 0x18, 0xc6,
-	0x60, 0x90, 0xaa, 0x32, 0xe4, 0xc6, 0x82, 0x30, 0x3b, 0x81, 0x51, 0x6a, 0x77, 0x2b, 0x65, 0xb6,
-	0xd2, 0xf1, 0x3e, 0x49, 0x5a, 0xc2, 0x2b, 0xbc, 0x33, 0x1f, 0x50, 0x3a, 0x61, 0xcf, 0xdd, 0xca,
-	0x2d, 0xf2, 0x38, 0x70, 0x1e, 0xb3, 0x29, 0xc4, 0x99, 0x96, 0x05, 0xf2, 0x21, 0x91, 0xe1, 0x91,
-	0x3c, 0xc0, 0x38, 0x74, 0xdc, 0x28, 0x55, 0x5b, 0x76, 0x05, 0xd0, 0x96, 0xe5, 0xd1, 0xac, 0x3f,
-	0x1f, 0x5f, 0x4c, 0x17, 0x3a, 0x5f, 0x7c, 0xff, 0x10, 0xd1, 0xd9, 0xf3, 0x71, 0x5a, 0xa9, 0x7a,
-	0x7f, 0x2c, 0xc2, 0x89, 0x81, 0x49, 0x6a, 0x50, 0x3a, 0x0c, 0xca, 0x5f, 0x6f, 0x6e, 0x69, 0x8d,
-	0x5a, 0xef, 0x6f, 0xde, 0x32, 0xec, 0x0c, 0x62, 0x6f, 0x6a, 0x79, 0x9f, 0x1a, 0x4d, 0xda, 0x46,
-	0x54, 0x5b, 0x84, 0xa9, 0xcf, 0xbc, 0xd7, 0xe5, 0xff, 0x66, 0xde, 0xc0, 0x64, 0x89, 0x35, 0xfe,
-	0x49, 0x66, 0x3e, 0xa4, 0x1f, 0xf6, 0xf2, 0x33, 0x00, 0x00, 0xff, 0xff, 0x23, 0x06, 0x47, 0xf9,
-	0xbe, 0x02, 0x00, 0x00,
+	// 852 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x58, 0xc1, 0x4e, 0xdb, 0x4a,
+	0x14, 0x7d, 0x76, 0x88, 0x49, 0x6e, 0x20, 0x88, 0xd1, 0x0b, 0x2f, 0xa0, 0xbc, 0xa7, 0xc8, 0x42,
+	0x4f, 0x79, 0x1b, 0x9e, 0x0a, 0x95, 0xa5, 0xaa, 0x9b, 0x22, 0x22, 0xc4, 0xa2, 0x14, 0xe4, 0xa8,
+	0x6b, 0xe4, 0xc4, 0x43, 0xb0, 0x14, 0x3c, 0xae, 0x67, 0x92, 0xd2, 0x5f, 0xe8, 0xaa, 0xcb, 0x7e,
+	0x49, 0xf7, 0xdd, 0xf6, 0x17, 0xfa, 0x03, 0xfd, 0x8c, 0x6a, 0x66, 0xec, 0xc4, 0x63, 0x8f, 0x29,
+	0x6d, 0x91, 0xaa, 0xa6, 0xdd, 0xcd, 0xdc, 0x99, 0x7b, 0x72, 0xee, 0x99, 0xf1, 0xe1, 0x0e, 0x00,
+	0xfe, 0xd5, 0x28, 0xda, 0x8b, 0x62, 0xc2, 0x08, 0x32, 0xa3, 0xa1, 0xfd, 0x04, 0xe0, 0x2c, 0xc2,
+	0xb1, 0x8b, 0xe9, 0x74, 0xc2, 0xd0, 0x36, 0xd4, 0x62, 0xcc, 0x2e, 0x46, 0xc4, 0xc7, 0x6d, 0xa3,
+	0x6b, 0xf4, 0xaa, 0xee, 0x6a, 0x8c, 0xd9, 0x11, 0xf1, 0x31, 0xfa, 0x0b, 0xf8, 0xf0, 0xe2, 0x9a,
+	0x8e, 0xdb, 0x66, 0xd7, 0xe8, 0xd5, 0x5d, 0x2b, 0xc6, 0xec, 0x94, 0x8e, 0xed, 0xb7, 0x06, 0x58,
+	0x67, 0x11, 0x0b, 0x48, 0x88, 0xfe, 0x01, 0xf0, 0x26, 0x2f, 0xbd, 0x57, 0x74, 0x80, 0x43, 0x5f,
+	0x00, 0xd4, 0xdc, 0x4c, 0x04, 0x21, 0x58, 0x11, 0xd0, 0xa6, 0x80, 0x16, 0x63, 0xd4, 0x81, 0xfa,
+	0x88, 0xce, 0x8e, 0x49, 0x7c, 0xed, 0xb1, 0x76, 0x45, 0xa4, 0x2c, 0x02, 0x3c, 0xc3, 0xf7, 0x98,
+	0xd7, 0x5e, 0x11, 0x3f, 0x29, 0xc6, 0x3c, 0x16, 0x7a, 0xd7, 0xb8, 0x5d, 0x95, 0x31, 0x3e, 0x46,
+	0x7f, 0x42, 0x95, 0x46, 0xde, 0x08, 0xb7, 0x2d, 0x11, 0x94, 0x13, 0xfb, 0xbd, 0x01, 0x0d, 0x17,
+	0x53, 0x1c, 0xcf, 0x3c, 0xc1, 0x6f, 0x07, 0x6a, 0x51, 0x8c, 0x2f, 0x83, 0x1b, 0x4c, 0x05, 0xbb,
+	0xba, 0x3b, 0x9f, 0xf3, 0xb5, 0x2b, 0x42, 0x99, 0x40, 0x96, 0x05, 0xce, 0xe7, 0x82, 0xc5, 0x34,
+	0xf0, 0x05, 0x3d, 0xce, 0x62, 0x1a, 0xf8, 0xa8, 0x0b, 0x8d, 0x20, 0x3a, 0xf4, 0xfd, 0x18, 0x53,
+	0x8a, 0x69, 0x42, 0x30, 0x1b, 0xe2, 0x6a, 0x84, 0xf8, 0x86, 0x0d, 0x70, 0x3c, 0xc3, 0x71, 0xc2,
+	0x36, 0x13, 0x41, 0xbb, 0xb0, 0x4a, 0x22, 0xd6, 0xe7, 0xe5, 0x59, 0xdd, 0x4a, 0xaf, 0xb1, 0x0f,
+	0x7b, 0xd1, 0x70, 0x4f, 0x4a, 0xe9, 0xa6, 0x4b, 0xf6, 0x21, 0x54, 0xcf, 0x09, 0x99, 0xd0, 0x64,
+	0x7b, 0x40, 0x42, 0xce, 0x5d, 0xb7, 0x9d, 0x2f, 0x71, 0xaa, 0x11, 0x21, 0x93, 0xa4, 0x04, 0x31,
+	0xb6, 0x7b, 0xd0, 0xa4, 0xcc, 0x8b, 0x59, 0xff, 0xe4, 0xe8, 0x7c, 0xf6, 0xd0, 0xc5, 0x2f, 0xd0,
+	0x16, 0x58, 0x23, 0x12, 0x5e, 0x06, 0xe3, 0x44, 0x86, 0x64, 0x66, 0x6f, 0xc0, 0x3a, 0x65, 0x24,
+	0x9a, 0x6f, 0xb4, 0x3f, 0x1a, 0xb0, 0x79, 0x14, 0x63, 0x8f, 0xe1, 0xc1, 0x74, 0x18, 0x62, 0x26,
+	0xd3, 0x9b, 0x60, 0x06, 0x7e, 0x92, 0x6a, 0x06, 0x3e, 0x87, 0xa3, 0x62, 0x39, 0xbd, 0x1a, 0x72,
+	0x96, 0xa5, 0x5c, 0x29, 0xa7, 0x7c, 0x00, 0x6b, 0xf1, 0xe2, 0x90, 0xb8, 0x94, 0x7c, 0xeb, 0x06,
+	0xdf, 0x9a, 0x39, 0x3c, 0x57, 0xd9, 0x84, 0x76, 0x61, 0x7d, 0xe6, 0x4d, 0x02, 0xff, 0x69, 0x70,
+	0x89, 0x59, 0x30, 0xbf, 0x0d, 0x6a, 0x10, 0xfd, 0x9d, 0xa8, 0x21, 0xf5, 0xad, 0x73, 0x48, 0x21,
+	0x66, 0x22, 0x0c, 0xaf, 0xee, 0x79, 0xe4, 0x2f, 0x69, 0x75, 0x8f, 0x61, 0xb3, 0x8f, 0x27, 0x58,
+	0x2d, 0x6e, 0x51, 0x8c, 0xa1, 0x14, 0x23, 0x8b, 0x36, 0xd3, 0xa2, 0xed, 0x77, 0x06, 0xb4, 0xd4,
+	0x83, 0xe7, 0xd0, 0xf7, 0x2f, 0xcf, 0x7f, 0xdc, 0x56, 0x78, 0xe5, 0xa5, 0xca, 0xa4, 0xeb, 0x77,
+	0x13, 0xc5, 0x3e, 0x85, 0x96, 0x7a, 0xa4, 0x65, 0xbc, 0x33, 0xfc, 0xcc, 0x52, 0x7e, 0xf6, 0xff,
+	0xd0, 0x52, 0x45, 0x4c, 0xe1, 0x4a, 0x84, 0xb4, 0x3f, 0x19, 0xd0, 0xc9, 0x7f, 0x31, 0x8b, 0x62,
+	0x6e, 0x39, 0x81, 0xd4, 0x64, 0xcc, 0x8c, 0xc9, 0x64, 0x4d, 0xa9, 0x92, 0x33, 0xa5, 0x2d, 0xb0,
+	0xa4, 0xdb, 0x24, 0xde, 0x93, 0xcc, 0xee, 0x68, 0x3b, 0xa2, 0x6e, 0xab, 0xfc, 0x5c, 0x6c, 0x58,
+	0x1b, 0x12, 0xc2, 0x8e, 0x83, 0x09, 0x7e, 0xc6, 0x7f, 0x7d, 0x55, 0xe0, 0x28, 0x31, 0xfb, 0x8d,
+	0x09, 0x9d, 0xfc, 0xe7, 0xb3, 0x9c, 0xa5, 0xa2, 0x7f, 0xa1, 0x49, 0x05, 0xe6, 0x49, 0xca, 0xb1,
+	0x26, 0x76, 0xe5, 0xa2, 0xf6, 0x6b, 0x03, 0x3a, 0xf9, 0x8f, 0xee, 0x9b, 0x25, 0x59, 0x94, 0x5d,
+	0x51, 0xca, 0x2e, 0x92, 0x59, 0xd1, 0x92, 0x51, 0x7c, 0xdf, 0xb9, 0xab, 0xef, 0x3b, 0x5a, 0xdf,
+	0x77, 0x96, 0xda, 0xf7, 0x9d, 0x65, 0xf6, 0x7d, 0xe7, 0xbb, 0x7c, 0xdf, 0xf9, 0x49, 0x7d, 0xdf,
+	0xb9, 0x5f, 0xdf, 0x77, 0xbe, 0xda, 0xf7, 0x9d, 0x5f, 0xc7, 0xf7, 0x9d, 0xdf, 0xbe, 0x9f, 0xf7,
+	0x7d, 0xe7, 0xc7, 0xf9, 0xfe, 0xfe, 0x07, 0x0b, 0x1a, 0xfd, 0xab, 0x51, 0x74, 0xea, 0x85, 0xde,
+	0x18, 0xc7, 0xe8, 0x00, 0x1a, 0x83, 0x45, 0xff, 0x8f, 0x10, 0x17, 0x43, 0x7d, 0x10, 0xec, 0x34,
+	0xa5, 0x40, 0xe9, 0x43, 0xd0, 0xfe, 0x03, 0x3d, 0x00, 0x18, 0xcc, 0x9f, 0x02, 0x68, 0x53, 0xe6,
+	0x64, 0x9e, 0x06, 0x9a, 0x94, 0x47, 0xd0, 0x54, 0x3b, 0x1f, 0xd4, 0xe2, 0x7b, 0x0a, 0xef, 0x07,
+	0x7d, 0xaa, 0xda, 0x49, 0xc8, 0xd4, 0x42, 0x73, 0xae, 0x4f, 0x55, 0xff, 0xe2, 0xca, 0xd4, 0x42,
+	0xeb, 0xab, 0x49, 0x3d, 0x04, 0x54, 0xec, 0x71, 0xd1, 0x76, 0x91, 0x74, 0xf2, 0xf1, 0xeb, 0x21,
+	0x8a, 0xed, 0xa6, 0x84, 0xd0, 0xb6, 0xa1, 0x7a, 0x88, 0x62, 0x8b, 0x29, 0x21, 0xb4, 0xad, 0xa7,
+	0x06, 0xe2, 0x0c, 0xb6, 0x4b, 0x7b, 0x4e, 0xd4, 0xd5, 0x1d, 0x42, 0xf6, 0x72, 0xea, 0x01, 0x4b,
+	0x3b, 0x3b, 0x09, 0x78, 0x5b, 0xe3, 0xa7, 0x07, 0x2c, 0xed, 0x8b, 0x24, 0xe0, 0x6d, 0x6d, 0x93,
+	0x06, 0x50, 0xb9, 0xd4, 0x4e, 0xfe, 0x52, 0x3b, 0x5f, 0xbe, 0xd4, 0x4e, 0xee, 0x52, 0xeb, 0x53,
+	0x86, 0x96, 0xf8, 0x5f, 0xc9, 0xc1, 0xe7, 0x00, 0x00, 0x00, 0xff, 0xff, 0x0d, 0x2c, 0xae, 0x86,
+	0x39, 0x11, 0x00, 0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// DhcpManagerClient is the client API for DhcpManager service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type DhcpManagerClient interface {
+	StartDHCPv4(ctx context.Context, in *StartDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	StopDHCPv4(ctx context.Context, in *StopDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4(ctx context.Context, in *CreateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4(ctx context.Context, in *UpdateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4(ctx context.Context, in *DeleteSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4Pool(ctx context.Context, in *CreateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4Pool(ctx context.Context, in *UpdateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4Pool(ctx context.Context, in *DeleteSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4Reservation(ctx context.Context, in *CreateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4Reservation(ctx context.Context, in *UpdateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4Reservation(ctx context.Context, in *DeleteSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	StartDHCPv6(ctx context.Context, in *StartDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error)
+	StopDHCPv6(ctx context.Context, in *StopDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error)
+}
+
+type dhcpManagerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewDhcpManagerClient(cc *grpc.ClientConn) DhcpManagerClient {
+	return &dhcpManagerClient{cc}
+}
+
+func (c *dhcpManagerClient) StartDHCPv4(ctx context.Context, in *StartDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/StartDHCPv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) StopDHCPv4(ctx context.Context, in *StopDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/StopDHCPv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) CreateSubnetv4(ctx context.Context, in *CreateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/CreateSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) UpdateSubnetv4(ctx context.Context, in *UpdateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/UpdateSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) DeleteSubnetv4(ctx context.Context, in *DeleteSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/DeleteSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) CreateSubnetv4Pool(ctx context.Context, in *CreateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/CreateSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) UpdateSubnetv4Pool(ctx context.Context, in *UpdateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/UpdateSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) DeleteSubnetv4Pool(ctx context.Context, in *DeleteSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/DeleteSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) CreateSubnetv4Reservation(ctx context.Context, in *CreateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/CreateSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) UpdateSubnetv4Reservation(ctx context.Context, in *UpdateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/UpdateSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) DeleteSubnetv4Reservation(ctx context.Context, in *DeleteSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/DeleteSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) StartDHCPv6(ctx context.Context, in *StartDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/StartDHCPv6", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpManagerClient) StopDHCPv6(ctx context.Context, in *StopDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.DhcpManager/StopDHCPv6", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DhcpManagerServer is the server API for DhcpManager service.
+type DhcpManagerServer interface {
+	StartDHCPv4(context.Context, *StartDHCPv4Req) (*OperResult, error)
+	StopDHCPv4(context.Context, *StopDHCPv4Req) (*OperResult, error)
+	CreateSubnetv4(context.Context, *CreateSubnetv4Req) (*OperResult, error)
+	UpdateSubnetv4(context.Context, *UpdateSubnetv4Req) (*OperResult, error)
+	DeleteSubnetv4(context.Context, *DeleteSubnetv4Req) (*OperResult, error)
+	CreateSubnetv4Pool(context.Context, *CreateSubnetv4PoolReq) (*OperResult, error)
+	UpdateSubnetv4Pool(context.Context, *UpdateSubnetv4PoolReq) (*OperResult, error)
+	DeleteSubnetv4Pool(context.Context, *DeleteSubnetv4PoolReq) (*OperResult, error)
+	CreateSubnetv4Reservation(context.Context, *CreateSubnetv4ReservationReq) (*OperResult, error)
+	UpdateSubnetv4Reservation(context.Context, *UpdateSubnetv4ReservationReq) (*OperResult, error)
+	DeleteSubnetv4Reservation(context.Context, *DeleteSubnetv4ReservationReq) (*OperResult, error)
+	StartDHCPv6(context.Context, *StartDHCPv6Req) (*OperResult, error)
+	StopDHCPv6(context.Context, *StopDHCPv6Req) (*OperResult, error)
+}
+
+// UnimplementedDhcpManagerServer can be embedded to have forward compatible implementations.
+type UnimplementedDhcpManagerServer struct {
+}
+
+func (*UnimplementedDhcpManagerServer) StartDHCPv4(ctx context.Context, req *StartDHCPv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDHCPv4 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) StopDHCPv4(ctx context.Context, req *StopDHCPv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDHCPv4 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) CreateSubnetv4(ctx context.Context, req *CreateSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) UpdateSubnetv4(ctx context.Context, req *UpdateSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) DeleteSubnetv4(ctx context.Context, req *DeleteSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) CreateSubnetv4Pool(ctx context.Context, req *CreateSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpManagerServer) UpdateSubnetv4Pool(ctx context.Context, req *UpdateSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpManagerServer) DeleteSubnetv4Pool(ctx context.Context, req *DeleteSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpManagerServer) CreateSubnetv4Reservation(ctx context.Context, req *CreateSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpManagerServer) UpdateSubnetv4Reservation(ctx context.Context, req *UpdateSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpManagerServer) DeleteSubnetv4Reservation(ctx context.Context, req *DeleteSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpManagerServer) StartDHCPv6(ctx context.Context, req *StartDHCPv6Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDHCPv6 not implemented")
+}
+func (*UnimplementedDhcpManagerServer) StopDHCPv6(ctx context.Context, req *StopDHCPv6Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDHCPv6 not implemented")
+}
+
+func RegisterDhcpManagerServer(s *grpc.Server, srv DhcpManagerServer) {
+	s.RegisterService(&_DhcpManager_serviceDesc, srv)
+}
+
+func _DhcpManager_StartDHCPv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDHCPv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).StartDHCPv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/StartDHCPv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).StartDHCPv4(ctx, req.(*StartDHCPv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_StopDHCPv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDHCPv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).StopDHCPv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/StopDHCPv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).StopDHCPv4(ctx, req.(*StopDHCPv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_CreateSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).CreateSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/CreateSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).CreateSubnetv4(ctx, req.(*CreateSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_UpdateSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).UpdateSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/UpdateSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).UpdateSubnetv4(ctx, req.(*UpdateSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_DeleteSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).DeleteSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/DeleteSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).DeleteSubnetv4(ctx, req.(*DeleteSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_CreateSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).CreateSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/CreateSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).CreateSubnetv4Pool(ctx, req.(*CreateSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_UpdateSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).UpdateSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/UpdateSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).UpdateSubnetv4Pool(ctx, req.(*UpdateSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_DeleteSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).DeleteSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/DeleteSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).DeleteSubnetv4Pool(ctx, req.(*DeleteSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_CreateSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).CreateSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/CreateSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).CreateSubnetv4Reservation(ctx, req.(*CreateSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_UpdateSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).UpdateSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/UpdateSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).UpdateSubnetv4Reservation(ctx, req.(*UpdateSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_DeleteSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).DeleteSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/DeleteSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).DeleteSubnetv4Reservation(ctx, req.(*DeleteSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_StartDHCPv6_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDHCPv6Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).StartDHCPv6(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/StartDHCPv6",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).StartDHCPv6(ctx, req.(*StartDHCPv6Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DhcpManager_StopDHCPv6_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDHCPv6Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DhcpManagerServer).StopDHCPv6(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.DhcpManager/StopDHCPv6",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DhcpManagerServer).StopDHCPv6(ctx, req.(*StopDHCPv6Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _DhcpManager_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.DhcpManager",
+	HandlerType: (*DhcpManagerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "StartDHCPv4",
+			Handler:    _DhcpManager_StartDHCPv4_Handler,
+		},
+		{
+			MethodName: "StopDHCPv4",
+			Handler:    _DhcpManager_StopDHCPv4_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4",
+			Handler:    _DhcpManager_CreateSubnetv4_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4",
+			Handler:    _DhcpManager_UpdateSubnetv4_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4",
+			Handler:    _DhcpManager_DeleteSubnetv4_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4Pool",
+			Handler:    _DhcpManager_CreateSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4Pool",
+			Handler:    _DhcpManager_UpdateSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4Pool",
+			Handler:    _DhcpManager_DeleteSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4Reservation",
+			Handler:    _DhcpManager_CreateSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4Reservation",
+			Handler:    _DhcpManager_UpdateSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4Reservation",
+			Handler:    _DhcpManager_DeleteSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "StartDHCPv6",
+			Handler:    _DhcpManager_StartDHCPv6_Handler,
+		},
+		{
+			MethodName: "StopDHCPv6",
+			Handler:    _DhcpManager_StopDHCPv6_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dhcp.proto",
 }

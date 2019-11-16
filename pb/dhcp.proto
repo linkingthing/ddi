@@ -2,49 +2,211 @@ syntax = "proto3";
 
 package pb;
 
-message DHCPStartReq{
-string service = 1;
-string configFile = 2;
+service DhcpManager {
+
+    rpc StartDHCPv4(startDHCPv4Req) returns (OperResult){}
+    rpc StopDHCPv4(stopDHCPv4Req)   returns (OperResult){}
+
+    rpc CreateSubnetv4(CreateSubnetv4Req)   returns (OperResult){}
+    rpc UpdateSubnetv4(UpdateSubnetv4Req)   returns (OperResult){}
+    rpc DeleteSubnetv4(DeleteSubnetv4Req)   returns (OperResult){}
+
+    rpc CreateSubnetv4Pool(CreateSubnetv4PoolReq)   returns (OperResult){}
+    rpc UpdateSubnetv4Pool(UpdateSubnetv4PoolReq)   returns (OperResult){}
+    rpc DeleteSubnetv4Pool(DeleteSubnetv4PoolReq)   returns (OperResult){}
+
+    rpc CreateSubnetv4Reservation(CreateSubnetv4ReservationReq)   returns (OperResult){}
+    rpc UpdateSubnetv4Reservation(UpdateSubnetv4ReservationReq)   returns (OperResult){}
+    rpc DeleteSubnetv4Reservation(DeleteSubnetv4ReservationReq)   returns (OperResult){}
+
+
+    rpc StartDHCPv6(startDHCPv6Req) returns (OperResult){}
+    rpc StopDHCPv6(stopDHCPv6Req)   returns (OperResult){}
+
 }
-message DHCPStopReq{
-string service = 1;
+
+message OperResult {
+    int32   ret_code    = 1; //operation result:0 stands for success, 1 stands for fail.
+    string  ret_msg     = 2;
 }
-message SubnetOptionData{
-bool AlwaysSend = 1;
-int32 Code = 2;
-bool CsvFormat = 3;
-string Data = 4;
-string Name = 5;
-string Space = 6;
-}
-message SubnetPools{
-repeated SubnetOptionData OptionData = 1;
-string pool = 2;
+
+message Option{
+    bool alwaysSend = 1;
+    int32   code            = 2;
+    bool    csvFormat       = 3;
+    string  data            = 4;
+    string  name            = 5;
+    string  space           = 6;
 }
 
 message Reservation{
-repeated string ClientClasses = 1;
-string hostname = 2;
-optional string duid = 3;
-string ipAddresses = 4;
-optional string nextServer = 5;
-repeated SubnetOptionData OptionData = 6;
-optional string ServerHostname = 7;
-optional string prefixes = 8;
+    string prefixes         = 1;
+    string hostname         = 2;
+    string duid             = 3;
+    string ipAddresses      = 4;
+    string nextServer       = 5;
+    repeated    Option optData = 6;
 }
-message CreateSubnetReq{
-string service = 1;
-string subnetName = 2;
-repeated SubnetPools pools = 3;
-repeated Reservation reservations = 4;
 
+message Pools{
+    repeated    Option options  = 1;
+                string pool     = 2;
 }
-message UpdateSubnetReq{
-string service = 1;
-string subnetName = 2;
-repeated SubnetPools pools = 3;
+
+message startDHCPv4Req{
+    string      config      = 1;
 }
-message DeleteSubnetReq{
-string service = 1;
-string subnetName = 2;
+
+message stopDHCPv4Req{
+}
+
+message CreateSubnetv4Req{
+    string      id          = 1;
+    string      subnet      = 2;
+    repeated    Option      options     = 3;
+    repeated    Reservation reservations    = 4;
+    string      validLifetime   = 5;
+    repeated    Pools    pool = 6;
+}
+
+message UpdateSubnetv4Req{
+    string      id          = 1;
+    string      subnet      = 2;
+    repeated    Option      options     = 3;
+    repeated    Reservation reservations    = 4;
+    string      validLifetime   = 5;
+    repeated    Pools    pool = 6;
+}
+
+message DeleteSubnetv4Req{
+    string subnet = 1;
+    string id = 2;
+}
+
+
+message CreateSubnetv4PoolReq{
+    string      id = 1;
+    string      subnet = 2;
+    repeated    Option options = 3;
+    repeated    Reservation reservs = 4;
+    string      validLifetime = 5;
+}
+
+message UpdateSubnetv4PoolReq{
+    string  id = 1;
+    repeated Option options = 2;
+}
+
+message DeleteSubnetv4PoolReq{
+    string  subnet  = 1;
+}
+
+
+message CreateSubnetv4ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string hostname = 3;
+    string ipAddr = 4;
+    string nextServer = 5;
+    repeated Option options = 6;
+    string bootFileName = 7;
+    //repeated string clientClasses = 8;
+}
+
+message UpdateSubnetv4ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string hostname = 3;
+    string ipAddr = 4;
+    string nextServer = 5;
+    repeated Option options = 6;
+    string bootFileName = 7;
+    string serverHostname = 8;
+}
+
+message DeleteSubnetv4ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string ipAddr = 3;
+    string serverHostname = 4;
+}
+
+
+/// start of dhcpv6
+message startDHCPv6Req{
+    string      config      = 1;
+}
+
+message stopDHCPv6Req{
+}
+
+message CreateSubnetv6Req{
+    string      id          = 1;
+    string      subnet      = 2;
+    repeated    Option      options     = 3;
+    repeated    Reservation reservations    = 4;
+    string      validLifetime   = 5;
+    repeated    Pools    pool = 6;
+}
+
+message UpdateSubnetv6Req{
+    string      id          = 1;
+    string      subnet      = 2;
+    repeated    Option      options     = 3;
+    repeated    Reservation reservations    = 4;
+    string      validLifetime   = 5;
+    repeated    Pools    pool = 6;
+}
+
+message DeleteSubnetv6Req{
+    string subnet = 1;
+    string id = 2;
+}
+
+
+message CreateSubnetv6PoolReq{
+    string      id = 1;
+    string      subnet = 2;
+    repeated    Option options = 3;
+    repeated    Reservation reservs = 4;
+    string      validLifetime = 5;
+}
+
+message UpdateSubnetv6PoolReq{
+    string  id = 1;
+    repeated Option options = 2;
+}
+
+message DeleteSubnetv6PoolReq{
+    string  subnet  = 1;
+}
+
+
+message CreateSubnetv6ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string hostname = 3;
+    string ipAddr = 4;
+    string nextServer = 5;
+    repeated Option options = 6;
+    string bootFileName = 7;
+    //repeated string clientClasses = 8;
+}
+
+message UpdateSubnetv6ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string hostname = 3;
+    string ipAddr = 4;
+    string nextServer = 5;
+    repeated Option options = 6;
+    string bootFileName = 7;
+    string serverHostname = 8;
+}
+
+message DeleteSubnetv6ReservationReq{
+    string  subnet  = 1;
+    string duid = 2;
+    string ipAddr = 3;
+    string serverHostname = 4;
 }

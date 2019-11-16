@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing.com/ddi/dhcp"
+	"github.com/linkingthing.com/ddi/dhcp/dhcpv4"
 	"github.com/linkingthing.com/ddi/pb"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -31,7 +32,7 @@ func consumer() {
 	})
 	defer r.Close()
 
-	var handler = &dhcp.KEAHandler{
+	var handler = &dhcpv4.KEAv4Handler{
 		ConfigPath:   dhcp.DhcpConfigPath,
 		MainConfName: dhcp.Dhcp4ConfigFile,
 	}
@@ -46,26 +47,26 @@ func consumer() {
 
 		index, _ := strconv.ParseUint(string(m.Key), 0, 64)
 		switch uint(index) {
-		case dhcp.IntfStartDHCP:
-			var data pb.DHCPStartReq
+		case dhcp.IntfStartDHCPv4:
+			var data pb.StartDHCPv4Req
 			err := proto.Unmarshal(m.Value, &data)
 			if err != nil {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.StartDHCP(pb.DHCPStartReq{Service: data.Service})
+			handler.StartDHCPv4(pb.StartDHCPv4Req{})
 
-		case dhcp.IntfStopDHCP:
-			var data pb.DHCPStopReq
+		case dhcp.IntfStopDHCPv4:
+			var data pb.StopDHCPv4Req
 			err := proto.Unmarshal(m.Value, &data)
 			if err != nil {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.StopDHCP(pb.DHCPStopReq{Service: data.Service})
+			handler.StopDHCPv4(pb.StopDHCPv4Req{})
 
-		case dhcp.IntfCreateSubnet:
-			var data pb.CreateSubnetReq
+		case dhcp.IntfCreateSubnetv4:
+			var data pb.CreateSubnetv4Req
 			err := proto.Unmarshal(m.Value, &data)
 			if err != nil {
 				fmt.Printf("unmarshal error, m.key: %s\n", m.Key)
@@ -75,17 +76,17 @@ func consumer() {
 
 			fmt.Printf("begin to call createsubnet, m.value: %s\n", string(m.Value))
 
-			handler.CreateSubnet(pb.CreateSubnetReq{Service: data.Service, SubnetName: data.SubnetName, Pools: data.Pools})
+			handler.CreateSubnetv4(pb.CreateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
 
 			time.Sleep(10 * time.Second)
-		case dhcp.IntfUpdateSubnet:
-			var data pb.UpdateSubnetReq
+		case dhcp.IntfUpdateSubnetv4:
+			var data pb.UpdateSubnetv4Req
 			err := proto.Unmarshal(m.Value, &data)
 			if err != nil {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.UpdateSubnet4(pb.UpdateSubnetReq{Service: data.Service, SubnetName: data.SubnetName, Pools: data.Pools})
+			handler.UpdateSubnetv4(pb.UpdateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
 
 		default:
 			logrus.Error("kafka message unknown, m.key: " + string(m.Key))
