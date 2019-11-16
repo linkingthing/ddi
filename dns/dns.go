@@ -31,7 +31,7 @@ const (
 	nzfTpl       = "nzf.tpl"
 	rndcPort     = "953"
 	rrKey        = "key1"
-	rrSecret     = "secret1"
+	rrSecret     = "linking_encr"
 )
 
 type BindHandler struct {

@@ -4,11 +4,18 @@ options {
 	allow-new-zones yes;
 	allow-query {any;};
 };
+key key1 {
+    algorithm hmac-md5;
+    secret "bGlua2luZ19lbmNy";
+};
+
 {{range $k, $view := .Views}}
 view "{{$view.Name}}" {
 	match-clients {	{{range $kk, $acl := $view.ACLs}}
 	{{$acl.Name}};	{{end}}
+	key key1;
 	};
+	allow-update { key key1;};
 };{{end}}
 
 view "default" {
