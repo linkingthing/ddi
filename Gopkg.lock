@@ -3,9 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d69557bb6c74a231e2eca1b1a956f0349fb25c7ccc1bae7bf31c4cab5209e059"
+  digest = "1:6f66cda66ed9a373767dd897161a855508dfff024f22b93cb77aba55076cdfc2"
   name = "github.com/ben-han-cn/cement"
   packages = [
+    "log",
+    "log/log4go",
     "randomdata",
     "shell",
     "slice",
@@ -46,6 +48,20 @@
   revision = "fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5"
 
 [[projects]]
+  digest = "1:f5ce1529abc1204444ec73779f44f94e2fa8fcdb7aca3c355b0c95947e4005c6"
+  name = "github.com/golang/protobuf"
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp",
+  ]
+  pruneopts = "UT"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
+
+[[projects]]
   branch = "master"
   digest = "1:da9478c5e301d3ef973ce49c248e92bee763c827b0f72887a510267041ea0603"
   name = "github.com/insomniacslk/dhcp"
@@ -57,7 +73,7 @@
     "rfc1035label",
   ]
   pruneopts = "UT"
-  revision = "8249c7314fb30aca426139aae111bb0a3488a236"
+  revision = "c058740140122368226eaaf7debce03c376e6ae8"
 
 [[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
@@ -100,27 +116,122 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:824b4d14e35e35e821d3127319e51eb838f72434100750ad395db96d00b5a871"
+  digest = "1:8d2e6c9bd8e4b510b2f3cc4100ae18bfbd2f9dd78013097b00e725b48695f5f0"
+  name = "golang.org/x/net"
+  packages = [
+    "http/httpguts",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "trace",
+  ]
+  pruneopts = "UT"
+  revision = "2180aed2234323691e9fd264fb1d32d20ff04b27"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3b81f20605df873608343956a1f707bc63fe76bbc9ab3adb644ce95b4502a525"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "c1f44814a5cd81a6d1cb589ef1e528bc5d305e07"
+  revision = "52ab431487773bc9dd1b0766228b1cf3944126bf"
+
+[[projects]]
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
+  name = "golang.org/x/text"
+  packages = [
+    "collate",
+    "collate/build",
+    "internal/colltab",
+    "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
+    "internal/triegen",
+    "internal/ucd",
+    "language",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:583a0c80f5e3a9343d33aea4aead1e1afcc0043db66fdf961ddd1fe8cd3a4faf"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  pruneopts = "UT"
+  revision = "83cc0476cb11ea0da33dacd4c6354ab192de6fe6"
+
+[[projects]]
+  digest = "1:b59ce3ddb11daeeccccc9cb3183b58ebf8e9a779f1c853308cd91612e817a301"
+  name = "google.golang.org/grpc"
+  packages = [
+    ".",
+    "backoff",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "binarylog/grpc_binarylog_v1",
+    "codes",
+    "connectivity",
+    "credentials",
+    "credentials/internal",
+    "encoding",
+    "encoding/proto",
+    "grpclog",
+    "internal",
+    "internal/backoff",
+    "internal/balancerload",
+    "internal/binarylog",
+    "internal/buffer",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/grpcsync",
+    "internal/resolver/dns",
+    "internal/resolver/passthrough",
+    "internal/syscall",
+    "internal/transport",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "serviceconfig",
+    "stats",
+    "status",
+    "tap",
+  ]
+  pruneopts = "UT"
+  revision = "1a3960e4bd028ac0cec0a2afd27d7d8e67c11514"
+  version = "v1.25.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/ben-han-cn/cement/log",
+    "github.com/ben-han-cn/cement/randomdata",
     "github.com/ben-han-cn/cement/shell",
     "github.com/ben-han-cn/cement/slice",
     "github.com/ben-han-cn/cement/stringtool",
     "github.com/ben-han-cn/cement/unittest",
     "github.com/ben-han-cn/g53",
-    "github.com/ben-han-cn/kvzoo",
     "github.com/ben-han-cn/kvzoo/backend/bolt",
     "github.com/insomniacslk/dhcp/dhcpv4",
     "github.com/insomniacslk/dhcp/dhcpv6",
     "github.com/segmentio/kafka-go",
     "github.com/sirupsen/logrus",
+    "google.golang.org/grpc",
+    "google.golang.org/grpc/codes",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
