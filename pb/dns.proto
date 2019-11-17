@@ -2,6 +2,25 @@ syntax = "proto3";
 
 package pb;
 
+service AgentManager{
+rpc StartDNS(DNSStartReq) returns (OperResult){}
+rpc StopDNS(DNSStopReq) returns (OperResult){}
+rpc CreateACL(CreateACLReq) returns (OperResult){}
+rpc DeleteACL(DeleteACLReq) returns (OperResult){}
+rpc CreateView(CreateViewReq) returns (OperResult){}
+rpc UpdateView(UpdateViewReq) returns (OperResult){}
+rpc DeleteView(DeleteViewReq) returns (OperResult){}
+rpc CreateZone(CreateZoneReq) returns (OperResult){}
+rpc DeleteZone(DeleteZoneReq) returns (OperResult){}
+rpc CreateRR(CreateRRReq) returns (OperResult){}
+rpc UpdateRR(UpdateRRReq) returns (OperResult){}
+rpc DeleteRR(DeleteRRReq) returns (OperResult){} 
+}
+
+message OperResult {
+    int32 ret_code = 1; //operation result:0 stands for success, 1 stands for fail.
+    string ret_msg = 2; 
+}
 message DNSStartReq{
 	string config = 1;
 }
