@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
-	"os"
-	"time"
 )
 
 const (
@@ -35,12 +32,6 @@ var (
 	address     = "localhost:8888"
 )
 
-const (
-	checkPeriod = 5
-)
-
-var dnsStart bool = false
-
 func main() {
 	go dnsClient()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
@@ -64,8 +55,6 @@ func dnsClient() {
 		Topic:   dhcpTopic,
 	})
 	var message kg.Message
-	ticker := time.NewTicker(checkPeriod * time.Second)
-	quit := make(chan int)
 	for {
 		message, err = kafkaReader.ReadMessage(context.Background())
 		if err != nil {
@@ -79,13 +68,11 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.StartDNS(context.Background(), &target)
-			go KeepDNSAlive(ticker, quit)
 		case STOPDNS:
 			var target pb.DNSStopReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.StopDNS(context.Background(), &target)
-			quit <- 1
 		case CREATEACL:
 			var target pb.CreateACLReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
@@ -136,22 +123,6 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.DeleteRR(context.Background(), &target)
-		}
-	}
-}
-
-func KeepDNSAlive(ticker *time.Ticker, quit chan int) {
-	for {
-		select {
-		case <-ticker.C:
-			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
-				continue
-			}
-			var param string = "-c" + "/root/bindtest/" + "named.conf"
-			shell.Shell("named", param)
-
-		case <-quit:
-			return
 		}
 	}
 }
