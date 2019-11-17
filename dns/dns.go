@@ -387,6 +387,10 @@ func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 	return nil
 }
 
+func (h *BindHandler) Close() {
+	h.db.Close()
+}
+
 func (handler *BindHandler) namedConfData() (namedData, error) {
 	var err error
 	data := namedData{ConfigPath: handler.dnsConfPath}

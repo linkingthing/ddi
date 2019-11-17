@@ -4,8 +4,12 @@
 package pb
 
 import (
+	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -20,6 +24,53 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type OperResult struct {
+	RetCode              int32    `protobuf:"varint,1,opt,name=ret_code,json=retCode,proto3" json:"ret_code,omitempty"`
+	RetMsg               string   `protobuf:"bytes,2,opt,name=ret_msg,json=retMsg,proto3" json:"ret_msg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *OperResult) Reset()         { *m = OperResult{} }
+func (m *OperResult) String() string { return proto.CompactTextString(m) }
+func (*OperResult) ProtoMessage()    {}
+func (*OperResult) Descriptor() ([]byte, []int) {
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{0}
+}
+
+func (m *OperResult) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OperResult.Unmarshal(m, b)
+}
+func (m *OperResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OperResult.Marshal(b, m, deterministic)
+}
+func (m *OperResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OperResult.Merge(m, src)
+}
+func (m *OperResult) XXX_Size() int {
+	return xxx_messageInfo_OperResult.Size(m)
+}
+func (m *OperResult) XXX_DiscardUnknown() {
+	xxx_messageInfo_OperResult.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OperResult proto.InternalMessageInfo
+
+func (m *OperResult) GetRetCode() int32 {
+	if m != nil {
+		return m.RetCode
+	}
+	return 0
+}
+
+func (m *OperResult) GetRetMsg() string {
+	if m != nil {
+		return m.RetMsg
+	}
+	return ""
+}
+
 type DNSStartReq struct {
 	Config               string   `protobuf:"bytes,1,opt,name=config,proto3" json:"config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -31,7 +82,7 @@ func (m *DNSStartReq) Reset()         { *m = DNSStartReq{} }
 func (m *DNSStartReq) String() string { return proto.CompactTextString(m) }
 func (*DNSStartReq) ProtoMessage()    {}
 func (*DNSStartReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{0}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{1}
 }
 
 func (m *DNSStartReq) XXX_Unmarshal(b []byte) error {
@@ -69,7 +120,7 @@ func (m *DNSStopReq) Reset()         { *m = DNSStopReq{} }
 func (m *DNSStopReq) String() string { return proto.CompactTextString(m) }
 func (*DNSStopReq) ProtoMessage()    {}
 func (*DNSStopReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{1}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{2}
 }
 
 func (m *DNSStopReq) XXX_Unmarshal(b []byte) error {
@@ -103,7 +154,7 @@ func (m *CreateACLReq) Reset()         { *m = CreateACLReq{} }
 func (m *CreateACLReq) String() string { return proto.CompactTextString(m) }
 func (*CreateACLReq) ProtoMessage()    {}
 func (*CreateACLReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{2}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{3}
 }
 
 func (m *CreateACLReq) XXX_Unmarshal(b []byte) error {
@@ -156,7 +207,7 @@ func (m *DeleteACLReq) Reset()         { *m = DeleteACLReq{} }
 func (m *DeleteACLReq) String() string { return proto.CompactTextString(m) }
 func (*DeleteACLReq) ProtoMessage()    {}
 func (*DeleteACLReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{3}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{4}
 }
 
 func (m *DeleteACLReq) XXX_Unmarshal(b []byte) error {
@@ -198,7 +249,7 @@ func (m *CreateViewReq) Reset()         { *m = CreateViewReq{} }
 func (m *CreateViewReq) String() string { return proto.CompactTextString(m) }
 func (*CreateViewReq) ProtoMessage()    {}
 func (*CreateViewReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{4}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{5}
 }
 
 func (m *CreateViewReq) XXX_Unmarshal(b []byte) error {
@@ -262,7 +313,7 @@ func (m *UpdateViewReq) Reset()         { *m = UpdateViewReq{} }
 func (m *UpdateViewReq) String() string { return proto.CompactTextString(m) }
 func (*UpdateViewReq) ProtoMessage()    {}
 func (*UpdateViewReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{5}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{6}
 }
 
 func (m *UpdateViewReq) XXX_Unmarshal(b []byte) error {
@@ -329,7 +380,7 @@ func (m *DeleteViewReq) Reset()         { *m = DeleteViewReq{} }
 func (m *DeleteViewReq) String() string { return proto.CompactTextString(m) }
 func (*DeleteViewReq) ProtoMessage()    {}
 func (*DeleteViewReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{6}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{7}
 }
 
 func (m *DeleteViewReq) XXX_Unmarshal(b []byte) error {
@@ -371,7 +422,7 @@ func (m *CreateZoneReq) Reset()         { *m = CreateZoneReq{} }
 func (m *CreateZoneReq) String() string { return proto.CompactTextString(m) }
 func (*CreateZoneReq) ProtoMessage()    {}
 func (*CreateZoneReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{7}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{8}
 }
 
 func (m *CreateZoneReq) XXX_Unmarshal(b []byte) error {
@@ -432,7 +483,7 @@ func (m *DeleteZoneReq) Reset()         { *m = DeleteZoneReq{} }
 func (m *DeleteZoneReq) String() string { return proto.CompactTextString(m) }
 func (*DeleteZoneReq) ProtoMessage()    {}
 func (*DeleteZoneReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{8}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{9}
 }
 
 func (m *DeleteZoneReq) XXX_Unmarshal(b []byte) error {
@@ -481,7 +532,7 @@ func (m *CreateRRReq) Reset()         { *m = CreateRRReq{} }
 func (m *CreateRRReq) String() string { return proto.CompactTextString(m) }
 func (*CreateRRReq) ProtoMessage()    {}
 func (*CreateRRReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{9}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{10}
 }
 
 func (m *CreateRRReq) XXX_Unmarshal(b []byte) error {
@@ -544,7 +595,7 @@ func (m *UpdateRRReq) Reset()         { *m = UpdateRRReq{} }
 func (m *UpdateRRReq) String() string { return proto.CompactTextString(m) }
 func (*UpdateRRReq) ProtoMessage()    {}
 func (*UpdateRRReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{10}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{11}
 }
 
 func (m *UpdateRRReq) XXX_Unmarshal(b []byte) error {
@@ -606,7 +657,7 @@ func (m *DeleteRRReq) Reset()         { *m = DeleteRRReq{} }
 func (m *DeleteRRReq) String() string { return proto.CompactTextString(m) }
 func (*DeleteRRReq) ProtoMessage()    {}
 func (*DeleteRRReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_638ff8d8aaf3d8ae, []int{11}
+	return fileDescriptor_638ff8d8aaf3d8ae, []int{12}
 }
 
 func (m *DeleteRRReq) XXX_Unmarshal(b []byte) error {
@@ -649,6 +700,7 @@ func (m *DeleteRRReq) GetRRID() string {
 }
 
 func init() {
+	proto.RegisterType((*OperResult)(nil), "pb.OperResult")
 	proto.RegisterType((*DNSStartReq)(nil), "pb.DNSStartReq")
 	proto.RegisterType((*DNSStopReq)(nil), "pb.DNSStopReq")
 	proto.RegisterType((*CreateACLReq)(nil), "pb.CreateACLReq")
@@ -666,29 +718,517 @@ func init() {
 func init() { proto.RegisterFile("dns.proto", fileDescriptor_638ff8d8aaf3d8ae) }
 
 var fileDescriptor_638ff8d8aaf3d8ae = []byte{
-	// 374 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0xcf, 0x4a, 0xf3, 0x40,
-	0x10, 0x27, 0x4d, 0xdb, 0xef, 0xeb, 0x24, 0xbd, 0x04, 0x29, 0x41, 0x3c, 0x94, 0x45, 0xb1, 0x27,
-	0x2f, 0x3e, 0x80, 0x48, 0x82, 0x50, 0x08, 0x45, 0xb7, 0xd8, 0x83, 0xb7, 0xad, 0x5d, 0x65, 0xa1,
-	0x66, 0xd3, 0xed, 0x62, 0xd0, 0x8b, 0x0f, 0xe2, 0xcb, 0xca, 0xee, 0x24, 0x9b, 0x54, 0x50, 0xa1,
-	0xf4, 0x36, 0xbf, 0xc9, 0xcc, 0xfc, 0xfe, 0x2c, 0x81, 0xc1, 0x2a, 0xdf, 0x5e, 0x14, 0x4a, 0x6a,
-	0x19, 0x75, 0x8a, 0x25, 0x39, 0x83, 0x20, 0x9d, 0xcd, 0xe7, 0x9a, 0x29, 0x4d, 0xf9, 0x26, 0x1a,
-	0x41, 0xff, 0x51, 0xe6, 0x4f, 0xe2, 0x39, 0xf6, 0xc6, 0xde, 0x64, 0x40, 0x2b, 0x44, 0x42, 0x00,
-	0x3b, 0x26, 0x0b, 0xca, 0x37, 0x64, 0x01, 0x61, 0xa2, 0x38, 0xd3, 0xfc, 0x3a, 0xc9, 0xcc, 0x56,
-	0x0c, 0xff, 0x58, 0x92, 0xcd, 0xd8, 0x0b, 0xaf, 0xd6, 0x6a, 0x18, 0x1d, 0x41, 0x8f, 0x25, 0xd9,
-	0x34, 0x8d, 0x3b, 0xb6, 0x8f, 0xc0, 0xb0, 0x88, 0xdb, 0x4c, 0x6c, 0x75, 0xec, 0x8f, 0x7d, 0xc3,
-	0x82, 0x88, 0x9c, 0x42, 0x98, 0xf2, 0x35, 0x77, 0x77, 0xdd, 0xb6, 0xd7, 0xda, 0x26, 0x25, 0x0c,
-	0x91, 0x7d, 0x21, 0x78, 0x69, 0xc6, 0x8e, 0xe1, 0xff, 0xab, 0xe0, 0x65, 0x8b, 0xdf, 0x61, 0x43,
-	0x65, 0x6a, 0xa7, 0xa0, 0x42, 0x66, 0xa7, 0x50, 0x42, 0x2a, 0xa1, 0xdf, 0x62, 0x7f, 0xec, 0x4d,
-	0x7a, 0xd4, 0x61, 0xb3, 0x63, 0x99, 0xb6, 0x71, 0x17, 0xe5, 0x21, 0x22, 0x9f, 0x1e, 0x0c, 0xef,
-	0x8b, 0x55, 0x8b, 0xb9, 0xb9, 0xee, 0xfd, 0x78, 0xbd, 0xf3, 0xed, 0xba, 0x33, 0xe5, 0xb7, 0x23,
-	0x21, 0x10, 0xae, 0xac, 0xf5, 0x29, 0x06, 0x83, 0xcc, 0x3b, 0xbd, 0xe8, 0x04, 0x06, 0x39, 0x2f,
-	0xab, 0x81, 0x9e, 0x1d, 0x68, 0x1a, 0xe4, 0x1c, 0x86, 0x18, 0xde, 0x1f, 0xe2, 0xc8, 0x47, 0x9d,
-	0xdf, 0x83, 0xcc, 0xf9, 0x6f, 0x2e, 0x46, 0xd0, 0x7f, 0x97, 0x39, 0x6f, 0xb2, 0x43, 0x64, 0xdc,
-	0x99, 0xca, 0xe6, 0x8d, 0x26, 0x1c, 0x36, 0x3e, 0x4c, 0x7d, 0x23, 0xd6, 0xf8, 0xbd, 0x6b, 0xbf,
-	0xef, 0xf4, 0xc8, 0x55, 0xad, 0x74, 0x4f, 0x01, 0x44, 0x40, 0x80, 0x0e, 0x28, 0xdd, 0x47, 0x7f,
-	0x04, 0x5d, 0x45, 0xdd, 0x03, 0xd8, 0xda, 0xcc, 0x2a, 0x9a, 0x32, 0xcd, 0x2a, 0xc5, 0x15, 0x22,
-	0x12, 0x02, 0x7c, 0xf2, 0xc3, 0x51, 0xe1, 0x33, 0xd2, 0x36, 0x5b, 0xd3, 0x20, 0x77, 0x10, 0x60,
-	0x38, 0x07, 0x23, 0x5c, 0xf6, 0xed, 0xef, 0x7e, 0xf9, 0x15, 0x00, 0x00, 0xff, 0xff, 0xf0, 0x38,
-	0x93, 0xc8, 0xfb, 0x03, 0x00, 0x00,
+	// 574 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdd, 0x6e, 0xd3, 0x30,
+	0x14, 0x26, 0xfd, 0xef, 0x69, 0x3b, 0xc0, 0x42, 0x23, 0x4c, 0x5c, 0x54, 0x16, 0x88, 0x49, 0x68,
+	0x45, 0xc0, 0x03, 0xc0, 0xd4, 0x0a, 0x69, 0x52, 0x57, 0xc0, 0x15, 0xbb, 0xe0, 0x66, 0x4a, 0xd7,
+	0x43, 0x15, 0xa9, 0x4b, 0x32, 0xc7, 0x50, 0xc1, 0x0d, 0x0f, 0xc2, 0x8b, 0xf1, 0x38, 0xc8, 0x3e,
+	0x89, 0xed, 0x42, 0xe8, 0xa4, 0x69, 0x77, 0xfe, 0x9c, 0xef, 0xf3, 0x77, 0xce, 0xf1, 0x39, 0x0e,
+	0x74, 0x97, 0x49, 0x3e, 0xca, 0x64, 0xaa, 0x52, 0x56, 0xcb, 0x16, 0xfc, 0x2d, 0xc0, 0xfb, 0x0c,
+	0xa5, 0xc0, 0xfc, 0xeb, 0x5a, 0xb1, 0x47, 0xd0, 0x91, 0xa8, 0xce, 0x2f, 0xd2, 0x25, 0x86, 0xc1,
+	0x30, 0x38, 0x6c, 0x8a, 0xb6, 0x44, 0x35, 0x4e, 0x97, 0xc8, 0x1e, 0x82, 0x5e, 0x9e, 0x5f, 0xe6,
+	0xab, 0xb0, 0x36, 0x0c, 0x0e, 0xbb, 0xa2, 0x25, 0x51, 0x9d, 0xe6, 0x2b, 0xfe, 0x14, 0x7a, 0x93,
+	0xd9, 0x7c, 0xae, 0x22, 0xa9, 0x04, 0x5e, 0xb1, 0x7d, 0x68, 0x5d, 0xa4, 0xc9, 0x97, 0x78, 0x65,
+	0x0e, 0xe8, 0x8a, 0x02, 0xf1, 0x3e, 0x80, 0xa1, 0xa5, 0x99, 0xc0, 0x2b, 0x7e, 0x06, 0xfd, 0xb1,
+	0xc4, 0x48, 0xe1, 0xf1, 0x78, 0xaa, 0x55, 0x21, 0xb4, 0xa3, 0xf1, 0x74, 0x16, 0x5d, 0x62, 0x21,
+	0x2b, 0x21, 0x7b, 0x00, 0xcd, 0x68, 0x3c, 0x3d, 0x99, 0x14, 0xae, 0x04, 0xb4, 0x4b, 0xfc, 0x61,
+	0x1a, 0xe7, 0x2a, 0xac, 0x0f, 0xeb, 0xda, 0x85, 0x10, 0x7f, 0x02, 0xfd, 0x09, 0xae, 0xd1, 0x9e,
+	0x6b, 0xd5, 0x81, 0xa7, 0xe6, 0x1b, 0x18, 0x90, 0xfb, 0x59, 0x8c, 0x1b, 0x4d, 0x3b, 0x80, 0xce,
+	0xb7, 0x18, 0x37, 0x9e, 0xbf, 0xc5, 0xda, 0x4a, 0xaf, 0x6d, 0x04, 0x05, 0xd2, 0x9a, 0x4c, 0xc6,
+	0xa9, 0x8c, 0xd5, 0xf7, 0xb0, 0x6e, 0x6a, 0x65, 0xb1, 0xd6, 0x18, 0xa7, 0x3c, 0x6c, 0x50, 0x78,
+	0x84, 0xf8, 0xaf, 0x00, 0x06, 0x9f, 0xb2, 0xa5, 0xe7, 0xec, 0x4e, 0x0f, 0xfe, 0x7b, 0x7a, 0xed,
+	0xaf, 0xd3, 0x6d, 0x52, 0x75, 0xbf, 0x24, 0x1c, 0xfa, 0x4b, 0x93, 0xfa, 0x09, 0x15, 0x86, 0x9c,
+	0xb7, 0xf6, 0xd8, 0x63, 0xe8, 0x26, 0xb8, 0x29, 0x08, 0x4d, 0x43, 0x70, 0x1b, 0xfc, 0x19, 0x0c,
+	0xa8, 0x78, 0xd7, 0x04, 0xc7, 0x7f, 0x96, 0xf5, 0xfb, 0x9c, 0x26, 0xb8, 0x2b, 0x8b, 0x7d, 0x68,
+	0xfd, 0x48, 0x13, 0x74, 0xb5, 0x23, 0xa4, 0xb3, 0xd3, 0x2b, 0x53, 0x6f, 0x4a, 0xc2, 0x62, 0x9d,
+	0x87, 0x5e, 0xbf, 0x8b, 0xd7, 0xf4, 0xbd, 0x61, 0xbe, 0x6f, 0xed, 0xf1, 0x37, 0x65, 0xa4, 0x37,
+	0x0c, 0x80, 0xc7, 0xd0, 0xa3, 0x0c, 0x84, 0xb8, 0x49, 0xfc, 0x0c, 0x1a, 0x52, 0xd8, 0x0b, 0x30,
+	0x6b, 0xcd, 0x95, 0x62, 0x12, 0xa9, 0xa8, 0x88, 0xb8, 0x40, 0x3c, 0x85, 0x1e, 0x5d, 0xf9, 0xed,
+	0x59, 0xd1, 0x35, 0x0a, 0xdf, 0xcd, 0x6d, 0xf0, 0x8f, 0xd0, 0xa3, 0xe2, 0xdc, 0x9a, 0xe1, 0xab,
+	0xdf, 0x0d, 0xe8, 0x1f, 0xaf, 0x30, 0x51, 0xa7, 0x51, 0x12, 0xad, 0x50, 0xb2, 0x23, 0xe8, 0x98,
+	0x89, 0x9f, 0xcc, 0xe6, 0xec, 0xee, 0x28, 0x5b, 0x8c, 0xbc, 0x27, 0xe0, 0x60, 0x4f, 0x6f, 0xb8,
+	0x57, 0x85, 0xdf, 0x61, 0xcf, 0xa1, 0xad, 0x27, 0x5f, 0xb3, 0xf7, 0x2c, 0xdb, 0xbc, 0x04, 0x15,
+	0xe4, 0x17, 0xd0, 0xb5, 0x6f, 0x03, 0xbb, 0xa7, 0x3f, 0xfb, 0x4f, 0x45, 0xb5, 0xc0, 0x0e, 0x3d,
+	0x09, 0xfc, 0x37, 0xa0, 0x42, 0xf0, 0x12, 0xc0, 0xcd, 0x3f, 0xbb, 0xef, 0x2c, 0x8a, 0xc6, 0xaf,
+	0x96, 0xb8, 0xc1, 0x25, 0xc9, 0xd6, 0x20, 0x57, 0x4b, 0xdc, 0x38, 0x91, 0x64, 0x6b, 0xbc, 0x76,
+	0x05, 0xa6, 0xfb, 0xda, 0x0f, 0xac, 0xe8, 0xf3, 0x5d, 0x2e, 0x4e, 0xb2, 0x35, 0x1a, 0x15, 0x92,
+	0x23, 0xe8, 0x94, 0xcd, 0x4f, 0x97, 0xe7, 0x8d, 0x42, 0x35, 0xbd, 0x6c, 0x60, 0xa2, 0x7b, 0xed,
+	0x5c, 0x4d, 0x2f, 0xdb, 0xaf, 0x68, 0x0d, 0xd7, 0x8c, 0xff, 0xd2, 0x17, 0x2d, 0xf3, 0x2f, 0x7a,
+	0xfd, 0x27, 0x00, 0x00, 0xff, 0xff, 0x2e, 0x76, 0xe4, 0x04, 0x98, 0x06, 0x00, 0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// AgentManagerClient is the client API for AgentManager service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type AgentManagerClient interface {
+	StartDNS(ctx context.Context, in *DNSStartReq, opts ...grpc.CallOption) (*OperResult, error)
+	StopDNS(ctx context.Context, in *DNSStopReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateACL(ctx context.Context, in *CreateACLReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteACL(ctx context.Context, in *DeleteACLReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateView(ctx context.Context, in *CreateViewReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateView(ctx context.Context, in *UpdateViewReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteView(ctx context.Context, in *DeleteViewReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateZone(ctx context.Context, in *CreateZoneReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteZone(ctx context.Context, in *DeleteZoneReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateRR(ctx context.Context, in *CreateRRReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateRR(ctx context.Context, in *UpdateRRReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteRR(ctx context.Context, in *DeleteRRReq, opts ...grpc.CallOption) (*OperResult, error)
+}
+
+type agentManagerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewAgentManagerClient(cc *grpc.ClientConn) AgentManagerClient {
+	return &agentManagerClient{cc}
+}
+
+func (c *agentManagerClient) StartDNS(ctx context.Context, in *DNSStartReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/StartDNS", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) StopDNS(ctx context.Context, in *DNSStopReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/StopDNS", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) CreateACL(ctx context.Context, in *CreateACLReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/CreateACL", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) DeleteACL(ctx context.Context, in *DeleteACLReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/DeleteACL", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) CreateView(ctx context.Context, in *CreateViewReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/CreateView", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) UpdateView(ctx context.Context, in *UpdateViewReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/UpdateView", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) DeleteView(ctx context.Context, in *DeleteViewReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/DeleteView", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) CreateZone(ctx context.Context, in *CreateZoneReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/CreateZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) DeleteZone(ctx context.Context, in *DeleteZoneReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/DeleteZone", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) CreateRR(ctx context.Context, in *CreateRRReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/CreateRR", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) UpdateRR(ctx context.Context, in *UpdateRRReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/UpdateRR", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentManagerClient) DeleteRR(ctx context.Context, in *DeleteRRReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.AgentManager/DeleteRR", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// AgentManagerServer is the server API for AgentManager service.
+type AgentManagerServer interface {
+	StartDNS(context.Context, *DNSStartReq) (*OperResult, error)
+	StopDNS(context.Context, *DNSStopReq) (*OperResult, error)
+	CreateACL(context.Context, *CreateACLReq) (*OperResult, error)
+	DeleteACL(context.Context, *DeleteACLReq) (*OperResult, error)
+	CreateView(context.Context, *CreateViewReq) (*OperResult, error)
+	UpdateView(context.Context, *UpdateViewReq) (*OperResult, error)
+	DeleteView(context.Context, *DeleteViewReq) (*OperResult, error)
+	CreateZone(context.Context, *CreateZoneReq) (*OperResult, error)
+	DeleteZone(context.Context, *DeleteZoneReq) (*OperResult, error)
+	CreateRR(context.Context, *CreateRRReq) (*OperResult, error)
+	UpdateRR(context.Context, *UpdateRRReq) (*OperResult, error)
+	DeleteRR(context.Context, *DeleteRRReq) (*OperResult, error)
+}
+
+// UnimplementedAgentManagerServer can be embedded to have forward compatible implementations.
+type UnimplementedAgentManagerServer struct {
+}
+
+func (*UnimplementedAgentManagerServer) StartDNS(ctx context.Context, req *DNSStartReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDNS not implemented")
+}
+func (*UnimplementedAgentManagerServer) StopDNS(ctx context.Context, req *DNSStopReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDNS not implemented")
+}
+func (*UnimplementedAgentManagerServer) CreateACL(ctx context.Context, req *CreateACLReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateACL not implemented")
+}
+func (*UnimplementedAgentManagerServer) DeleteACL(ctx context.Context, req *DeleteACLReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteACL not implemented")
+}
+func (*UnimplementedAgentManagerServer) CreateView(ctx context.Context, req *CreateViewReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateView not implemented")
+}
+func (*UnimplementedAgentManagerServer) UpdateView(ctx context.Context, req *UpdateViewReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateView not implemented")
+}
+func (*UnimplementedAgentManagerServer) DeleteView(ctx context.Context, req *DeleteViewReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteView not implemented")
+}
+func (*UnimplementedAgentManagerServer) CreateZone(ctx context.Context, req *CreateZoneReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateZone not implemented")
+}
+func (*UnimplementedAgentManagerServer) DeleteZone(ctx context.Context, req *DeleteZoneReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteZone not implemented")
+}
+func (*UnimplementedAgentManagerServer) CreateRR(ctx context.Context, req *CreateRRReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateRR not implemented")
+}
+func (*UnimplementedAgentManagerServer) UpdateRR(ctx context.Context, req *UpdateRRReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateRR not implemented")
+}
+func (*UnimplementedAgentManagerServer) DeleteRR(ctx context.Context, req *DeleteRRReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRR not implemented")
+}
+
+func RegisterAgentManagerServer(s *grpc.Server, srv AgentManagerServer) {
+	s.RegisterService(&_AgentManager_serviceDesc, srv)
+}
+
+func _AgentManager_StartDNS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DNSStartReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).StartDNS(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/StartDNS",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).StartDNS(ctx, req.(*DNSStartReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_StopDNS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DNSStopReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).StopDNS(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/StopDNS",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).StopDNS(ctx, req.(*DNSStopReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_CreateACL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateACLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).CreateACL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/CreateACL",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).CreateACL(ctx, req.(*CreateACLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_DeleteACL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteACLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).DeleteACL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/DeleteACL",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).DeleteACL(ctx, req.(*DeleteACLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_CreateView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateViewReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).CreateView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/CreateView",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).CreateView(ctx, req.(*CreateViewReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_UpdateView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateViewReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).UpdateView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/UpdateView",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).UpdateView(ctx, req.(*UpdateViewReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_DeleteView_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteViewReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).DeleteView(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/DeleteView",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).DeleteView(ctx, req.(*DeleteViewReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_CreateZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateZoneReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).CreateZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/CreateZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).CreateZone(ctx, req.(*CreateZoneReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_DeleteZone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteZoneReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).DeleteZone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/DeleteZone",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).DeleteZone(ctx, req.(*DeleteZoneReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_CreateRR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRRReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).CreateRR(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/CreateRR",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).CreateRR(ctx, req.(*CreateRRReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_UpdateRR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRRReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).UpdateRR(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/UpdateRR",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).UpdateRR(ctx, req.(*UpdateRRReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AgentManager_DeleteRR_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRRReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentManagerServer).DeleteRR(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.AgentManager/DeleteRR",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentManagerServer).DeleteRR(ctx, req.(*DeleteRRReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _AgentManager_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.AgentManager",
+	HandlerType: (*AgentManagerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "StartDNS",
+			Handler:    _AgentManager_StartDNS_Handler,
+		},
+		{
+			MethodName: "StopDNS",
+			Handler:    _AgentManager_StopDNS_Handler,
+		},
+		{
+			MethodName: "CreateACL",
+			Handler:    _AgentManager_CreateACL_Handler,
+		},
+		{
+			MethodName: "DeleteACL",
+			Handler:    _AgentManager_DeleteACL_Handler,
+		},
+		{
+			MethodName: "CreateView",
+			Handler:    _AgentManager_CreateView_Handler,
+		},
+		{
+			MethodName: "UpdateView",
+			Handler:    _AgentManager_UpdateView_Handler,
+		},
+		{
+			MethodName: "DeleteView",
+			Handler:    _AgentManager_DeleteView_Handler,
+		},
+		{
+			MethodName: "CreateZone",
+			Handler:    _AgentManager_CreateZone_Handler,
+		},
+		{
+			MethodName: "DeleteZone",
+			Handler:    _AgentManager_DeleteZone_Handler,
+		},
+		{
+			MethodName: "CreateRR",
+			Handler:    _AgentManager_CreateRR_Handler,
+		},
+		{
+			MethodName: "UpdateRR",
+			Handler:    _AgentManager_UpdateRR_Handler,
+		},
+		{
+			MethodName: "DeleteRR",
+			Handler:    _AgentManager_DeleteRR_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dns.proto",
 }
