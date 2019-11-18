@@ -19,8 +19,10 @@ const (
 
 	KEADHCPv4Service = "dhcp4"
 	KEADHCPv6Service = "dhcp6"
-)
-const (
+
+	Dhcpv4AgentAddr = "localhost:8888"
+	Dhcpv6AgentAddr = "localhost:8889"
+
 	IntfStartDHCPv4 = 1 + iota
 	IntfStopDHCPv4
 	IntfCreateSubnetv4

@@ -26,8 +26,6 @@ const (
 	CreateSubnetv4Reservation = "CreateSubnetv4Reservation"
 	UpdateSubnetv4Reservation = "UpdateSubnetv4Reservation"
 	DeleteSubnetv4Reservation = "DeleteSubnetv4Reservation"
-	StartDHCPv6               = "StartDHCPv6"
-	StopDHCPv6                = "StopDHCPv6"
 )
 
 var (
@@ -35,7 +33,6 @@ var (
 	dhcpTopic   = "test"
 	kafkaWriter *kg.Writer
 	kafkaReader *kg.Reader
-	address     = "localhost:8888"
 )
 
 const (
@@ -46,13 +43,13 @@ var dhcpv4Start bool = false
 var dhcpv6Start bool = false
 
 func dhcpClient() {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(dhcp.Dhcpv4AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
 	defer conn.Close()
 	cliv4 := pb.NewDhcpv4ManagerClient(conn)
-	cliv6 := pb.NewDhcpv6ManagerClient(conn)
+
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{kafkaServer},
@@ -137,19 +134,6 @@ func dhcpClient() {
 			}
 			cliv4.DeleteSubnetv4Reservation(context.Background(), &target)
 
-		case StartDHCPv6:
-			var target pb.StartDHCPv6Req
-			if err := proto.Unmarshal(message.Value, &target); err != nil {
-			}
-			cliv6.StartDHCPv6(context.Background(), &target)
-			go KeepDhcpv6Alive(ticker, quit)
-
-		case StopDHCPv6:
-			var target pb.StopDHCPv6Req
-			if err := proto.Unmarshal(message.Value, &target); err != nil {
-			}
-			cliv6.StopDHCPv6(context.Background(), &target)
-			quit <- 2
 		}
 	}
 }
@@ -170,36 +154,13 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 	}
 }
 
-func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
-	for {
-		select {
-		case <-ticker.C:
-			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
-				continue
-			}
-			var param string = "-c" + "/root/bindtest/" + "named.conf"
-			shell.Shell("named", param)
-
-		case <-quit:
-			return
-		}
-	}
-}
-
 func main() {
 	go dhcpClient()
-	s, err := server.NewDHCPv4GRPCServer("localhost:8888", dhcp.DhcpConfigPath, "/root/bindtest/")
+	s, err := server.NewDHCPv4GRPCServer(dhcp.Dhcpv4AgentAddr, dhcp.DhcpConfigPath, "/root/bindtest/")
 	if err != nil {
 		return
 	}
 	s.Start()
 	defer s.Stop()
-
-	s6, err6 := server.NewDHCPv6GRPCServer("localhost:8889", dhcp.DhcpConfigPath, "/root/bindtest/")
-	if err6 != nil {
-		return
-	}
-	s6.Start()
-	defer s6.Stop()
 
 }
