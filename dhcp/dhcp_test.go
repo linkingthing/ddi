@@ -57,23 +57,23 @@ func init() {
 //	//consumer()
 //}
 
-func TestStopDHCPv4(t *testing.T) {
-	service := pb.StopDHCPv4Req{}
-	err := handlerv4.StopDHCPv4(service)
-	ut.Assert(t, err == nil, "dhcp4 stop successfully!")
+//func TestStopDHCPv4(t *testing.T) {
+//	service := pb.StopDHCPv4Req{}
+//	err := handlerv4.StopDHCPv4(service)
+//	ut.Assert(t, err == nil, "dhcp4 stop successfully!")
+//
+//	time.Sleep(2 * time.Second)
+//}
 
-	time.Sleep(2 * time.Second)
-}
-
-func TestStartDHCPv4(t *testing.T) {
-
-	configFile := DhcpConfigPath + Dhcp4ConfigFile
-	dhcpv4 := pb.StartDHCPv4Req{Config: configFile}
-	err := handlerv4.StartDHCPv4(dhcpv4)
-	ut.Assert(t, err == nil, "dhcp4 start successfully!")
-
-	time.Sleep(2 * time.Second)
-}
+//func TestStartDHCPv4(t *testing.T) {
+//
+//	configFile := DhcpConfigPath + Dhcp4ConfigFile
+//	dhcpv4 := pb.StartDHCPv4Req{Config: configFile}
+//	err := handlerv4.StartDHCPv4(dhcpv4)
+//	ut.Assert(t, err == nil, "dhcp4 start successfully!")
+//
+//	time.Sleep(2 * time.Second)
+//}
 
 func TestDeleteSubnetv4(t *testing.T) {
 	time.Sleep(time.Second)

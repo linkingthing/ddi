@@ -7,6 +7,7 @@ import (
 
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
+	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/server"
 	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
@@ -187,14 +188,14 @@ func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
 
 func main() {
 	go dhcpClient()
-	s, err := server.NewDHCPv4GRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
+	s, err := server.NewDHCPv4GRPCServer("localhost:8888", dhcp.DhcpConfigPath, "/root/bindtest/")
 	if err != nil {
 		return
 	}
 	s.Start()
 	defer s.Stop()
 
-	s6, err6 := server.NewDHCPv6GRPCServer("localhost:8889", "/root/bindtest/", "/root/bindtest/")
+	s6, err6 := server.NewDHCPv6GRPCServer("localhost:8889", dhcp.DhcpConfigPath, "/root/bindtest/")
 	if err6 != nil {
 		return
 	}
