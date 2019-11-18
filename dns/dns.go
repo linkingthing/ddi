@@ -38,22 +38,14 @@ const (
 	checkPeriod  = 5
 )
 
-var (
-	Ticker *time.Ticker
-	Quit   chan int
-)
-
 type BindHandler struct {
 	tpl         *template.Template
 	db          kv.DB
 	dnsConfPath string
 	dBPath      string
 	tplPath     string
-}
-
-func init() {
-	Ticker = time.NewTicker(checkPeriod * time.Second)
-	Quit = make(chan int)
+	ticker      *time.Ticker
+	quit        chan int
 }
 
 func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
@@ -92,6 +84,9 @@ func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
 	if err != nil {
 		return nil
 	}
+	instance.ticker = time.NewTicker(checkPeriod * time.Second)
+	instance.quit = make(chan int)
+
 	return instance
 }
 
@@ -155,17 +150,20 @@ func (handler *BindHandler) StartDNS(req pb.DNSStartReq) error {
 	if _, err := shell.Shell("named", param); err != nil {
 		return err
 	}
-	go KeepDNSAlive(Ticker, Quit)
+	go handler.keepDNSAlive()
 	return nil
 
 }
 
 func (handler *BindHandler) StopDNS() error {
+	if _, err := os.Stat(handler.dnsConfPath + "named.pid"); err != nil {
+		return nil
+	}
 	var err error
 	if _, err = shell.Shell("rndc", "halt"); err != nil {
 		return err
 	}
-	Quit <- 1
+	handler.quit <- 1
 	return nil
 }
 
@@ -923,17 +921,17 @@ func (handler *BindHandler) rndcDelZone(name string, zoneFile string, viewName s
 	return nil
 }
 
-func KeepDNSAlive(ticker *time.Ticker, quit chan int) {
+func (handler *BindHandler) keepDNSAlive() {
 	for {
 		select {
-		case <-ticker.C:
+		case <-handler.ticker.C:
 			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
 				continue
 			}
 			var param string = "-c" + "/root/bindtest/" + "named.conf"
 			shell.Shell("named", param)
 
-		case <-quit:
+		case <-handler.quit:
 			return
 		}
 	}
