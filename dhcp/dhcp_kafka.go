@@ -10,13 +10,15 @@ import (
 const (
 	KafkaServer = "localhost:9092"
 	DhcpTopic   = "test"
+	Dhcpv4Topic = "testv4"
+	Dhcpv6Topic = "testv6"
 )
 
 func produce(msg kafka.Message) {
 	fmt.Printf("into produce\n")
 	w := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{KafkaServer},
-		Topic:   DhcpTopic,
+		Topic:   Dhcpv6Topic,
 	})
 
 	w.WriteMessages(context.Background(), msg)
@@ -27,7 +29,7 @@ func consumer() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 
 		Brokers:     []string{KafkaServer},
-		Topic:       DhcpTopic,
+		Topic:       Dhcpv6Topic,
 		StartOffset: 34,
 	})
 

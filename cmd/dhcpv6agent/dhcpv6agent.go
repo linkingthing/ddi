@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"fmt"
+
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
@@ -41,7 +43,7 @@ func dhcpClient() {
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Topic:   dhcp.Dhcpv6Topic,
 	})
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)
@@ -52,6 +54,7 @@ func dhcpClient() {
 			panic(err)
 			return
 		}
+		fmt.Printf("v6 message at offset %d: key: %s, value: %s\n", message.Offset, string(message.Key), string(message.Value))
 
 		switch string(message.Key) {
 		case StartDHCPv6:

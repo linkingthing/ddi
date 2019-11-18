@@ -25,12 +25,12 @@ const (
 func init() {
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Topic:   dhcp.Dhcpv6Topic,
 	})
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Topic:   dhcp.Dhcpv6Topic,
 	})
 	flag.StringVar(&cmd, "cmd", "", StartDHCPv6+"\n"+
 		StopDHCPv6)

@@ -4,8 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	ut "github.com/ben-han-cn/cement/unittest"
+	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/segmentio/kafka-go"
 )
 
 var handlerv4 = &KEAHandler{
@@ -27,14 +31,30 @@ func init() {
 	handlerv6 = pv6
 }
 
+func TestKafka(t *testing.T) {
+
+	dhcpv4Req := pb.StartDHCPv4Req{Config: "StartDHCPv4"}
+	data, err := proto.Marshal(&dhcpv4Req)
+	if err != nil {
+		fmt.Printf("---err in TestStartDHCPv4 \n")
+		return
+	}
+
+	msg := kafka.Message{
+		Key:   []byte("StartDHCPv4"),
+		Value: data,
+	}
+	produce(msg)
+}
+
 //func TestKafka(t *testing.T) {
 //
 //	conf := &ParseConfig{}
 //	err := getConfig("dhcp4", conf)
 //	fmt.Print(conf)
 //
-//	//configFile := DhcpConfigPath + Dhcp4ConfigFile
-//	//info := &pb.DHCPStartReq{Service: "dhcp4", ConfigFile: configFile}
+//	configFile := DhcpConfigPath + Dhcp4ConfigFile
+//	info := &pb.DHCPStartReq{Service: "dhcp4", ConfigFile: configFile}
 //	d1 := &pb.Subnet4OptionData{}
 //	d2 := &pb.Subnet4Pools{}
 //	d2.OptionData = []*pb.Subnet4OptionData{d1}

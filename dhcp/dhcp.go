@@ -280,7 +280,7 @@ func (handler *KEAHandler) StartDHCPv6(req pb.StartDHCPv6Req) error {
 
 func (handler *KEAHandler) StopDHCPv6(req pb.StopDHCPv6Req) error {
 
-	stopCmd := "keactrl stop -s "
+	stopCmd := "keactrl stop -s " + KEADHCPv6Service
 
 	ret, err := cmd(stopCmd)
 

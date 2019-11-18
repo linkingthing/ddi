@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"fmt"
+	"log"
 
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
@@ -42,6 +42,7 @@ const (
 var dhcpv4Start bool = false
 
 func dhcpClient() {
+
 	conn, err := grpc.Dial(dhcp.Dhcpv4AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return
@@ -51,8 +52,9 @@ func dhcpClient() {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Brokers:     []string{dhcp.KafkaServer},
+		Topic:       dhcp.Dhcpv4Topic,
+		StartOffset: 95,
 	})
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)
@@ -64,15 +66,12 @@ func dhcpClient() {
 			return
 		}
 
-		fmt.Printf("message at offset %d: key: %s, value: %s\n", message.Offset, string(message.Key), string(message.Value))
-
 		switch string(message.Key) {
 		case StartDHCPv4:
 			var target pb.StartDHCPv4Req
-			fmt.Printf("m key: %s\n", message.Key)
 
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
-				fmt.Print(err)
+				log.Fatal(err)
 			}
 			cliv4.StartDHCPv4(context.Background(), &target)
 			go KeepDhcpv4Alive(ticker, quit)
@@ -81,8 +80,7 @@ func dhcpClient() {
 			var target pb.StopDHCPv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			fmt.Print(message.Value)
-			fmt.Print(target)
+
 			cliv4.StopDHCPv4(context.Background(), &target)
 			quit <- 1
 
@@ -165,8 +163,8 @@ func main() {
 	//ver string, ConfPath string, addr string
 	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
 	if err != nil {
-		fmt.Println("server.NewDHCPv4GRPCServer error")
-		fmt.Print(err)
+
+		log.Fatal(err)
 		return
 	}
 	s.Start()
