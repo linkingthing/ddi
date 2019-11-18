@@ -58,6 +58,7 @@ message startDHCPv4Req{
 }
 
 message stopDHCPv4Req{
+    string config = 1;
 }
 
 message CreateSubnetv4Req{

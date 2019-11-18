@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
 	"google.golang.org/grpc"
 )
@@ -24,16 +25,12 @@ const (
 	CreateSubnetv4Reservation = "CreateSubnetv4Reservation"
 	UpdateSubnetv4Reservation = "UpdateSubnetv4Reservation"
 	DeleteSubnetv4Reservation = "DeleteSubnetv4Reservation"
-	StartDHCPv6               = "StartDHCPv6"
-	StopDHCPv6                = "StopDHCPv6"
 )
 
 func init() {
 	flag.StringVar(&cmd, "cmd", "", StartDHCPv4+"\n"+
-		StopDHCPv4+"\n"+
-		StartDHCPv6+"\n"+
-		StopDHCPv6)
-	flag.StringVar(&addr, "addr", "localhost:8888", "ip:port")
+		StopDHCPv4)
+	flag.StringVar(&addr, "addr", dhcp.Dhcpv4AgentAddr, "ip:port")
 
 }
 func main() {
@@ -50,37 +47,22 @@ func main() {
 	fmt.Printf("cmd: %s\n", cmd)
 	switch cmd {
 	case StartDHCPv4:
-		target := pb.StartDHCPv4Req{Config: ""}
+		target := pb.StartDHCPv4Req{Config: "StartDHCPv4Req"}
 		_, err := cli.StartDHCPv4(context.Background(), &target)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Print(err)
+		} else {
+			fmt.Print("start dhcpv4 ok\n")
 		}
 	case StopDHCPv4:
 		target := pb.StopDHCPv4Req{}
 		OperResult, err := cli.StopDHCPv4(context.Background(), &target)
 		if err != nil {
-			fmt.Println(OperResult)
-			fmt.Println(err)
+			fmt.Print(OperResult)
+			fmt.Print(err)
 		} else {
-			fmt.Println(OperResult)
+			fmt.Print(OperResult)
 		}
 
-	case StartDHCPv6:
-		fmt.Print("\n---into case startdhcpv6---\n")
-		target := pb.StartDHCPv6Req{Config: ""}
-		_, err := cli.StartDHCPv6(context.Background(), &target)
-		if err != nil {
-			fmt.Println(err)
-		}
-	case StopDHCPv6:
-		fmt.Print("\n---into case StopDHCPv6---\n")
-		target := pb.StopDHCPv6Req{}
-		OperResult, err := cli.StopDHCPv6(context.Background(), &target)
-		if err != nil {
-			fmt.Println(OperResult)
-			fmt.Println(err)
-		} else {
-			fmt.Println(OperResult)
-		}
 	}
 }

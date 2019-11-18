@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	dhcpTopic   = "test"
 	kafkaWriter *kg.Writer
 	kafkaReader *kg.Reader
 	cmd         = ""
@@ -31,38 +30,42 @@ const (
 	CreateSubnetv4Reservation = "CreateSubnetv4Reservation"
 	UpdateSubnetv4Reservation = "UpdateSubnetv4Reservation"
 	DeleteSubnetv4Reservation = "DeleteSubnetv4Reservation"
-	StartDHCPv6               = "StartDHCPv6"
-	StopDHCPv6                = "StopDHCPv6"
 )
 
 func init() {
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcpTopic,
+		Topic:   dhcp.DhcpTopic,
 	})
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{kafkaServer},
-		Topic:   dhcpTopic,
+		Brokers: []string{dhcp.KafkaServer},
+		Topic:   dhcp.DhcpTopic,
 	})
 	flag.StringVar(&cmd, "cmd", "", StartDHCPv4+"\n"+
-		StopDHCPv4+"\n"+
-		StartDHCPv6+"\n"+
-		StopDHCPv6)
+		StopDHCPv4)
 }
 func main() {
 	flag.Parse()
 
-	TestStartDHCPv4()
+	fmt.Printf("cmd: %s\n", cmd)
+	switch cmd {
+	case StartDHCPv4:
+		TestStartDHCPv4()
+	case StopDHCPv4:
+		TestStopDHCPv4()
+	}
+
 }
 
 func TestStartDHCPv4() {
 
 	fmt.Printf("---into TestStartDHCPv4\n")
 
-	dhcpv4Req := pb.StartDHCPv4Req{Config: "test"}
+	dhcpv4Req := pb.StartDHCPv4Req{Config: "StartDHCPv4"}
 	data, err := proto.Marshal(&dhcpv4Req)
 	if err != nil {
+		fmt.Printf("---err in TestStartDHCPv4 \n")
 		return
 	}
 
@@ -70,25 +73,30 @@ func TestStartDHCPv4() {
 		Key:   []byte(StartDHCPv4),
 		Value: data,
 	}
+	fmt.Print(postData)
 	err = kafkaWriter.WriteMessages(context.Background(), postData)
 	if err != nil {
+		fmt.Printf("---err in TestStartDHCPv4 writemessage \n")
 		return
 	}
 }
 
-//func TestStopDNS() {
-//	dnsStopReq := pb.DNSStopReq{}
-//	data, err := proto.Marshal(&dnsStopReq)
-//	if err != nil {
-//		return
-//	}
-//	postData := kg.Message{
-//		Key:   []byte(STOPDNS),
-//		Value: data,
-//	}
-//	err = kafkaWriter.WriteMessages(context.Background(), postData)
-//	if err != nil {
-//		return
-//	}
-//
-//}
+func TestStopDHCPv4() {
+	fmt.Printf("---into TestStopDHCPv4\n")
+
+	stopDHCPv4 := pb.StopDHCPv4Req{Config: "StopDHCPv4"}
+	data, err := proto.Marshal(&stopDHCPv4)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	postData := kg.Message{
+		Key:   []byte(StopDHCPv4),
+		Value: data,
+	}
+	err = kafkaWriter.WriteMessages(context.Background(), postData)
+	if err != nil {
+		return
+	}
+
+}

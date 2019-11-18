@@ -90,7 +90,7 @@ func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
 
 func main() {
 	go dhcpClient()
-	s, err := server.NewDHCPv6GRPCServer(dhcp.Dhcpv6AgentAddr, dhcp.DhcpConfigPath, "/root/keatest/")
+	s, err := server.NewDHCPv6GRPCServer(dhcp.KEADHCPv6Service, dhcp.DhcpConfigPath, dhcp.Dhcpv6AgentAddr)
 	if err != nil {
 		return
 	}

@@ -121,8 +121,9 @@ func NewKEAHandler(ver string, ConfPath string, addr string) *KEAHandler {
 }
 
 func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
-	startCmd := "nohup keactrl start -s dhcp4 >/dev/null 2>&1 &"
+	startCmd := "nohup keactrl start -s " + KEADHCPv4Service + " >/dev/null 2>&1 &"
 
+	fmt.Printf("in startdhcp4, cmd: %s\n", startCmd)
 	_, err := cmd(startCmd)
 	if err != nil {
 		logrus.Error("keactrl start -s kea-" + req.Config + " failed")
@@ -135,12 +136,12 @@ func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 
 func (handler *KEAHandler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 
-	stopCmd := "keactrl stop -s "
-
-	ret, err := cmd(stopCmd)
+	stopCmd := "keactrl stop -s " + KEADHCPv4Service
+	fmt.Printf("in startdhcp4, cmd: %s\n", stopCmd)
+	_, err := cmd(stopCmd)
 
 	if err != nil {
-		fmt.Printf("stopCmd ret: %s\n", ret)
+
 		return err
 	}
 

@@ -3,6 +3,8 @@ package server
 import (
 	"net"
 
+	"fmt"
+
 	"github.com/linkingthing/ddi/pb"
 	"google.golang.org/grpc"
 )
@@ -14,11 +16,14 @@ type DHCPv4GRPCServer struct {
 }
 
 func NewDHCPv4GRPCServer(ver string, ConfPath string, addr string) (*DHCPv4GRPCServer, error) {
+	fmt.Printf("ver: %s, confpath: %s, addr: %s\n", ver, ConfPath, addr)
+
 	server := grpc.NewServer()
 	servicev4 := newDHCPv4Service(ver, addr, ConfPath)
 	pb.RegisterDhcpv4ManagerServer(server, servicev4)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
 	return &DHCPv4GRPCServer{
