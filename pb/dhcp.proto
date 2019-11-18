@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pb;
 
-service DhcpManager {
+service Dhcpv4Manager {
 
     rpc StartDHCPv4(startDHCPv4Req) returns (OperResult){}
     rpc StopDHCPv4(stopDHCPv4Req)   returns (OperResult){}
@@ -18,11 +18,11 @@ service DhcpManager {
     rpc CreateSubnetv4Reservation(CreateSubnetv4ReservationReq)   returns (OperResult){}
     rpc UpdateSubnetv4Reservation(UpdateSubnetv4ReservationReq)   returns (OperResult){}
     rpc DeleteSubnetv4Reservation(DeleteSubnetv4ReservationReq)   returns (OperResult){}
+}
 
-
+service Dhcpv6Manager {
     rpc StartDHCPv6(startDHCPv6Req) returns (OperResult){}
     rpc StopDHCPv6(stopDHCPv6Req)   returns (OperResult){}
-
 }
 
 message OperResult {
@@ -114,7 +114,7 @@ message CreateSubnetv4ReservationReq{
 }
 
 message UpdateSubnetv4ReservationReq{
-    string  subnet  = 1;
+    string subnet  = 1;
     string duid = 2;
     string hostname = 3;
     string ipAddr = 4;

@@ -9,8 +9,22 @@ import (
 )
 
 var handlerv4 = &KEAHandler{
+	ver:          "dhcp4",
 	ConfigPath:   DhcpConfigPath,
 	MainConfName: Dhcp4ConfigFile,
+}
+var handlerv6 = &KEAHandler{
+	ver:          "dhcp6",
+	ConfigPath:   DhcpConfigPath,
+	MainConfName: Dhcp4ConfigFile,
+}
+
+func init() {
+	pv4 := NewKEAHandler("dhcp4", "/root/keatest/", "/root/keatest/")
+	handlerv4 = pv4
+
+	pv6 := NewKEAHandler("dhcp6", "/root/keatest/", "/root/keatest/")
+	handlerv6 = pv6
 }
 
 //func TestKafka(t *testing.T) {

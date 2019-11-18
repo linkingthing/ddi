@@ -111,9 +111,9 @@ type KEAHandler struct {
 	//FreeACLList  map[string]ACL
 }
 
-func NewKEAHandler(ver string, ConfPath string, agentPath string) *KEAHandler {
+func NewKEAHandler(ver string, ConfPath string, addr string) *KEAHandler {
 
-	instance := &KEAHandler{ver: ConfPath, ConfigPath: ConfPath, MainConfName: agentPath}
+	instance := &KEAHandler{ver: ver, ConfigPath: ConfPath}
 
 	return instance
 }

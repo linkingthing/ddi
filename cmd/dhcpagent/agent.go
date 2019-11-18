@@ -50,7 +50,8 @@ func dhcpClient() {
 		return
 	}
 	defer conn.Close()
-	cli := pb.NewDhcpManagerClient(conn)
+	cliv4 := pb.NewDhcpv4ManagerClient(conn)
+	cliv6 := pb.NewDhcpv6ManagerClient(conn)
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{kafkaServer},
@@ -71,82 +72,82 @@ func dhcpClient() {
 			var target pb.StartDHCPv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.StartDHCPv4(context.Background(), &target)
+			cliv4.StartDHCPv4(context.Background(), &target)
 			go KeepDhcpv4Alive(ticker, quit)
 
 		case StopDHCPv4:
 			var target pb.StopDHCPv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.StopDHCPv4(context.Background(), &target)
+			cliv4.StopDHCPv4(context.Background(), &target)
 			quit <- 1
 
 		case CreateSubnetv4:
 			var target pb.CreateSubnetv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.CreateSubnetv4(context.Background(), &target)
+			cliv4.CreateSubnetv4(context.Background(), &target)
 
 		case UpdateSubnetv4:
 			var target pb.UpdateSubnetv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.UpdateSubnetv4(context.Background(), &target)
+			cliv4.UpdateSubnetv4(context.Background(), &target)
 
 		case DeleteSubnetv4:
 			var target pb.DeleteSubnetv4Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.DeleteSubnetv4(context.Background(), &target)
+			cliv4.DeleteSubnetv4(context.Background(), &target)
 
 		case CreateSubnetv4Pool:
 			var target pb.CreateSubnetv4PoolReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.CreateSubnetv4Pool(context.Background(), &target)
+			cliv4.CreateSubnetv4Pool(context.Background(), &target)
 
 		case UpdateSubnetv4Pool:
 			var target pb.UpdateSubnetv4PoolReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.UpdateSubnetv4Pool(context.Background(), &target)
+			cliv4.UpdateSubnetv4Pool(context.Background(), &target)
 
 		case DeleteSubnetv4Pool:
 			var target pb.DeleteSubnetv4PoolReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.DeleteSubnetv4Pool(context.Background(), &target)
+			cliv4.DeleteSubnetv4Pool(context.Background(), &target)
 
 		case CreateSubnetv4Reservation:
 			var target pb.CreateSubnetv4ReservationReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.CreateSubnetv4Reservation(context.Background(), &target)
+			cliv4.CreateSubnetv4Reservation(context.Background(), &target)
 
 		case UpdateSubnetv4Reservation:
 			var target pb.UpdateSubnetv4ReservationReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.UpdateSubnetv4Reservation(context.Background(), &target)
+			cliv4.UpdateSubnetv4Reservation(context.Background(), &target)
 
 		case DeleteSubnetv4Reservation:
 			var target pb.DeleteSubnetv4ReservationReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.DeleteSubnetv4Reservation(context.Background(), &target)
+			cliv4.DeleteSubnetv4Reservation(context.Background(), &target)
 
 		case StartDHCPv6:
 			var target pb.StartDHCPv6Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.StartDHCPv6(context.Background(), &target)
+			cliv6.StartDHCPv6(context.Background(), &target)
 			go KeepDhcpv6Alive(ticker, quit)
 
 		case StopDHCPv6:
 			var target pb.StopDHCPv6Req
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			cli.StopDHCPv6(context.Background(), &target)
+			cliv6.StopDHCPv6(context.Background(), &target)
 			quit <- 2
 		}
 	}
@@ -156,10 +157,10 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 	for {
 		select {
 		case <-ticker.C:
-			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
+			if _, err := os.Stat("/root/keatest/" + "named.pid"); err == nil {
 				continue
 			}
-			var param string = "-c" + "/root/bindtest/" + "named.conf"
+			var param string = "-c" + "/root/keatest/" + "named.conf"
 			shell.Shell("named", param)
 
 		case <-quit:
@@ -186,10 +187,18 @@ func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
 
 func main() {
 	go dhcpClient()
-	s, err := server.NewDHCPGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
+	s, err := server.NewDHCPv4GRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
 	}
 	s.Start()
 	defer s.Stop()
+
+	s6, err6 := server.NewDHCPv6GRPCServer("localhost:8889", "/root/bindtest/", "/root/bindtest/")
+	if err6 != nil {
+		return
+	}
+	s6.Start()
+	defer s6.Stop()
+
 }
