@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/ben-han-cn/cement/shell"
 	kv "github.com/ben-han-cn/kvzoo"
@@ -32,6 +33,14 @@ const (
 	rndcPort     = "953"
 	rrKey        = "key1"
 	rrSecret     = "linking_encr"
+	opSuccess    = 0
+	opFail       = 1
+	checkPeriod  = 5
+)
+
+var (
+	Ticker *time.Ticker
+	Quit   chan int
 )
 
 type BindHandler struct {
@@ -40,6 +49,11 @@ type BindHandler struct {
 	dnsConfPath string
 	dBPath      string
 	tplPath     string
+}
+
+func init() {
+	Ticker = time.NewTicker(checkPeriod * time.Second)
+	Quit = make(chan int)
 }
 
 func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
@@ -141,6 +155,7 @@ func (handler *BindHandler) StartDNS(req pb.DNSStartReq) error {
 	if _, err := shell.Shell("named", param); err != nil {
 		return err
 	}
+	go KeepDNSAlive(Ticker, Quit)
 	return nil
 
 }
@@ -150,6 +165,7 @@ func (handler *BindHandler) StopDNS() error {
 	if _, err = shell.Shell("rndc", "halt"); err != nil {
 		return err
 	}
+	Quit <- 1
 	return nil
 }
 
@@ -905,4 +921,20 @@ func (handler *BindHandler) rndcDelZone(name string, zoneFile string, viewName s
 		return err
 	}
 	return nil
+}
+
+func KeepDNSAlive(ticker *time.Ticker, quit chan int) {
+	for {
+		select {
+		case <-ticker.C:
+			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
+				continue
+			}
+			var param string = "-c" + "/root/bindtest/" + "named.conf"
+			shell.Shell("named", param)
+
+		case <-quit:
+			return
+		}
+	}
 }
