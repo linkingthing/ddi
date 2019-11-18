@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing.com/ddi/dhcp"
-	"github.com/linkingthing.com/ddi/dhcp/dhcpv4"
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/pb"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +30,7 @@ func consumer() {
 	})
 	defer r.Close()
 
-	var handler = &dhcpv4.KEAv4Handler{
+	var handler = &dhcp.KEAHandler{
 		ConfigPath:   dhcp.DhcpConfigPath,
 		MainConfName: dhcp.Dhcp4ConfigFile,
 	}

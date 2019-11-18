@@ -7,8 +7,8 @@ import (
 
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing.com/ddi/dns/server"
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/dns/server"
+	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 )

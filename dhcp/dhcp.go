@@ -113,7 +113,7 @@ type KEAHandler struct {
 
 func NewKEAHandler(ver string, ConfPath string, agentPath string) *KEAHandler {
 
-	instance := &KEAHandler{ver: ConfPath, ConfigPath: ConfPath}
+	instance := &KEAHandler{ver: ConfPath, ConfigPath: ConfPath, MainConfName: agentPath}
 
 	return instance
 }
@@ -221,10 +221,11 @@ func (handler *KEAHandler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 		return err
 	}
 
+	dhcp := conf.Arguments["Dhcp4"]
 	tmp := conf.Arguments["Dhcp4"].Subnet
 	for k, v := range conf.Arguments["Dhcp4"].Subnet {
 		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp4"].Subnet = append(tmp[:k], tmp[k+1:]...)
+			dhcp.Subnet = append(tmp[:k], tmp[k+1:]...)
 			err = setConfig(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
@@ -232,6 +233,31 @@ func (handler *KEAHandler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 			return nil
 		}
 	}
+
+	return nil
+}
+
+func (handler *KEAHandler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
+
+	return nil
+}
+func (handler *KEAHandler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
+
+	return nil
+}
+func (handler *KEAHandler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) error {
+
+	return nil
+}
+func (handler *KEAHandler) CreateSubnetv4Reservation(req pb.CreateSubnetv4ReservationReq) error {
+
+	return nil
+}
+func (handler *KEAHandler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
+
+	return nil
+}
+func (handler *KEAHandler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4ReservationReq) error {
 
 	return nil
 }
@@ -293,8 +319,8 @@ func (handler *KEAHandler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 			},
 		},
 	}
-
-	conf.Arguments["Dhcp6"].Subnet = append(conf.Arguments["Dhcp6"].Subnet, newSubnet6)
+	dhcp := conf.Arguments["Dhcp6"]
+	dhcp.Subnet = append(conf.Arguments["Dhcp6"].Subnet, newSubnet6)
 
 	setErr := setConfig(KEADHCPv6Service, &conf.Arguments)
 	if setErr != nil {
@@ -336,10 +362,11 @@ func (handler *KEAHandler) DeleteSubnetv6(req pb.DeleteSubnetv6Req) error {
 		return err
 	}
 
+	dhcp := conf.Arguments["Dhcp6"]
 	tmp := conf.Arguments["Dhcp6"].Subnet
 	for k, v := range conf.Arguments["Dhcp6"].Subnet {
 		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp6"].Subnet = append(tmp[:k], tmp[k+1:]...)
+			dhcp.Subnet = append(tmp[:k], tmp[k+1:]...)
 			err = setConfig(KEADHCPv6Service, &conf.Arguments)
 			if err != nil {
 				return err

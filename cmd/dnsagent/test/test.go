@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/linkingthing.com/ddi/dns"
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/dns"
+	"github.com/linkingthing/ddi/pb"
 )
 
 func main() {
