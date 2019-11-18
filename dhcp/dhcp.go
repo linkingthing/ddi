@@ -6,7 +6,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/pb"
 	"github.com/sirupsen/logrus"
 )
 

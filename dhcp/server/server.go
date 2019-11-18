@@ -3,7 +3,7 @@ package server
 import (
 	"net"
 
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/pb"
 	"google.golang.org/grpc"
 )
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	ut "github.com/ben-han-cn/cement/unittest"
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/pb"
 )
 
 var handlerv4 = &KEAHandler{

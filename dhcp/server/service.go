@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/linkingthing.com/ddi/dhcp"
-	"github.com/linkingthing.com/ddi/pb"
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/pb"
 )
 
 const (
