@@ -39,6 +39,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/ben-han-cn/gorest"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/insomniacslk/dhcp"
 
 [[constraint]]
