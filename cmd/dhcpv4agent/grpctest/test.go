@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log"
 
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
@@ -37,32 +37,36 @@ func main() {
 	flag.Parse()
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
 		return
 	}
 	defer conn.Close()
 
 	cli := pb.NewDhcpv4ManagerClient(conn)
 
-	fmt.Printf("cmd: %s\n", cmd)
+	log.Print("cmd: " + cmd)
 	switch cmd {
 	case StartDHCPv4:
 		target := pb.StartDHCPv4Req{Config: "StartDHCPv4Req"}
 		_, err := cli.StartDHCPv4(context.Background(), &target)
 		if err != nil {
-			fmt.Print(err)
+			log.Print(err)
 		} else {
-			fmt.Print("start dhcpv4 ok\n")
+			log.Print("start dhcpv4 ok\n")
 		}
 	case StopDHCPv4:
 		target := pb.StopDHCPv4Req{}
 		OperResult, err := cli.StopDHCPv4(context.Background(), &target)
 		if err != nil {
-			fmt.Print(OperResult)
-			fmt.Print(err)
-		} else {
-			fmt.Print(OperResult)
+			log.Print(OperResult)
+			log.Print(err)
 		}
-
+	case CreateSubnetv4:
+		target := pb.CreateSubnetv4Req{Subnet: "192.168.0.0/24", ValidLifetime: "32"}
+		OperResult, err := cli.CreateSubnetv4(context.Background(), &target)
+		if err != nil {
+			log.Print(OperResult)
+			log.Print(err)
+		}
 	}
 }

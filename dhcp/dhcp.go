@@ -6,6 +6,8 @@ import (
 
 	"encoding/json"
 
+	"log"
+
 	"github.com/linkingthing/ddi/pb"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +21,10 @@ const (
 
 	KEADHCPv4Service = "dhcp4"
 	KEADHCPv6Service = "dhcp6"
+
+	KeaPidPath      = "/usr/local/var/run/kea/"
+	KeaDhcp4PidFile = "kea-dhcp4.kea-dhcp4.pid"
+	KeaDhcp6PidFile = "kea-dhcp6.kea-dhcp6.pid"
 
 	Dhcpv4AgentAddr = "localhost:8888"
 	Dhcpv6AgentAddr = "localhost:8889"
@@ -43,7 +49,8 @@ type DhcpConfig struct {
 	//ClientClasses map[string]interface{} `json:"client-classes"`
 	ControlSocket ControlSocket  `json:"control-socket"`
 	OptionData    []Option       `json:"option-data"`
-	Subnet        []SubnetConfig `json:"subnet6"`
+	Subnet4       []SubnetConfig `json:"subnet4"`
+	Subnet6       []SubnetConfig `json:"subnet6"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
@@ -123,7 +130,7 @@ func NewKEAHandler(ver string, ConfPath string, addr string) *KEAHandler {
 func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 	startCmd := "nohup keactrl start -s " + KEADHCPv4Service + " >/dev/null 2>&1 &"
 
-	fmt.Printf("in startdhcp4, cmd: %s\n", startCmd)
+	log.Print("in startdhcp4, cmd: " + startCmd)
 	_, err := cmd(startCmd)
 	if err != nil {
 		logrus.Error("keactrl start -s kea-" + req.Config + " failed")
@@ -137,7 +144,7 @@ func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 func (handler *KEAHandler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 
 	stopCmd := "keactrl stop -s " + KEADHCPv4Service
-	fmt.Printf("in startdhcp4, cmd: %s\n", stopCmd)
+	log.Print("in stopdhcp4, cmd: " + stopCmd)
 	_, err := cmd(stopCmd)
 
 	if err != nil {
@@ -149,18 +156,23 @@ func (handler *KEAHandler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 }
 
 func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
-
+	log.Print("into dhcp.go, CreateSubnetv4")
 	var conf ParseConfig
 	err := getConfig(KEADHCPv4Service, &conf)
 	if err != nil {
 
+		log.Print(err)
 		return err
 	}
 
-	dhcpConf := conf.Arguments
-	dhcpConfig := dhcpConf["Dhcp4"]
+	//var p *DhcpConfig
+	//p = nil
+	dhcpConfig := conf.Arguments["Dhcp4"]
+	log.Print("before dhcpConfig\n")
+	log.Print(dhcpConfig)
+	log.Print("after  dhcpConfig\n")
 
-	for _, v := range dhcpConfig.Subnet {
+	for _, v := range dhcpConfig.Subnet4 {
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf("subnet %s exists, create failed", req.Subnet)
 		}
@@ -174,19 +186,31 @@ func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Relay: SubnetRelay{
 			IpAddresses: []string{},
 		},
-		Pools: []Pool{
-			{
-				[]Option{},
-				req.Pool[0].Pool,
-			},
-		},
+		//Pools: []Pool{
+		//	{
+		//		[]Option{},
+		//		req.Pool[0].Pool,
+		//	},
+		//},
 	}
 
-	dhcpConfig.Subnet = append(dhcpConfig.Subnet, newSubnet4)
+	if req.Pool != nil {
 
+	}
+
+	dhcpConfig.Subnet4 = append(dhcpConfig.Subnet4, newSubnet4)
+	log.Print("2before dhcpConfig\n")
+	log.Print(dhcpConfig)
+	log.Print("2after  dhcpConfig\n")
+
+	conf.Arguments["Dhcp4"] = dhcpConfig
+	log.Print("before conf.Arguments\n")
+	log.Print(conf.Arguments)
+	log.Print("after  conf.Arguments\n")
 	setErr := setConfig(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
 
+		log.Print(setErr)
 		return setErr
 	}
 	return nil
@@ -199,9 +223,9 @@ func (handler *KEAHandler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 		return err
 	}
 
-	for k, v := range conf.Arguments["Dhcp4"].Subnet {
+	for k, v := range conf.Arguments["Dhcp4"].Subnet4 {
 		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp4"].Subnet[k].Pools = []Pool{
+			conf.Arguments["Dhcp4"].Subnet4[k].Pools = []Pool{
 				{
 					[]Option{},
 					req.Pool[0].Pool,
@@ -225,10 +249,10 @@ func (handler *KEAHandler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 	}
 
 	dhcp := conf.Arguments["Dhcp4"]
-	tmp := conf.Arguments["Dhcp4"].Subnet
-	for k, v := range conf.Arguments["Dhcp4"].Subnet {
+	tmp := conf.Arguments["Dhcp4"].Subnet4
+	for k, v := range conf.Arguments["Dhcp4"].Subnet4 {
 		if v.Subnet == req.Subnet {
-			dhcp.Subnet = append(tmp[:k], tmp[k+1:]...)
+			dhcp.Subnet4 = append(tmp[:k], tmp[k+1:]...)
 			err = setConfig(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
@@ -301,7 +325,7 @@ func (handler *KEAHandler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 		return err
 	}
 
-	for _, v := range conf.Arguments["Dhcp6"].Subnet {
+	for _, v := range conf.Arguments["Dhcp6"].Subnet6 {
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf("subnet %s exists, create failed", req.Subnet)
 		}
@@ -323,7 +347,7 @@ func (handler *KEAHandler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 		},
 	}
 	dhcp := conf.Arguments["Dhcp6"]
-	dhcp.Subnet = append(conf.Arguments["Dhcp6"].Subnet, newSubnet6)
+	dhcp.Subnet6 = append(conf.Arguments["Dhcp6"].Subnet6, newSubnet6)
 
 	setErr := setConfig(KEADHCPv6Service, &conf.Arguments)
 	if setErr != nil {
@@ -340,9 +364,9 @@ func (handler *KEAHandler) UpdateSubnetv6(req pb.UpdateSubnetv6Req) error {
 		return err
 	}
 
-	for k, v := range conf.Arguments["Dhcp6"].Subnet {
+	for k, v := range conf.Arguments["Dhcp6"].Subnet6 {
 		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp6"].Subnet[k].Pools = []Pool{
+			conf.Arguments["Dhcp6"].Subnet6[k].Pools = []Pool{
 				{
 					[]Option{},
 					req.Pool[0].Pool,
@@ -366,10 +390,10 @@ func (handler *KEAHandler) DeleteSubnetv6(req pb.DeleteSubnetv6Req) error {
 	}
 
 	dhcp := conf.Arguments["Dhcp6"]
-	tmp := conf.Arguments["Dhcp6"].Subnet
-	for k, v := range conf.Arguments["Dhcp6"].Subnet {
+	tmp := conf.Arguments["Dhcp6"].Subnet6
+	for k, v := range conf.Arguments["Dhcp6"].Subnet6 {
 		if v.Subnet == req.Subnet {
-			dhcp.Subnet = append(tmp[:k], tmp[k+1:]...)
+			dhcp.Subnet6 = append(tmp[:k], tmp[k+1:]...)
 			err = setConfig(KEADHCPv6Service, &conf.Arguments)
 			if err != nil {
 				return err

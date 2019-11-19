@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"log"
+
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
 )
@@ -23,6 +25,7 @@ func newDHCPv4Service(ver string, addr string, dhcpConfPath string) *DHCPv4Servi
 }
 
 func (service *DHCPv4Service) StartDHCPv4(content context.Context, req *pb.StartDHCPv4Req) (*pb.OperResult, error) {
+	log.Print("into service, startdhcpv4")
 	err := service.handler.StartDHCPv4(*req)
 	if err != nil {
 		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
@@ -32,6 +35,8 @@ func (service *DHCPv4Service) StartDHCPv4(content context.Context, req *pb.Start
 }
 
 func (service *DHCPv4Service) StopDHCPv4(content context.Context, req *pb.StopDHCPv4Req) (*pb.OperResult, error) {
+	log.Print("into service, stopdhcpv4")
+
 	err := service.handler.StopDHCPv4(*req)
 	if err != nil {
 		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
