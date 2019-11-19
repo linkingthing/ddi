@@ -1,12 +1,11 @@
 package dhcp
 
 import (
-	"fmt"
-	"time"
-
 	"encoding/json"
-
+	"fmt"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/linkingthing/ddi/pb"
 	"github.com/sirupsen/logrus"
@@ -36,6 +35,33 @@ const (
 	IntfDeleteSubnetv4
 )
 
+var KeaDhcpv4Conf []byte // global var, stores config content of dhcpv4 in json format
+var KeaDhcpv6Conf []byte // same like dhcpv4 above
+
+//func init() {
+//
+//	KeaDhcpv4Conf = NewParseDhcpv4Config()
+//}
+
+//
+//func NewParseDhcpv4Config() *ParseDhcpv4Config {
+//
+//	dhcpv4Config := new(Dhcpv4Config)
+//	dhcpv4Config.ValidLifetime = json.Number(0)
+//	dhcpv4Config.Authoritative = false
+//	dhcpv4Config.ControlSocket = ControlSocket{}
+//	dhcpv4Config.OptionData = []Option{}
+//
+//	dhcpv4 := new(DHCPv4Conf)
+//	dhcpv4.Dhcp4 = *dhcpv4Config
+//
+//	p := new(ParseDhcpv4Config)
+//	p.Result = json.Number(0)
+//	p.Arguments = *dhcpv4
+//
+//	return p
+//}
+
 type ParseDhcpv4Config struct {
 	Result    json.Number
 	Arguments DHCPv4Conf
@@ -58,10 +84,10 @@ type Dhcpv4Config struct {
 
 type ParseDhcpv6Config struct {
 	Result    json.Number
-	Arguments DHCPv4Conf
+	Arguments DHCPv6Conf
 }
 type DHCPv6Conf struct {
-	Dhcp4 Dhcpv6Config
+	Dhcp6 Dhcpv6Config
 }
 type Dhcpv6Config struct {
 	Authoritative bool   `json:"authoritative"`
@@ -132,6 +158,7 @@ type Reservations struct {
 }
 
 type KEAv4Handler struct {
+	mu           sync.Mutex
 	ver          string
 	ConfigPath   string
 	MainConfName string
@@ -140,6 +167,7 @@ type KEAv4Handler struct {
 	//FreeACLList  map[string]ACL
 }
 type KEAv6Handler struct {
+	mu           sync.Mutex
 	ver          string
 	ConfigPath   string
 	MainConfName string
@@ -158,6 +186,95 @@ func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
 	return instance
 }
 
+func (handler *KEAv4Handler) getDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
+
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+
+	postData := map[string]interface{}{
+		"command": "config-get",
+		"service": []string{service},
+	}
+	postStr, _ := json.Marshal(postData)
+
+	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
+		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+
+	configJson, err := cmd(getCmd)
+
+	if err != nil {
+		return err
+	}
+
+	KeaDhcpv4Conf = []byte(string(configJson[2 : len(configJson)-2]))
+
+	err = json.Unmarshal(KeaDhcpv4Conf, conf)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type curlRet struct {
+	result json.Number
+	text   string
+}
+
+func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
+
+	handler.mu.Lock()
+	defer handler.mu.Unlock()
+	postData := map[string]interface{}{
+		"command":   "config-set",
+		"service":   []string{service},
+		"arguments": &conf,
+	}
+	postStr, _ := json.Marshal(postData)
+
+	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
+		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+	r, err := cmd(curlCmd)
+
+	log.Print(curlCmd)
+	log.Print("print r")
+	log.Print(r)
+
+	if err != nil {
+		return err
+	}
+	log.Print("curl ok")
+
+	// todo 正则匹配successful.
+
+	//param1 := "-X" + "POST"
+	//param2 := "-H" + "\"Content-Type: application/json\""
+	//param3 := "-d" + "' " + string(postStr) + "'"
+	//param4 := "http://" + DhcpHost + ":" + DhcpPort
+	////param5 := "2>/dev/null"
+	//if ret, err := shell.Shell("curl", param1, param2, param3, param4); err != nil {
+	//	log.Print("shell err")
+	//	log.Print(err)
+	//	return err
+	//} else {
+	//	log.Print("shell ok")
+	//	log.Print(ret)
+	//
+	//	var r curlRet
+	//	if err := json.Unmarshal([]byte(ret), &r); err != nil {
+	//		log.Print("err != nil")
+	//		log.Print(err)
+	//	} else {
+	//		log.Print("err == nil")
+	//		log.Print(r)
+	//	}
+	//
+	//}
+
+	KeaDhcpv4Conf = postStr
+	return nil
+}
+
 func (handler *KEAv4Handler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 	startCmd := "nohup keactrl start -s " + KEADHCPv4Service + " >/dev/null 2>&1 &"
 
@@ -174,38 +291,46 @@ func (handler *KEAv4Handler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 
 func (handler *KEAv4Handler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 
+	KeaDhcpv4Conf = []byte{}
+
 	stopCmd := "keactrl stop -s " + KEADHCPv4Service
 	log.Print("in stopdhcp4, cmd: " + stopCmd)
 	_, err := cmd(stopCmd)
 
 	if err != nil {
-
 		return err
 	}
 
 	return nil
 }
 
-func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
-	//log.Print("into dhcp.go, CreateSubnetv4")
-	var conf ParseDhcpv4Config
-	err := getDhcpv4Config(KEADHCPv4Service, &conf)
-	if err != nil {
+func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
+	if len(KeaDhcpv4Conf) == 0 {
+		log.Print("KeaDhcpv4Conf is nil")
+		err := handler.getDhcpv4Config(KEADHCPv4Service, conf)
+		if err != nil {
+			log.Print(err)
+			return err
+		}
+	} else {
+		log.Print("KeaDhcpv4Conf is not nil")
+		err := json.Unmarshal(KeaDhcpv4Conf, conf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-		log.Print(err)
+func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
+	var conf ParseDhcpv4Config
+	if err := handler.getv4Config(&conf); err != nil {
 		return err
 	}
 
-	//var p *DhcpConfig
-	//p = nil
-	dhcpv4Config := conf.Arguments.Dhcp4
-	//log.Print("before dhcpConfig\n")
-	//log.Print(dhcpConfig)
-	//log.Print("after  dhcpConfig\n")
-
-	for _, v := range dhcpv4Config.Subnet4 {
+	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
-			return fmt.Errorf("subnet %s exists, create failed", req.Subnet)
+			return fmt.Errorf(req.Subnet + " exists, return")
 		}
 	}
 
@@ -217,24 +342,12 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Relay: SubnetRelay{
 			IpAddresses: []string{},
 		},
-		//Pools: []Pool{
-		//	{
-		//		[]Option{},
-		//		req.Pool[0].Pool,
-		//	},
-		//},
 	}
+	newSubnet4.Pools = []Pool{}
 
-	if req.Pool != nil {
-
-	}
-
-	dhcpv4Config.Subnet4 = append(dhcpv4Config.Subnet4, newSubnet4)
-
-	setErr := setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
+	setErr := handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
-
-		log.Print(setErr)
 		return setErr
 	}
 	return nil
@@ -242,7 +355,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 
 func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 	var conf ParseDhcpv4Config
-	err := getDhcpv4Config(KEADHCPv4Service, &conf)
+	err := handler.getv4Config(&conf)
 	if err != nil {
 		return err
 	}
@@ -255,7 +368,7 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 					req.Pool[0].Pool,
 				},
 			}
-			err = setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
@@ -267,17 +380,16 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 
 func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 	var conf ParseDhcpv4Config
-	err := getDhcpv4Config(KEADHCPv4Service, &conf)
+	err := handler.getv4Config(&conf)
 	if err != nil {
 		return err
 	}
 
-	dhcp := conf.Arguments.Dhcp4
 	tmp := conf.Arguments.Dhcp4.Subnet4
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
-			dhcp.Subnet4 = append(tmp[:k], tmp[k+1:]...)
-			err = setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
+			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
@@ -289,6 +401,14 @@ func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 }
 
 func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
+
+	log.Print("into dhcp.go, CreateSubnetv4Pool")
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
 
 	return nil
 }
@@ -304,6 +424,7 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 
 	return nil
 }
+
 func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
 
 	return nil

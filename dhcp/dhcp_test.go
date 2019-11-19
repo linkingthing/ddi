@@ -4,12 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"fmt"
-
 	ut "github.com/ben-han-cn/cement/unittest"
-	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/pb"
-	"github.com/segmentio/kafka-go"
 )
 
 var handlerv4 = &KEAv4Handler{
@@ -17,26 +13,10 @@ var handlerv4 = &KEAv4Handler{
 	ConfigPath:   DhcpConfigPath,
 	MainConfName: Dhcp4ConfigFile,
 }
-var handlerv6 = &KEAv4Handler{
+var handlerv6 = &KEAv6Handler{
 	ver:          "dhcp6",
 	ConfigPath:   DhcpConfigPath,
-	MainConfName: Dhcp4ConfigFile,
-}
-
-func TestKafka(t *testing.T) {
-
-	dhcpv4Req := pb.StartDHCPv4Req{Config: "StartDHCPv4"}
-	data, err := proto.Marshal(&dhcpv4Req)
-	if err != nil {
-		fmt.Printf("---err in TestStartDHCPv4 \n")
-		return
-	}
-
-	msg := kafka.Message{
-		Key:   []byte("StartDHCPv4"),
-		Value: data,
-	}
-	produce(msg)
+	MainConfName: Dhcp6ConfigFile,
 }
 
 //func TestKafka(t *testing.T) {

@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
+
+	"log"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
@@ -41,7 +42,7 @@ func consumer() {
 			break
 		}
 
-		fmt.Printf("message at offset %d: key: %s, value: %s\n", m.Offset, string(m.Key), string(m.Value))
+		log.Printf("kafka_protobuf.go, message at offset %d: key: %s, value: %s\n", m.Offset, string(m.Key), string(m.Value))
 
 		index, _ := strconv.ParseUint(string(m.Key), 0, 64)
 		switch uint(index) {
@@ -67,12 +68,12 @@ func consumer() {
 			var data pb.CreateSubnetv4Req
 			err := proto.Unmarshal(m.Value, &data)
 			if err != nil {
-				fmt.Printf("unmarshal error, m.key: %s\n", m.Key)
+				log.Printf("unmarshal error, m.key: %s\n", m.Key)
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
 
-			fmt.Printf("begin to call createsubnet, m.value: %s\n", string(m.Value))
+			log.Printf("begin to call createsubnet, m.value: %s\n", string(m.Value))
 
 			handlerv4.CreateSubnetv4(pb.CreateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
 
