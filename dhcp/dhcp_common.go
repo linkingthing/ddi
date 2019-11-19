@@ -13,7 +13,7 @@ func cmd(command string) (string, error) {
 	return result, err
 }
 
-func getConfig(service string, conf *ParseConfig) error {
+func getDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
 
 	postData := map[string]interface{}{
 		"command": "config-get",
@@ -38,7 +38,7 @@ func getConfig(service string, conf *ParseConfig) error {
 	return nil
 }
 
-func setConfig(service string, conf *DHCPConf) error {
+func setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
 	postData := map[string]interface{}{
 		"command":   "config-set",

@@ -36,26 +36,46 @@ const (
 	IntfDeleteSubnetv4
 )
 
-type ParseConfig struct {
+type ParseDhcpv4Config struct {
 	Result    json.Number
-	Arguments DHCPConf
+	Arguments DHCPv4Conf
 }
-
-type DHCPConf map[string]DhcpConfig
-
-type DhcpConfig struct {
+type DHCPv4Conf struct {
+	Dhcp4 Dhcpv4Config
+}
+type Dhcpv4Config struct {
 	Authoritative bool   `json:"authoritative"`
 	BootFileName  string `json:"boot-file-name"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
 	ControlSocket ControlSocket  `json:"control-socket"`
 	OptionData    []Option       `json:"option-data"`
 	Subnet4       []SubnetConfig `json:"subnet4"`
+
+	//T1Percent json.Number `json:"t1-percent"`
+	//T2Percent json.Number `json:"t2-percent"`
+	ValidLifetime json.Number `json:"valid-lifetime"`
+}
+
+type ParseDhcpv6Config struct {
+	Result    json.Number
+	Arguments DHCPv4Conf
+}
+type DHCPv6Conf struct {
+	Dhcp4 Dhcpv6Config
+}
+type Dhcpv6Config struct {
+	Authoritative bool   `json:"authoritative"`
+	BootFileName  string `json:"boot-file-name"`
+	//ClientClasses map[string]interface{} `json:"client-classes"`
+	ControlSocket ControlSocket  `json:"control-socket"`
+	OptionData    []Option       `json:"option-data"`
 	Subnet6       []SubnetConfig `json:"subnet6"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
 	ValidLifetime json.Number `json:"valid-lifetime"`
 }
+
 type ControlSocket struct {
 	SocketName string `json:"socket-name"`
 	SocketType string `json:"socket-type"`
@@ -111,7 +131,7 @@ type Reservations struct {
 	ServerHostname string   `json:"server-hostname"`
 }
 
-type KEAHandler struct {
+type KEAv4Handler struct {
 	ver          string
 	ConfigPath   string
 	MainConfName string
@@ -119,15 +139,26 @@ type KEAHandler struct {
 	//ViewList     []View
 	//FreeACLList  map[string]ACL
 }
+type KEAv6Handler struct {
+	ver          string
+	ConfigPath   string
+	MainConfName string
+}
 
-func NewKEAHandler(ver string, ConfPath string, addr string) *KEAHandler {
+func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 
-	instance := &KEAHandler{ver: ver, ConfigPath: ConfPath}
+	instance := &KEAv4Handler{ver: ver, ConfigPath: ConfPath}
+
+	return instance
+}
+func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
+
+	instance := &KEAv6Handler{ver: ver, ConfigPath: ConfPath}
 
 	return instance
 }
 
-func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
+func (handler *KEAv4Handler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 	startCmd := "nohup keactrl start -s " + KEADHCPv4Service + " >/dev/null 2>&1 &"
 
 	log.Print("in startdhcp4, cmd: " + startCmd)
@@ -141,7 +172,7 @@ func (handler *KEAHandler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) StopDHCPv4(req pb.StopDHCPv4Req) error {
+func (handler *KEAv4Handler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 
 	stopCmd := "keactrl stop -s " + KEADHCPv4Service
 	log.Print("in stopdhcp4, cmd: " + stopCmd)
@@ -155,10 +186,10 @@ func (handler *KEAHandler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
-	log.Print("into dhcp.go, CreateSubnetv4")
-	var conf ParseConfig
-	err := getConfig(KEADHCPv4Service, &conf)
+func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
+	//log.Print("into dhcp.go, CreateSubnetv4")
+	var conf ParseDhcpv4Config
+	err := getDhcpv4Config(KEADHCPv4Service, &conf)
 	if err != nil {
 
 		log.Print(err)
@@ -167,12 +198,12 @@ func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 
 	//var p *DhcpConfig
 	//p = nil
-	dhcpConfig := conf.Arguments["Dhcp4"]
-	log.Print("before dhcpConfig\n")
-	log.Print(dhcpConfig)
-	log.Print("after  dhcpConfig\n")
+	dhcpv4Config := conf.Arguments.Dhcp4
+	//log.Print("before dhcpConfig\n")
+	//log.Print(dhcpConfig)
+	//log.Print("after  dhcpConfig\n")
 
-	for _, v := range dhcpConfig.Subnet4 {
+	for _, v := range dhcpv4Config.Subnet4 {
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf("subnet %s exists, create failed", req.Subnet)
 		}
@@ -198,16 +229,9 @@ func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 
 	}
 
-	dhcpConfig.Subnet4 = append(dhcpConfig.Subnet4, newSubnet4)
-	log.Print("2before dhcpConfig\n")
-	log.Print(dhcpConfig)
-	log.Print("2after  dhcpConfig\n")
+	dhcpv4Config.Subnet4 = append(dhcpv4Config.Subnet4, newSubnet4)
 
-	conf.Arguments["Dhcp4"] = dhcpConfig
-	log.Print("before conf.Arguments\n")
-	log.Print(conf.Arguments)
-	log.Print("after  conf.Arguments\n")
-	setErr := setConfig(KEADHCPv4Service, &conf.Arguments)
+	setErr := setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
 
 		log.Print(setErr)
@@ -216,22 +240,22 @@ func (handler *KEAHandler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
-	var conf ParseConfig
-	err := getConfig(KEADHCPv4Service, &conf)
+func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
+	var conf ParseDhcpv4Config
+	err := getDhcpv4Config(KEADHCPv4Service, &conf)
 	if err != nil {
 		return err
 	}
 
-	for k, v := range conf.Arguments["Dhcp4"].Subnet4 {
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp4"].Subnet4[k].Pools = []Pool{
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
 				{
 					[]Option{},
 					req.Pool[0].Pool,
 				},
 			}
-			err = setConfig(KEADHCPv4Service, &conf.Arguments)
+			err = setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
@@ -241,19 +265,19 @@ func (handler *KEAHandler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 	return fmt.Errorf("subnet %s not exist, update error", req.Subnet)
 }
 
-func (handler *KEAHandler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
-	var conf ParseConfig
-	err := getConfig(KEADHCPv4Service, &conf)
+func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
+	var conf ParseDhcpv4Config
+	err := getDhcpv4Config(KEADHCPv4Service, &conf)
 	if err != nil {
 		return err
 	}
 
-	dhcp := conf.Arguments["Dhcp4"]
-	tmp := conf.Arguments["Dhcp4"].Subnet4
-	for k, v := range conf.Arguments["Dhcp4"].Subnet4 {
+	dhcp := conf.Arguments.Dhcp4
+	tmp := conf.Arguments.Dhcp4.Subnet4
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
 			dhcp.Subnet4 = append(tmp[:k], tmp[k+1:]...)
-			err = setConfig(KEADHCPv4Service, &conf.Arguments)
+			err = setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
@@ -264,32 +288,35 @@ func (handler *KEAHandler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
+func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
 
 	return nil
 }
-func (handler *KEAHandler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
+func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
 
 	return nil
 }
-func (handler *KEAHandler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) error {
+func (handler *KEAv4Handler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) error {
 
 	return nil
 }
-func (handler *KEAHandler) CreateSubnetv4Reservation(req pb.CreateSubnetv4ReservationReq) error {
+func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4ReservationReq) error {
 
 	return nil
 }
-func (handler *KEAHandler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
+func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
 
 	return nil
 }
-func (handler *KEAHandler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4ReservationReq) error {
+func (handler *KEAv4Handler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4ReservationReq) error {
 
 	return nil
 }
+func (handler *KEAv4Handler) Close() {
 
-func (handler *KEAHandler) StartDHCPv6(req pb.StartDHCPv6Req) error {
+}
+
+func (handler *KEAv6Handler) StartDHCPv6(req pb.StartDHCPv6Req) error {
 	startCmd := "nohup keactrl start -s " + KEADHCPv6Service + " >/dev/null 2>&1 &"
 
 	_, err := cmd(startCmd)
@@ -302,7 +329,7 @@ func (handler *KEAHandler) StartDHCPv6(req pb.StartDHCPv6Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) StopDHCPv6(req pb.StopDHCPv6Req) error {
+func (handler *KEAv6Handler) StopDHCPv6(req pb.StopDHCPv6Req) error {
 
 	stopCmd := "keactrl stop -s " + KEADHCPv6Service
 
@@ -316,94 +343,19 @@ func (handler *KEAHandler) StopDHCPv6(req pb.StopDHCPv6Req) error {
 	return nil
 }
 
-func (handler *KEAHandler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
-
-	var conf ParseConfig
-	err := getConfig(KEADHCPv6Service, &conf)
-	if err != nil {
-
-		return err
-	}
-
-	for _, v := range conf.Arguments["Dhcp6"].Subnet6 {
-		if v.Subnet == req.Subnet {
-			return fmt.Errorf("subnet %s exists, create failed", req.Subnet)
-		}
-	}
-
-	newSubnet6 := SubnetConfig{
-		ReservationMode: "all",
-		Reservations:    []Reservations{},
-		OptionData:      []Option{},
-		Subnet:          req.Subnet,
-		Relay: SubnetRelay{
-			IpAddresses: []string{},
-		},
-		Pools: []Pool{
-			{
-				[]Option{},
-				req.Pool[0].Pool,
-			},
-		},
-	}
-	dhcp := conf.Arguments["Dhcp6"]
-	dhcp.Subnet6 = append(conf.Arguments["Dhcp6"].Subnet6, newSubnet6)
-
-	setErr := setConfig(KEADHCPv6Service, &conf.Arguments)
-	if setErr != nil {
-
-		return setErr
-	}
-	return nil
-}
-
-func (handler *KEAHandler) UpdateSubnetv6(req pb.UpdateSubnetv6Req) error {
-	var conf ParseConfig
-	err := getConfig(KEADHCPv6Service, &conf)
-	if err != nil {
-		return err
-	}
-
-	for k, v := range conf.Arguments["Dhcp6"].Subnet6 {
-		if v.Subnet == req.Subnet {
-			conf.Arguments["Dhcp6"].Subnet6[k].Pools = []Pool{
-				{
-					[]Option{},
-					req.Pool[0].Pool,
-				},
-			}
-			err = setConfig(KEADHCPv6Service, &conf.Arguments)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("subnet %s not exist, update error", req.Subnet)
-}
-
-func (handler *KEAHandler) DeleteSubnetv6(req pb.DeleteSubnetv6Req) error {
-	var conf ParseConfig
-	err := getConfig(KEADHCPv6Service, &conf)
-	if err != nil {
-		return err
-	}
-
-	dhcp := conf.Arguments["Dhcp6"]
-	tmp := conf.Arguments["Dhcp6"].Subnet6
-	for k, v := range conf.Arguments["Dhcp6"].Subnet6 {
-		if v.Subnet == req.Subnet {
-			dhcp.Subnet6 = append(tmp[:k], tmp[k+1:]...)
-			err = setConfig(KEADHCPv6Service, &conf.Arguments)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
+func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 
 	return nil
 }
-func (handler *KEAHandler) Close() {
+
+func (handler *KEAv6Handler) UpdateSubnetv6(req pb.UpdateSubnetv6Req) error {
+	return nil
+}
+
+func (handler *KEAv6Handler) DeleteSubnetv6(req pb.DeleteSubnetv6Req) error {
+
+	return nil
+}
+func (handler *KEAv6Handler) Close() {
 
 }

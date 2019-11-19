@@ -30,7 +30,7 @@ func consumer() {
 	})
 	defer r.Close()
 
-	var handler = &dhcp.KEAHandler{
+	var handlerv4 = &dhcp.KEAv4Handler{
 		ConfigPath:   dhcp.DhcpConfigPath,
 		MainConfName: dhcp.Dhcp4ConfigFile,
 	}
@@ -52,7 +52,7 @@ func consumer() {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.StartDHCPv4(pb.StartDHCPv4Req{})
+			handlerv4.StartDHCPv4(pb.StartDHCPv4Req{})
 
 		case dhcp.IntfStopDHCPv4:
 			var data pb.StopDHCPv4Req
@@ -61,7 +61,7 @@ func consumer() {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.StopDHCPv4(pb.StopDHCPv4Req{})
+			handlerv4.StopDHCPv4(pb.StopDHCPv4Req{})
 
 		case dhcp.IntfCreateSubnetv4:
 			var data pb.CreateSubnetv4Req
@@ -74,7 +74,7 @@ func consumer() {
 
 			fmt.Printf("begin to call createsubnet, m.value: %s\n", string(m.Value))
 
-			handler.CreateSubnetv4(pb.CreateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
+			handlerv4.CreateSubnetv4(pb.CreateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
 
 			time.Sleep(10 * time.Second)
 		case dhcp.IntfUpdateSubnetv4:
@@ -84,7 +84,7 @@ func consumer() {
 				logrus.Error("unmarshal error, m.Value: " + string(m.Value))
 				continue
 			}
-			handler.UpdateSubnetv4(pb.UpdateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
+			handlerv4.UpdateSubnetv4(pb.UpdateSubnetv4Req{Subnet: data.Subnet, Pool: data.Pool})
 
 		default:
 			logrus.Error("kafka message unknown, m.key: " + string(m.Key))

@@ -16,12 +16,12 @@ const (
 )
 
 type DHCPv4Service struct {
-	handler *dhcp.KEAHandler
+	handler *dhcp.KEAv4Handler
 }
 
 func newDHCPv4Service(ver string, addr string, dhcpConfPath string) *DHCPv4Service {
 
-	return &DHCPv4Service{dhcp.NewKEAHandler(ver, dhcpConfPath, addr)}
+	return &DHCPv4Service{dhcp.NewKEAv4Handler(ver, dhcpConfPath, addr)}
 }
 
 func (service *DHCPv4Service) StartDHCPv4(content context.Context, req *pb.StartDHCPv4Req) (*pb.OperResult, error) {
@@ -126,12 +126,12 @@ func (service *DHCPv4Service) Close() {
 
 //dhcpv6 starts
 type DHCPv6Service struct {
-	handler *dhcp.KEAHandler
+	handler *dhcp.KEAv6Handler
 }
 
 func newDHCPv6Service(ver string, dhcpConfPath string, addr string) *DHCPv6Service {
 
-	return &DHCPv6Service{dhcp.NewKEAHandler(ver, dhcpConfPath, addr)}
+	return &DHCPv6Service{dhcp.NewKEAv6Handler(ver, dhcpConfPath, addr)}
 }
 func (service *DHCPv6Service) StartDHCPv6(content context.Context, req *pb.StartDHCPv6Req) (*pb.OperResult, error) {
 	err := service.handler.StartDHCPv6(*req)
