@@ -224,7 +224,7 @@ type curlRet struct {
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
 	log.Print("into  set dhcp config")
-	fmt.Printf("conf: %+v\n", conf)
+	//fmt.Printf("conf: %+v\n", conf)
 
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
@@ -237,11 +237,11 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
-	r, err := cmd(curlCmd)
+	_, err := cmd(curlCmd)
 
-	log.Print(curlCmd)
-	log.Print("print r")
-	log.Print(r)
+	//log.Print(curlCmd)
+	//log.Print("print r")
+	//log.Print(r)
 
 	if err != nil {
 		return err
@@ -280,7 +280,7 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 func (handler *KEAv4Handler) StartDHCPv4(req pb.StartDHCPv4Req) error {
 	startCmd := "nohup keactrl start -s " + KEADHCPv4Service + " >/dev/null 2>&1 &"
 
-	log.Print("in startdhcp4, cmd: " + startCmd)
+	//log.Print("in startdhcp4, cmd: " + startCmd)
 	_, err := cmd(startCmd)
 	if err != nil {
 		logrus.Error("keactrl start -s kea-" + req.Config + " failed")
@@ -447,9 +447,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 				p.OptionData = []Option{}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
-			log.Print("begin subnet\n")
-			log.Print(conf.Arguments.Dhcp4)
-			log.Print("end subnet\n")
+			//log.Print("begin subnet\n")
+			//log.Print(conf.Arguments.Dhcp4)
+			//log.Print("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {

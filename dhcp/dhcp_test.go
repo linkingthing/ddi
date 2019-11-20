@@ -114,17 +114,17 @@ func TestUpdateSubnetv4(t *testing.T) {
 func TestCreateSubnetv4Pool(t *testing.T) {
 	log.Print("begin to create subnet v4 pool")
 
-	d1 := &pb.Option{
-		AlwaysSend: true,
-		Code:       1,
-		CsvFormat:  false,
-		Data:       "192.166.1.52",
-		Name:       "name22",
-		Space:      "dhcp4",
-	}
+	//d1 := &pb.Option{
+	//	AlwaysSend: true,
+	//	Code:       1,
+	//	CsvFormat:  false,
+	//	Data:       "192.166.1.52",
+	//	Name:       "name22",
+	//	Space:      "dhcp4",
+	//}
 
 	p := pb.Pools{
-		Options: []*pb.Option{d1},
+		Options: []*pb.Option{},
 		Pool:    "192.166.1.40-192.166.1.70",
 	}
 
