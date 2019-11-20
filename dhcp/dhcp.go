@@ -134,12 +134,12 @@ type SubnetRelay struct {
 }
 
 type Option struct {
-	AlwaysSend bool        `json:"always-send"`
-	Code       json.Number `json:"code"`
-	CsvFormat  bool        `json:"csv-format"`
-	Data       string      `json:"data"`
-	Name       string      `json:"name"`
-	Space      string      `json:"space"`
+	AlwaysSend bool   `json:"always-send"`
+	Code       uint64 `json:"code"`
+	CsvFormat  bool   `json:"csv-format"`
+	Data       string `json:"data"`
+	Name       string `json:"name"`
+	Space      string `json:"space"`
 }
 type Pool struct {
 	OptionData []Option `json:"option-data"`
@@ -223,6 +223,9 @@ type curlRet struct {
 
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
+	log.Print("into  set dhcp config")
+	fmt.Printf("conf: %+v\n", conf)
+
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
 	postData := map[string]interface{}{
@@ -243,7 +246,6 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	if err != nil {
 		return err
 	}
-	log.Print("curl ok")
 
 	// todo 正则匹配successful.
 
@@ -409,10 +411,64 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 		log.Print(err)
 		return err
 	}
+	log.Print("begin conf\n")
+	log.Print(conf)
+	log.Print("end conf\n")
 
-	return nil
+	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		log.Print("in for loop")
+		log.Print(v.Subnet)
+		log.Print(req.Subnet)
+		if v.Subnet == req.Subnet {
+			for _, pool := range req.Pool {
+
+				var ops = []Option{}
+
+				if len(pool.Options) > 0 {
+					for _, op := range pool.Options {
+
+						var o Option
+						o.AlwaysSend = op.AlwaysSend
+						o.Code = op.Code
+						o.CsvFormat = op.CsvFormat
+						o.Data = op.Data
+						o.Name = op.Name
+						o.Space = op.Space
+
+						ops = append(ops, o)
+					}
+				}
+
+				var p Pool
+				p.Pool = pool.Pool
+				//p.OptionData = ops
+				p.OptionData = []Option{}
+				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
+			}
+			log.Print("begin subnet\n")
+			log.Print(conf.Arguments.Dhcp4)
+			log.Print("end subnet\n")
+
+			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("subnet do not exists, error")
 }
 func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
+	log.Print("into dhcp.go, UpdateSubnetv4Pool")
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Print(err)
+		return err
+	}
 
 	return nil
 }
@@ -457,7 +513,7 @@ func (handler *KEAv6Handler) StopDHCPv6(req pb.StopDHCPv6Req) error {
 	ret, err := cmd(stopCmd)
 
 	if err != nil {
-		fmt.Printf("stopCmd ret: %s\n", ret)
+		log.Printf("stopCmd ret: %s\n", ret)
 		return err
 	}
 

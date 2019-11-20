@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"log"
+
 	ut "github.com/ben-han-cn/cement/unittest"
 	"github.com/linkingthing/ddi/pb"
 )
@@ -69,6 +71,7 @@ var handlerv6 = &KEAv6Handler{
 
 func TestDeleteSubnetv4(t *testing.T) {
 	time.Sleep(time.Second)
+	log.Print("begin to delete subnet v4")
 
 	req := pb.DeleteSubnetv4Req{Subnet: "192.166.1.0/24"}
 	err := handlerv4.DeleteSubnetv4(req)
@@ -76,6 +79,7 @@ func TestDeleteSubnetv4(t *testing.T) {
 }
 
 func TestCreateSubnetv4(t *testing.T) {
+	log.Print("begin to create subnet v4")
 
 	time.Sleep(time.Second)
 	d1 := &pb.Option{}
@@ -95,6 +99,7 @@ func TestCreateSubnetv4(t *testing.T) {
 
 func TestUpdateSubnetv4(t *testing.T) {
 	time.Sleep(time.Second)
+	log.Print("begin to update subnet v4")
 
 	d1 := &pb.Option{}
 	d2 := &pb.Pools{}
@@ -104,4 +109,29 @@ func TestUpdateSubnetv4(t *testing.T) {
 	req := pb.UpdateSubnetv4Req{Subnet: "192.166.1.0/24", Pool: []*pb.Pools{d2}}
 	err := handlerv4.UpdateSubnetv4(req)
 	ut.Assert(t, err == nil, "Update Subnet 192.166.1.0/24 successfully!")
+}
+
+func TestCreateSubnetv4Pool(t *testing.T) {
+	log.Print("begin to create subnet v4 pool")
+
+	d1 := &pb.Option{
+		AlwaysSend: true,
+		Code:       1,
+		CsvFormat:  false,
+		Data:       "192.166.1.52",
+		Name:       "name22",
+		Space:      "dhcp4",
+	}
+
+	p := pb.Pools{
+		Options: []*pb.Option{d1},
+		Pool:    "192.166.1.40-192.166.1.70",
+	}
+
+	req := pb.CreateSubnetv4PoolReq{Subnet: "192.166.1.0/24",
+		Pool: []*pb.Pools{&p},
+	}
+
+	err := handlerv4.CreateSubnetv4Pool(req)
+	ut.Assert(t, err == nil, "Create Subnet 192.166.1.0/24, pool: 192.166.1.40-70 successfully!")
 }

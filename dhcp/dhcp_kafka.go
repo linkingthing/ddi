@@ -2,7 +2,8 @@ package dhcp
 
 import (
 	"context"
-	"fmt"
+
+	"log"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -15,7 +16,7 @@ const (
 )
 
 func produce(msg kafka.Message) {
-	fmt.Printf("into produce\n")
+	//log.Printf("into produce\n")
 	w := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{KafkaServer},
 		Topic:   Dhcpv6Topic,
@@ -38,7 +39,7 @@ func consumer() {
 		if err != nil {
 			break
 		}
-		fmt.Printf("message at offset %d: key: %s = value: %s\n", m.Offset, string(m.Key), string(m.Value))
+		log.Printf("message at offset %d: key: %s = value: %s\n", m.Offset, string(m.Key), string(m.Value))
 
 		//todo
 	}

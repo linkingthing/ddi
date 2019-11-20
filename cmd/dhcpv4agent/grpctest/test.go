@@ -68,5 +68,14 @@ func main() {
 			log.Print(OperResult)
 			log.Print(err)
 		}
+
+	case UpdateSubnetv4:
+		target := pb.UpdateSubnetv4Req{Subnet: "192.168.0.0/24", ValidLifetime: "66"}
+		OperResult, err := cli.UpdateSubnetv4(context.Background(), &target)
+		if err != nil {
+			log.Print(OperResult)
+			log.Print(err)
+		}
+
 	}
 }
