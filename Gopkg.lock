@@ -3,10 +3,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dd1bd8439d52391c75433a133ec9b2c4888b8021c197a57debf571f28d0434fd"
+  digest = "1:0b5b4602d1dc9edd55bad77210c3e5596217b05e7c3570d3a4588ffd8d980730"
   name = "github.com/ben-han-cn/cement"
   packages = [
-    "randomdata",
     "shell",
     "slice",
     "stringtool",
@@ -14,27 +13,30 @@
     "uuid",
   ]
   pruneopts = "UT"
-  revision = "507c086c3f27a5b43bf6e9c6806821fb8b77c884"
+  revision = "0d3787ede8c13fc1dbd0a6d655cbfb2f12dfed95"
 
 [[projects]]
   branch = "master"
-  digest = "1:8ecc7e8d289a2e1842136557bcb74122427e79d8b344f941a48fe426d5a71fc5"
+  digest = "1:06ed3272e2af4498498b41e23103ceec8ad788a1000933f0c9121ce817b9b44a"
   name = "github.com/ben-han-cn/g53"
   packages = [
     ".",
     "util",
   ]
   pruneopts = "UT"
-  revision = "d8b9b09c5327d920d8b9d21b2ebdf738888901a4"
+  revision = "b8e4d3dc3e3b7c3d9dfc5f2b49c0bc61eb5047e2"
 
 [[projects]]
   branch = "master"
-  digest = "1:64bda1244d1af187bcf926aa3b203cdc9031c965a67d4fffe7f2b14b10019973"
+  digest = "1:8a7d02528486c974df5aede0e3f21d20e70d944561974915f9e63cb8673c5ec6"
   name = "github.com/ben-han-cn/gorest"
   packages = [
     ".",
+    "adaptor",
     "error",
     "resource",
+    "resource/schema",
+    "resource/schema/resourcefield",
     "util",
   ]
   pruneopts = "UT"
@@ -58,6 +60,27 @@
   packages = ["."]
   pruneopts = "UT"
   revision = "fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5"
+
+[[projects]]
+  digest = "1:3ee1d175a75b911a659fbd860060874c4f503e793c5870d13e5a0ede529a63cf"
+  name = "github.com/gin-contrib/sse"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "54d8467d122d380a14768b6b4e5cd7ca4755938f"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:d8bd2a337f6ff2188e08f72c614f2f3f0fd48e6a7b37a071b197e427d77d3a47"
+  name = "github.com/gin-gonic/gin"
+  packages = [
+    ".",
+    "binding",
+    "internal/json",
+    "render",
+  ]
+  pruneopts = "UT"
+  revision = "b75d67cd51eb53c3c3a2fc406524c940021ffbda"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:f5ce1529abc1204444ec73779f44f94e2fa8fcdb7aca3c355b0c95947e4005c6"
@@ -88,12 +111,44 @@
   revision = "c058740140122368226eaaf7debce03c376e6ae8"
 
 [[projects]]
+  digest = "1:beb5b4f42a25056f0aa291b5eadd21e2f2903a05d15dfe7caf7eaee7e12fa972"
+  name = "github.com/json-iterator/go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "03217c3e97663914aec3faafde50d081f197a0a2"
+  version = "v1.1.8"
+
+[[projects]]
   digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
   pruneopts = "UT"
   revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
   version = "v1.0.2"
+
+[[projects]]
+  digest = "1:d62282425ffb75047679d7e2c3b980eea7f82c05ef5fb9142ee617ebac6e7432"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "88ba11cfdc67c7588b30042edf244b2875f892b6"
+  version = "v0.0.10"
+
+[[projects]]
+  digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  digest = "1:e32bdbdb7c377a07a9a46378290059822efdce5c8d96fe71940d87cb4f918855"
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
+  version = "1.0.1"
 
 [[projects]]
   digest = "1:90c46bfc05873658e35df09db29aeb98b988d98efd732331e7ddb4bf941c3627"
@@ -127,6 +182,22 @@
   version = "v6.0.0"
 
 [[projects]]
+  digest = "1:5a1cf4e370bc86137b58da2ae065e76526d32b11f62a7665f36dbd5f41fa95ff"
+  name = "github.com/ugorji/go"
+  packages = ["codec"]
+  pruneopts = "UT"
+  revision = "23ab95ef5dc3b70286760af84ce2327a2b64ed62"
+  version = "v1.1.7"
+
+[[projects]]
+  branch = "master"
+  digest = "1:fba9dda21242444d0026be1f0800ae476eff471eff51ac66b61f5d8058bde714"
+  name = "github.com/zdnscloud/cement"
+  packages = ["randomdata"]
+  pruneopts = "UT"
+  revision = "e70d68aebdadfacf1a5168fb29b1f5554f977966"
+
+[[projects]]
   branch = "master"
   digest = "1:8d2e6c9bd8e4b510b2f3cc4100ae18bfbd2f9dd78013097b00e725b48695f5f0"
   name = "golang.org/x/net"
@@ -147,7 +218,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "e882bf8e40c23f260d489ef820e5e8eead5e76e3"
+  revision = "6bfc516c8699a01fce75e51d680e03b80d068f24"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -226,6 +297,22 @@
   revision = "1a3960e4bd028ac0cec0a2afd27d7d8e67c11514"
   version = "v1.25.1"
 
+[[projects]]
+  digest = "1:cbc72c4c4886a918d6ab4b95e347ffe259846260f99ebdd8a198c2331cf2b2e9"
+  name = "gopkg.in/go-playground/validator.v8"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5f1438d3fca68893a817e4a66806cea46a9e4ebf"
+  version = "v8.18.2"
+
+[[projects]]
+  digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1f64d6156d11335c3f22d9330b0ad14fc1e789ce"
+  version = "v2.2.7"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -236,7 +323,10 @@
     "github.com/ben-han-cn/cement/unittest",
     "github.com/ben-han-cn/g53",
     "github.com/ben-han-cn/gorest",
+    "github.com/ben-han-cn/gorest/adaptor",
+    "github.com/ben-han-cn/gorest/error",
     "github.com/ben-han-cn/gorest/resource",
+    "github.com/ben-han-cn/gorest/resource/schema",
     "github.com/ben-han-cn/kvzoo",
     "github.com/ben-han-cn/kvzoo/backend/bolt",
     "github.com/insomniacslk/dhcp/dhcpv4",
