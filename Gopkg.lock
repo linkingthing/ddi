@@ -3,16 +3,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6f66cda66ed9a373767dd897161a855508dfff024f22b93cb77aba55076cdfc2"
+  digest = "1:dd1bd8439d52391c75433a133ec9b2c4888b8021c197a57debf571f28d0434fd"
   name = "github.com/ben-han-cn/cement"
   packages = [
-    "log",
-    "log/log4go",
     "randomdata",
     "shell",
     "slice",
     "stringtool",
     "unittest",
+    "uuid",
   ]
   pruneopts = "UT"
   revision = "507c086c3f27a5b43bf6e9c6806821fb8b77c884"
@@ -27,6 +26,19 @@
   ]
   pruneopts = "UT"
   revision = "d8b9b09c5327d920d8b9d21b2ebdf738888901a4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:64bda1244d1af187bcf926aa3b203cdc9031c965a67d4fffe7f2b14b10019973"
+  name = "github.com/ben-han-cn/gorest"
+  packages = [
+    ".",
+    "error",
+    "resource",
+    "util",
+  ]
+  pruneopts = "UT"
+  revision = "93ebecd771ba63aa67e72f842bf758bf3b7efa15"
 
 [[projects]]
   branch = "master"
@@ -127,15 +139,15 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "2180aed2234323691e9fd264fb1d32d20ff04b27"
+  revision = "fc4aabc6c91483155dade6fbb627cc953a723260"
 
 [[projects]]
   branch = "master"
-  digest = "1:3b81f20605df873608343956a1f707bc63fe76bbc9ab3adb644ce95b4502a525"
+  digest = "1:fc96eb481f72e9a5edeb4bb3f3610d3b9384c036f7c1e39f8c0dedff23d0c34d"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "52ab431487773bc9dd1b0766228b1cf3944126bf"
+  revision = "e882bf8e40c23f260d489ef820e5e8eead5e76e3"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -218,20 +230,20 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/ben-han-cn/cement/log",
-    "github.com/ben-han-cn/cement/randomdata",
     "github.com/ben-han-cn/cement/shell",
     "github.com/ben-han-cn/cement/slice",
     "github.com/ben-han-cn/cement/stringtool",
     "github.com/ben-han-cn/cement/unittest",
     "github.com/ben-han-cn/g53",
+    "github.com/ben-han-cn/gorest",
+    "github.com/ben-han-cn/gorest/resource",
+    "github.com/ben-han-cn/kvzoo",
     "github.com/ben-han-cn/kvzoo/backend/bolt",
     "github.com/insomniacslk/dhcp/dhcpv4",
     "github.com/insomniacslk/dhcp/dhcpv6",
     "github.com/segmentio/kafka-go",
     "github.com/sirupsen/logrus",
     "google.golang.org/grpc",
-    "google.golang.org/grpc/codes",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
