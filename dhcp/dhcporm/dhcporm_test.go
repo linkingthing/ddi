@@ -10,12 +10,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const addr = "postgresql://maxroach@localhost:26257/postgres?ssl=true&sslmode=require&sslrootcert=/root/download/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/download/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/download/cockroach-v19.2.0/certs/client.maxroach.crt"
-
 func TestListSubnetv4(t *testing.T) {
 
 	//const addr = "postgresql://maxroach@localhost:26257/postgres?ssl=true&sslmode=require&sslrootcert=/root/download/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/download/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/download/cockroach-v19.2.0/certs/client.maxroach.crt"
-	db, err := gorm.Open("postgres", addr)
+	db, err := gorm.Open("postgres", CRDBAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +29,7 @@ func TestListSubnetv4(t *testing.T) {
 func TestCreateSubnetv4(t *testing.T) {
 
 	//const addr = "postgresql://maxroach@localhost:26257/postgres?ssl=true&sslmode=require&sslrootcert=/root/download/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/download/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/download/cockroach-v19.2.0/certs/client.maxroach.crt"
-	db, err := gorm.Open("postgres", addr)
+	db, err := gorm.Open("postgres", CRDBAddr)
 	if err != nil {
 		log.Fatal(err)
 	}

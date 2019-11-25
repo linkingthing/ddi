@@ -23,7 +23,7 @@ func Subnetv4List(db *gorm.DB, dhcpVer string) []Subnet {
 func GetSubnetv4(db *gorm.DB, name string) []Subnet {
 
 	var subnetv4s []Subnet
-	db.Where("dhcpver = ? and subnet = ? ", dhcpv4Ver, name).Find(&subnetv4s)
+	db.Where("dhcpver = ? and subnet = ? ", Dhcpv4Ver, name).Find(&subnetv4s)
 
 	return subnetv4s
 }
@@ -32,7 +32,7 @@ func CreateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
 	var subnet = Subnet{
 		Subnet:        name,
 		ValidLifetime: validLifetime,
-		DhcpVer:       dhcpv4Ver,
+		DhcpVer:       Dhcpv4Ver,
 	}
 
 	query := db.Create(&subnet)
