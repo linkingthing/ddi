@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	handler DNSHandler
+	handler *BindHandler
 )
 
 func init() {

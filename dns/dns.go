@@ -41,7 +41,7 @@ const (
 type BindHandler struct {
 	tpl         *template.Template
 	db          kv.DB
-	dnsConfPath string
+	dnsConfPath string `aa`
 	dBPath      string
 	tplPath     string
 	ticker      *time.Ticker
@@ -220,6 +220,12 @@ func (handler *BindHandler) CreateView(req pb.CreateViewReq) error {
 	aCLs, err := handler.aCLsFromTopPath(req.ACLIDs)
 	if err != nil {
 		return err
+	}
+	//delete ACLs from acls+aclid path
+	for _, ID := range req.ACLIDs {
+		if err := handler.db.DeleteTable(kv.TableName(aCLsPath + ID)); err != nil {
+			return err
+		}
 	}
 	//insert aCLs into viewid table
 	if err := handler.insertACLs(req.ViewID, aCLs); err != nil {
