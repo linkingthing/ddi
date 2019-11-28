@@ -15,6 +15,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 )
 
@@ -31,10 +32,37 @@ var (
 //	ConfigJson            string `json:"configJson" rest:"required=true,minLen=1,maxLen=1000000"`
 //}
 
+type Option struct {
+	AlwaysSend bool   `gorm:"column:always-send"`
+	Code       uint64 `gorm:"column:code"`
+	CsvFormat  bool   `json:"csv-format"`
+	Data       string `json:"data"`
+	Name       string `json:"name"`
+	Space      string `json:"space"`
+}
+
+type Reservations struct {
+	BootFileName string `json:"boot-file-name"`
+	//ClientClasses []interface{} `json:"client-classes"`
+	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
+	Duid           string   `json:"duid"`
+	Hostname       string   `json:"hostname"`
+	IpAddress      string   `json:"ip-address"`
+	NextServer     string   `json:"next-server"`
+	OptionData     []Option `json:"option-data"`
+	ServerHostname string   `json:"server-hostname"`
+}
+
+type Pool struct {
+	OptionData []Option `json:"option-data"`
+	Pool       string   `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+}
 type Subnetv4 struct {
 	resource.ResourceBase `json:",inline"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	ValidLifetime         string `json:"validLifeTime"`
+	Reservations          []dhcp.Reservations
+	Pools                 []dhcp.Pool
 }
 
 type Dhcpv4 struct {
@@ -73,9 +101,6 @@ func (s *Dhcpv4) GetSubnetv4(subnet string) *Subnetv4 {
 	return s.getSubnetv4(subnet)
 }
 func (s *Dhcpv4) getSubnetv4(subnet string) *Subnetv4 {
-
-	log.Println("into GetSubnetv4s")
-
 	v := dhcporm.GetSubnetv4(s.db, subnet)
 	if len(v) == 0 {
 		return nil
@@ -92,14 +117,11 @@ func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	log.Println("into GetSubnetv4s")
-
 	list := dhcporm.Subnetv4List(s.db, "4")
 
 	var v4 []*Subnetv4
 	for _, v := range list {
-		log.Print(v)
-		log.Println("+++ v")
+
 		var subnet Subnetv4
 		subnet.Subnet = v.Subnet
 		subnet.ValidLifetime = v.ValidLifetime
@@ -119,7 +141,7 @@ func newSubnetv4Handler(s *Dhcpv4) *subnetv4Handler {
 	}
 }
 func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
-	log.Println("into Create")
+
 	subnetv4 := ctx.Resource.(*Subnetv4)
 	subnetv4.SetID(subnetv4.Subnet)
 	subnetv4.SetCreationTimestamp(time.Now())
@@ -131,13 +153,13 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 }
 
 func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
-	log.Println("into List")
+
 	return h.subnetv4s.GetSubnetv4s()
 }
 
-func (h *subnetv4Handler) Get(ctx *resource.Context) interface{} {
-	log.Println("into Get")
-	return h.subnetv4s.GetSubnetv4s()
+func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
+
+	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
 }
 
 func main() {

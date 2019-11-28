@@ -40,12 +40,8 @@ func TestCreateSubnetv4(t *testing.T) {
 
 	var subnets []Subnet
 	subnets = GetSubnetv4(db, "subnetname2")
-	log.Print("print subnets[0] now\n")
-	log.Print(subnets)
-	log.Print("print subnets[0] ok\n")
 
 	if len(subnets) > 0 {
-
 		UpdateSubnetv4(db, "subnetname2", "55555")
 	}
 

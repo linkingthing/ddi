@@ -9,6 +9,11 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
+func GetDhcpv4Conf(db *gorm.DB) interface{} {
+
+	return nil
+}
+
 func Subnetv4List(db *gorm.DB, dhcpVer string) []Subnet {
 
 	var subnets []Subnet
