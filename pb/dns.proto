@@ -31,7 +31,7 @@ message DNSStopReq{
 message CreateACLReq{
 string aCLName = 1;
 string aCLID = 2;
-repeated string iPList = 3;
+repeated string iPs = 3;
 }
 
 message DeleteACLReq{
@@ -49,8 +49,8 @@ message UpdateViewReq{
 string viewID = 1;
 int32 priority = 2;
 string aCLID = 3;
-repeated string deleteIPList = 4;
-repeated string newIPList = 5;
+repeated string deleteIPs = 4;
+repeated string newIPs = 5;
 }
 
 message DeleteViewReq{
