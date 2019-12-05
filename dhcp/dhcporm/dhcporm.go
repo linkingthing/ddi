@@ -5,6 +5,8 @@ import (
 
 	"log"
 
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -14,30 +16,62 @@ func GetDhcpv4Conf(db *gorm.DB) interface{} {
 	return nil
 }
 
-func Subnetv4List(db *gorm.DB, dhcpVer string) []Subnet {
+func Subnetv4List(db *gorm.DB) []Subnetv4 {
 
-	var subnets []Subnet
-	query := db.Where("dhcpver = ?", dhcpVer).Find(&subnets)
+	var subnetv4s []Subnetv4
+	//query := db.Find(&subnets)
+
+	//Dhcpv4Conf{gorm.Model{ID:1}}
+	query := db.Find(&subnetv4s)
 	if query.Error != nil {
 		log.Print(query.Error.Error())
 	}
 
-	return subnets
-}
+	sid := []string{}
+	for _, v := range subnetv4s {
 
-func GetSubnetv4(db *gorm.DB, name string) []Subnet {
+		sid = append(sid, string(v.ID))
+		rsv := []Reservation{}
+		if err := db.Where("subnetv4_id3 = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
+			log.Print(err)
+		}
 
-	var subnetv4s []Subnet
-	db.Where("dhcpver = ? and subnet = ? ", Dhcpv4Ver, name).Find(&subnetv4s)
+		log.Println("+++ rsv, v.id: ", strconv.Itoa(int(v.ID)))
+		log.Print(rsv)
+		log.Println("--- rsv v.id: ", strconv.Itoa(int(v.ID)))
+
+	}
+	log.Println("+++ sid")
+	log.Print(sid)
+	log.Println("--- sid")
+	ret := db.Where("subnetv4_id3 in (?)", sid).Find(&Reservation{})
+	if ret.Error != nil {
+		log.Print(ret.Error)
+	}
+
+	log.Println("+++ ret")
+	log.Print(ret)
+	log.Println("--- ret")
 
 	return subnetv4s
 }
 
+func GetSubnetv4(db *gorm.DB, name string) []Subnetv4 {
+
+	var subnetv4s []Subnetv4
+	v := db.Where(" subnet = ? ", name).Find(&subnetv4s)
+	log.Println("in getsubnetv4")
+	log.Print(v)
+	log.Println("in getsubnetv4 over")
+	return subnetv4s
+}
+
 func CreateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
-	var subnet = Subnet{
+	var subnet = Subnetv4{
+		Dhcpv4ConfId:  1,
 		Subnet:        name,
 		ValidLifetime: validLifetime,
-		DhcpVer:       Dhcpv4Ver,
+		//DhcpVer:       Dhcpv4Ver,
 	}
 
 	query := db.Create(&subnet)
@@ -63,7 +97,7 @@ func UpdateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
 }
 func DeleteSubnetv4(db *gorm.DB, name string) error {
 
-	query := db.Where("subnet = ? ", name).Delete(Subnet{})
+	query := db.Where("subnet = ? ", name).Delete(Subnetv4{})
 
 	if query.Error != nil {
 		return fmt.Errorf("create subnet error, subnet name: " + name)

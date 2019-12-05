@@ -15,7 +15,6 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 )
 
@@ -58,11 +57,11 @@ type Pool struct {
 	Pool       string   `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 }
 type Subnetv4 struct {
-	resource.ResourceBase `json:",inline"`
+	resource.ResourceBase `json:"embedded,inline"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	ValidLifetime         string `json:"validLifeTime"`
-	Reservations          []dhcp.Reservations
-	Pools                 []dhcp.Pool
+	Reservations          []Reservations
+	Pools                 []Pool
 }
 
 type Dhcpv4 struct {
@@ -109,7 +108,6 @@ func (s *Dhcpv4) getSubnetv4(subnet string) *Subnetv4 {
 	v4 := &Subnetv4{}
 	v4.Subnet = v[0].Subnet
 	v4.ValidLifetime = v[0].ValidLifetime
-	v4.ID = v[0].ID
 
 	return v4
 }
@@ -117,7 +115,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	list := dhcporm.Subnetv4List(s.db, "4")
+	list := dhcporm.Subnetv4List(s.db)
 
 	var v4 []*Subnetv4
 	for _, v := range list {
@@ -125,6 +123,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
 		var subnet Subnetv4
 		subnet.Subnet = v.Subnet
 		subnet.ValidLifetime = v.ValidLifetime
+		subnet.ID = string(v.ID)
 
 		v4 = append(v4, &subnet)
 	}
