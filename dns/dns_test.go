@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	handler DNSHandler
+	handler *BindHandler
 )
 
 func init() {
@@ -27,7 +27,7 @@ func TestCreateACL(t *testing.T) {
 	createACLReq := pb.CreateACLReq{
 		ACLName: "southchina",
 		ACLID:   "ACL001",
-		IPList:  ipList}
+		IPs:     ipList}
 	err := handler.CreateACL(createACLReq)
 	ut.Assert(t, err == nil, "Create ACL successfully!:%v", err)
 }

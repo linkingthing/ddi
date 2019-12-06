@@ -41,7 +41,7 @@ const (
 type BindHandler struct {
 	tpl         *template.Template
 	db          kv.DB
-	dnsConfPath string
+	dnsConfPath string `aa`
 	dBPath      string
 	tplPath     string
 	ticker      *time.Ticker
@@ -173,13 +173,13 @@ func (handler *BindHandler) CreateACL(req pb.CreateACLReq) error {
 		return err
 	}
 	values := map[string][]byte{}
-	for _, ip := range req.IPList {
+	for _, ip := range req.IPs {
 		values[ip] = []byte("")
 	}
 	if err := handler.addKVs(aCLsPath+req.ACLID+iPsEndPath, values); err != nil {
 		return err
 	}
-	aCLData := ACL{ID: req.ACLID, Name: req.ACLName, IPs: req.IPList}
+	aCLData := ACL{ID: req.ACLID, Name: req.ACLName, IPs: req.IPs}
 	buffer := new(bytes.Buffer)
 	if err = handler.tpl.ExecuteTemplate(buffer, aCLTpl, aCLData); err != nil {
 		return err
@@ -221,6 +221,12 @@ func (handler *BindHandler) CreateView(req pb.CreateViewReq) error {
 	if err != nil {
 		return err
 	}
+	//delete ACLs from acls+aclid path
+	for _, ID := range req.ACLIDs {
+		if err := handler.db.DeleteTable(kv.TableName(aCLsPath + ID)); err != nil {
+			return err
+		}
+	}
 	//insert aCLs into viewid table
 	if err := handler.insertACLs(req.ViewID, aCLs); err != nil {
 		return err
@@ -241,14 +247,14 @@ func (handler *BindHandler) UpdateView(req pb.UpdateViewReq) error {
 	}
 	//add new ips for aCL
 	ipsMap := map[string][]byte{}
-	for _, ip := range req.NewIPList {
+	for _, ip := range req.NewIPs {
 		ipsMap[ip] = []byte("")
 	}
 	if err := handler.addKVs(viewsPath+req.ViewID+aCLsPath+req.ACLID+iPsEndPath, ipsMap); err != nil {
 		return err
 	}
 	//delete ips for aCL
-	if err := handler.deleteKVs(viewsPath+req.ViewID+aCLsPath+req.ACLID+iPsEndPath, req.DeleteIPList); err != nil {
+	if err := handler.deleteKVs(viewsPath+req.ViewID+aCLsPath+req.ACLID+iPsEndPath, req.DeleteIPs); err != nil {
 		return err
 	}
 	if err := handler.rewriteNamedFile(); err != nil {
