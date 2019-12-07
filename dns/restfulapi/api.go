@@ -27,8 +27,8 @@ var (
 type View struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	Priority              int      `json:"Priority" rest:"required=true,min=1,max=100"`
-	aCLIDs                []string `json:"acls" rest:"required=true"`
+	Priority              int      `json:"priority" rest:"required=true,min=1,max=100"`
+	ACLIDs                []string `json:"aclids" rest:"required=true"`
 	zones                 []*Zone  `json:"-"`
 }
 
@@ -165,7 +165,7 @@ func (h *viewHandler) Get(ctx *resource.Context) resource.Resource {
 }
 
 func (h *viewHandler) List(ctx *resource.Context) interface{} {
-	return DBCon.GetACLs()
+	return DBCon.GetViews()
 }
 
 type ViewsState struct {
@@ -216,6 +216,56 @@ func (h *zoneHandler) Get(ctx *resource.Context) interface{} {
 	one := &Zone{}
 	var err error
 	if one, err = DBCon.GetZone(zone.GetParent().GetID(), zone.GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+type rrHandler struct {
+	views *ViewsState
+}
+
+func NewRRHandler(s *ViewsState) *rrHandler {
+	return &rrHandler{
+		views: s,
+	}
+}
+
+func (h *rrHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	rr := ctx.Resource.(*RR)
+	var err error
+	var dbRR tb.DBRR
+	if dbRR, err = DBCon.CreateRR(rr, rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
+		return rr, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+
+	rr.SetID(strconv.Itoa(int(dbRR.ID)))
+	rr.SetCreationTimestamp(dbRR.CreatedAt)
+	return rr, nil
+}
+
+func (h *rrHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	rr := ctx.Resource.(*RR)
+	if err := DBCon.DeleteRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+}
+func (h *rrHandler) List(ctx *resource.Context) interface{} {
+	rr := ctx.Resource.(*RR)
+	var one []*RR
+	var err error
+	if one, err = DBCon.GetRRs(rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+func (h *rrHandler) Get(ctx *resource.Context) interface{} {
+	rr := ctx.Resource.(*RR)
+	one := &RR{}
+	var err error
+	if one, err = DBCon.GetRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
 		return nil
 	}
 	return one

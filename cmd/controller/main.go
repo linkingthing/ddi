@@ -17,6 +17,8 @@ var (
 )
 
 func main() {
+	api.DBCon = api.NewDBController()
+	defer api.DBCon.Close()
 	schemas := schema.NewSchemaManager()
 	aCLsState := api.NewACLsState()
 	schemas.Import(&version, api.ACL{}, api.NewACLHandler(aCLsState))
