@@ -17,8 +17,6 @@ var (
 )
 
 func main() {
-	api.DBCon = api.NewDBController()
-	defer api.DBCon.Close()
 
 	dhcprest.PGDBConn = dhcprest.NewPGDB()
 	defer dhcprest.PGDBConn.Close()
