@@ -19,12 +19,12 @@ type Dhcpv4Conf struct {
 // table.
 type Subnetv4 struct {
 	gorm.Model
-	Dhcpv4ConfId int32
+	Dhcpv4ConfId uint
 	Subnet       string `gorm:"column:subnet"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
-	ValidLifetime string `gorm:"column:valid_life_time"`
-	Reservations  []Reservation
-	//Pools         []Pool
+	ValidLifetime string        `gorm:"column:valid_life_time"`
+	Reservations  []Reservation `gorm:"foreignkey:Subnetv4ID"`
+	//Pools []Pool `gorm:"foreignkey:SubnetRefer"`
 }
 
 func (Subnetv4) TableName() string {
@@ -33,7 +33,7 @@ func (Subnetv4) TableName() string {
 
 type Reservation struct {
 	gorm.Model
-	Subnetv4Id   int32
+	//Subnetv4Id   int32  `json:"subnetv4_id"`
 	BootFileName string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
@@ -43,6 +43,13 @@ type Reservation struct {
 	//NextServer string `json:"next-server"`
 	//OptionData     []Option `json:"option-data"`
 	//ServerHostname string   `json:"server-hostname"`
+	Subnetv4ID uint `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	//Subnetv4   Subnetv4
+	//SubnetRefer uint `json:"subnetv4_refer" sql:"type:bigint REFERENCES subnetv4s(id) ON DELETE CASCADE"`
+}
+
+func (Reservation) TableName() string {
+	return "reservations"
 }
 
 type Option struct {
@@ -56,8 +63,9 @@ type Option struct {
 }
 type Pool struct {
 	gorm.Model
-	OptionData []Option `json:"option-data"`
-	Pool       string   `json:"pool"`
+	OptionData  []Option `json:"option-data"`
+	Pool        string   `json:"pool"`
+	SubnetRefer uint
 }
 
 type Dhcpv6Conf struct {

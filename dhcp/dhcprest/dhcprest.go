@@ -8,7 +8,6 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"log"
-	"strconv"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -78,18 +77,14 @@ func (s *Dhcpv4) GetSubnetv4(id string) *Subnetv4 {
 
 	return s.getSubnetv4(id)
 }
+
 func (s *Dhcpv4) getSubnetv4(id string) *Subnetv4 {
 	v := PGDBConn.GetSubnetv4(s.db, id)
-
-	if len(v) == 0 {
+	if v.ID == 0 {
 		return nil
 	}
 
-	v4 := &Subnetv4{}
-	v4.SetID(strconv.Itoa(int(v[0].ID)))
-	v4.Subnet = v[0].Subnet
-	v4.ValidLifetime = v[0].ValidLifetime
-
+	v4 := s.convertSubnetv4FromOrmToRest(v)
 	return v4
 }
 
@@ -97,15 +92,11 @@ func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
 	log.Println("In dhcprest getSubnetv4ByName, name: ", name)
 
 	v := PGDBConn.GetSubnetv4ByName(s.db, name)
-
-	if len(v) == 0 {
+	if v == nil {
 		return nil
 	}
 
-	v4 := &Subnetv4{}
-	v4.SetID(strconv.Itoa(int(v[0].ID)))
-	v4.Subnet = v[0].Subnet
-	v4.ValidLifetime = v[0].ValidLifetime
+	v4 := s.convertSubnetv4FromOrmToRest(v)
 
 	return v4
 }
@@ -118,13 +109,9 @@ func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
 
 	var v4 []*Subnetv4
 	for _, v := range list {
-
-		var subnet Subnetv4
-		subnet.Subnet = v.Subnet
-		subnet.ValidLifetime = v.ValidLifetime
-		subnet.ID = strconv.Itoa(int(v.ID))
-
-		v4 = append(v4, &subnet)
+		var subnet *Subnetv4
+		subnet = s.convertSubnetv4FromOrmToRest(&v)
+		v4 = append(v4, subnet)
 	}
 	return v4
 }
