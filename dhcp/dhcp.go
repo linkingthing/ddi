@@ -114,16 +114,16 @@ type SubnetConfig struct {
 	Authoritative      bool   `json:"authoritative"`
 	CalculateTeeTimes  bool   `json:"calculate-tee-times"`
 	//Id json.Number `json:"id"`
-	MatchClientId   bool           `json:"match-client-id"`
-	NextServer      string         `json:"next-server"`
-	OptionData      []Option       `json:"option-data"`
-	Pools           []Pool         `json:"pools"`
-	RebindTimer     json.Number    `json:"rebind-timer"`
-	Relay           SubnetRelay    `json:"relay"`
-	RenewTimer      json.Number    `json:"renew-timer"`
-	ReservationMode string         `json:"reservation-mode"`
-	Reservations    []Reservations `json:"reservations"`
-	Subnet          string         `json:"subnet"`
+	MatchClientId   bool          `json:"match-client-id"`
+	NextServer      string        `json:"next-server"`
+	OptionData      []Option      `json:"option-data"`
+	Pools           []Pool        `json:"pools"`
+	RebindTimer     json.Number   `json:"rebind-timer"`
+	Relay           SubnetRelay   `json:"relay"`
+	RenewTimer      json.Number   `json:"renew-timer"`
+	ReservationMode string        `json:"reservation-mode"`
+	Reservations    []Reservation `json:"reservations"`
+	Subnet          string        `json:"subnet"`
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
@@ -145,7 +145,7 @@ type Pool struct {
 	OptionData []Option `json:"option-data"`
 	Pool       string   `json:"pool"`
 }
-type Reservations struct {
+type Reservation struct {
 	BootFileName string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
@@ -338,7 +338,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 
 	newSubnet4 := SubnetConfig{
 		ReservationMode: "all",
-		Reservations:    []Reservations{},
+		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
 		Relay: SubnetRelay{

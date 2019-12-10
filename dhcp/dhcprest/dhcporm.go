@@ -58,11 +58,12 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.Subnetv4 {
 		log.Print(query.Error.Error())
 	}
 
-	for _, v := range subnetv4s {
-		rsv := []dhcporm.Reservation{}
-		if err := db.Where("subnetv4_id3 = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
+	for k, v := range subnetv4s {
+		rsv := []*dhcporm.Reservation{}
+		if err := db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
 		}
+		subnetv4s[k].Reservations = rsv
 	}
 	return subnetv4s
 }
@@ -89,7 +90,7 @@ func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.Subnetv4 {
 	}
 
 	subnetv4 := dhcporm.Subnetv4{}
-	reservations := []dhcporm.Reservation{}
+	reservations := []*dhcporm.Reservation{}
 	subnetv4.ID = uint(dbId)
 	db.Model(&subnetv4).Related(&reservations)
 	subnetv4.Reservations = reservations
@@ -133,9 +134,6 @@ func (handler *PGDB) DeleteSubnetv4(db *gorm.DB, id string) error {
 		return fmt.Errorf("string to int convert error, id: ", id)
 	}
 
-	//db.Unscoped().Where("id = ? ", 1).Delete(dhcporm.Userd{})
-	//log.Println("after delete user=1")
-
 	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Subnetv4{})
 
 	if query.Error != nil {
@@ -143,4 +141,27 @@ func (handler *PGDB) DeleteSubnetv4(db *gorm.DB, id string) error {
 	}
 
 	return nil
+}
+
+func (handler *PGDB) Subnetv4ReservationList(db *gorm.DB, subnetId string) []*dhcporm.Reservation {
+	log.Println("in dhcprest, Subnetv4ReservationList, subnetId: ", subnetId)
+
+	var reservations []*dhcporm.Reservation
+	var rsvs []dhcporm.Reservation
+
+	dbId, err := strconv.Atoi(subnetId)
+	if err != nil {
+		return nil
+	}
+	log.Println("in dhcprest, dbId: ", dbId)
+
+	if err := db.Where("subnetv4_id = ?", dbId).Find(&rsvs).Error; err != nil {
+		return nil
+	}
+
+	log.Println("in dhcprest, Subnetv4ReservationList, rsvs")
+	log.Print(rsvs)
+	log.Println("in dhcprest, Subnetv4ReservationList, rsvs over")
+
+	return reservations
 }

@@ -14,6 +14,10 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 	return &Dhcpv4{db: db}
 }
 
+//func NewSubnetv4(db *gorm.DB) *Dhcpv4 {
+//	return &Subnetv4State{db: db}
+//}
+
 func (s *Dhcpv4) AddSubnetv4(subnetv4 *Subnetv4) error {
 	fmt.Println("into AddSubnetv4")
 	fmt.Print(subnetv4)
@@ -147,13 +151,11 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 	log.Println("into dhcprest.go Update")
 
 	subnetv4 := ctx.Resource.(*Subnetv4)
-	//subnetv4.SetID(subnetv4.Subnet)
-	//subnetv4.SetCreationTimestamp(time.Now())
 	if err := h.subnetv4s.UpdateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
-	} else {
-		return subnetv4, nil
 	}
+
+	return subnetv4, nil
 }
 
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
@@ -179,4 +181,10 @@ func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
 	log.Println("into dhcprest.go Get")
 	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
+}
+
+func (r *reservationHandler) List(ctx *resource.Context) interface{} {
+	log.Println("into dhcprest.go subnetv4ReservationHandler List")
+	rsv := ctx.Resource.(*RestReservation)
+	return r.GetSubnetv4Reservations(rsv.GetParent().GetID())
 }

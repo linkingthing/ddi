@@ -23,7 +23,7 @@ type Subnetv4 struct {
 	Subnet       string `gorm:"column:subnet"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 	ValidLifetime string        `gorm:"column:valid_life_time"`
-	Reservations  []Reservation `gorm:"foreignkey:Subnetv4ID"`
+	Reservations  []*Reservation `gorm:"foreignkey:Subnetv4ID"`
 	//Pools []Pool `gorm:"foreignkey:SubnetRefer"`
 }
 
@@ -83,6 +83,6 @@ type Subnetv6 struct {
 	Subnet        string `gorm:"column:subnet"`
 	DhcpVer       string `gorm:"column:dhcpver"`
 	ValidLifetime string `gorm:"column:validlifetime"`
-	Reservations  []dhcp.Reservations
+	Reservations  []dhcp.Reservation
 	Pools         []dhcp.Pool
 }
