@@ -176,3 +176,39 @@ func (handler *PGDB) OrmCreateReservation(db *gorm.DB, subnetv4_id string, r *Re
 
 	return rsv, nil
 }
+
+func (handler *PGDB) OrmUpdateReservation(db *gorm.DB, subnetv4_id string, r *RestReservation) error {
+
+	log.Println("into dhcporm, OrmUpdateReservation, id: ", r.GetID())
+
+	//search subnet, if not exist, return error
+	//subnet := handler.OrmGetReservation(db, subnetv4_id, r.GetID())
+	//if subnet == nil {
+	//	return fmt.Errorf(name + " not exists, return")
+	//}
+
+	ormRsv := dhcporm.Reservation{}
+	ormRsv.ID = ConvertStringToUint(r.GetID())
+
+    //ormRsv := dhcporm.Reservation{}
+    ormRsv.Hostname = r.Hostname
+    ormRsv.Duid = r.Duid
+    ormRsv.BootFileName = r.BootFileName
+
+	db.Model(&ormRsv).Updates(ormRsv)
+
+	return nil
+}
+
+func (handler *PGDB) OrmDeleteReservation(db *gorm.DB, id string) error {
+	log.Println("into dhcprest OrmDeleteReservation, id ", id)
+	dbId := ConvertStringToUint(id)
+
+	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Reservation{})
+
+	if query.Error != nil {
+		return fmt.Errorf("delete subnet Reservation error, Reservation id: " + id)
+	}
+
+	return nil
+}

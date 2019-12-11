@@ -180,7 +180,7 @@ func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 func (r *reservationHandler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go subnetv4ReservationHandler List")
 	rsv := ctx.Resource.(*RestReservation)
-	return r.GetSubnetv4Reservations(rsv.GetParent().GetID())
+	return r.GetReservations(rsv.GetParent().GetID())
 }
 func (r *reservationHandler) Get(ctx *resource.Context) resource.Resource {
 	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
@@ -192,7 +192,7 @@ func (r *reservationHandler) Create(ctx *resource.Context) (resource.Resource, *
 
 	rsv := ctx.Resource.(*RestReservation)
 
-	if _, err := r.AddSubnetv4Reservation(rsv); err != nil {
+	if _, err := r.OrmAddReservation(rsv); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	}
 
@@ -201,8 +201,32 @@ func (r *reservationHandler) Create(ctx *resource.Context) (resource.Resource, *
 
 	return rsv, nil
 }
-func (r *reservationHandler) AddSubnetv4Reservation(rsv *RestReservation) (*RestReservation, error) {
-	fmt.Println("into AddSubnetv4Reservation")
+
+func (r *reservationHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into rest rsv Update")
+
+	rsv := ctx.Resource.(*RestReservation)
+	if err := r.UpdateReservation(rsv); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	return rsv, nil
+}
+
+func (r *reservationHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	rsv := ctx.Resource.(*RestReservation)
+	log.Println("into dhcprest.go rsv Delete")
+	log.Print(rsv)
+	log.Println("subnetv4 over")
+
+	if err := r.DeleteReservation(rsv); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+}
+
+func (r *reservationHandler) OrmAddReservation(rsv *RestReservation) (*RestReservation, error) {
+	fmt.Println("into OrmAddReservation")
 	fmt.Print(rsv)
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -218,4 +242,36 @@ func (r *reservationHandler) AddSubnetv4Reservation(rsv *RestReservation) (*Rest
 	rsv.SetCreationTimestamp(rsv2.CreatedAt)
 
 	return rsv, nil
+}
+
+func (r *reservationHandler) UpdateReservation(rsv *RestReservation) error {
+	fmt.Println("into UpdateReservation")
+	fmt.Print(rsv)
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	//if c := s.getSubnetv4ByName(subnetv4.Subnet); c == nil {
+	//    return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
+	//}
+
+	subnetId := rsv.GetParent().GetID()
+	err := PGDBConn.OrmUpdateReservation(r.db, subnetId, rsv)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *reservationHandler) DeleteReservation(rsv *RestReservation) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err := PGDBConn.OrmDeleteReservation(r.db, rsv.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

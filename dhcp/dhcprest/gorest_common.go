@@ -174,7 +174,7 @@ func ConvertStringToUint(s string) uint {
 	return uint(dbId)
 }
 
-func (r *reservationHandler) GetSubnetv4Reservations(subnetId string) []*RestReservation {
+func (r *reservationHandler) GetReservations(subnetId string) []*RestReservation {
 	list := PGDBConn.OrmReservationList(r.db, subnetId)
 	rsv := ConvertReservationsFromOrmToRest(list)
 
