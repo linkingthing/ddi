@@ -9,7 +9,7 @@ import (
 type Dhcpv4Conf struct {
 	gorm.Model
 	//ID       string `gorm:"primary_key"`
-	Subnetv4 []Subnetv4
+	OrmSubnetv4 []OrmSubnetv4
 
 	ValidLifetime string
 	//OptionData    []Option
@@ -17,34 +17,34 @@ type Dhcpv4Conf struct {
 
 // Subnet is our model, which corresponds to the "subnetv4s" database
 // table.
-type Subnetv4 struct {
+type OrmSubnetv4 struct {
 	gorm.Model
-	Dhcpv4ConfId uint
-	Subnet       string `gorm:"column:subnet"`
-	//DhcpVer       string `gorm:"column:dhcpver"`
-	ValidLifetime string        `gorm:"column:valid_life_time"`
-	Reservations  []*Reservation `gorm:"foreignkey:Subnetv4ID"`
+	Dhcpv4ConfId    uint
+	Subnet          string `gorm:"column:subnet"`
+	ValidLifetime   string        `gorm:"column:valid_life_time"`
+	Reservations    []*Reservation `gorm:"foreignkey:Subnetv4ID"`
 	//Pools []Pool `gorm:"foreignkey:SubnetRefer"`
+	//DhcpVer       string `gorm:"column:dhcpver"`
 }
 
-func (Subnetv4) TableName() string {
+func (OrmSubnetv4) TableName() string {
 	return "subnetv4s"
 }
 
 type Reservation struct {
 	gorm.Model
 	//Subnetv4Id   int32  `json:"subnetv4_id"`
-	BootFileName string `json:"boot-file-name"`
+	BootFileName string `json:"boot_file_name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
 	Duid string `json:"duid"`
-	//Hostname   string `json:"hostname"`
+	Hostname   string `json:"hostname"`
 	//IpAddress  string `json:"ip-address"`
 	//NextServer string `json:"next-server"`
 	//OptionData     []Option `json:"option-data"`
 	//ServerHostname string   `json:"server-hostname"`
 	Subnetv4ID uint `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
-	//Subnetv4   Subnetv4
+	//OrmSubnetv4   OrmSubnetv4
 	//SubnetRefer uint `json:"subnetv4_refer" sql:"type:bigint REFERENCES subnetv4s(id) ON DELETE CASCADE"`
 }
 

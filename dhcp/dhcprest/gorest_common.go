@@ -1,6 +1,7 @@
 package dhcprest
 
 import (
+	"fmt"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
@@ -126,7 +127,7 @@ func ConvertReservationsFromOrmToRest(rs []*dhcporm.Reservation) []*RestReservat
 	return restRs
 }
 
-func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.Subnetv4) *Subnetv4 {
+func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *Subnetv4 {
 
 	v4 := &Subnetv4{}
 	v4.SetID(strconv.Itoa(int(v.ID)))
@@ -135,28 +136,53 @@ func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.Subnetv4) *Subnetv4 {
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	return v4
 }
+func (r *reservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
+	rsv := &RestReservation{}
+
+	if v == nil {
+		return rsv
+	}
+
+	rsv.SetID(strconv.Itoa(int(v.ID)))
+	rsv.BootFileName = v.BootFileName
+	rsv.Duid = v.Duid
+
+	return rsv
+}
 
 func (n RestReservation) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into GetParents")
 	return []resource.ResourceKind{Subnetv4{}}
 }
 
-func (s *Dhcpv4) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
+//func (s *Dhcpv4) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
+//
+//	rr := &RestReservation{}
+//	rr.SetID(strconv.Itoa(int(v.ID)))
+//	rr.BootFileName = v.BootFileName
+//	rr.Duid = v.Duid
+//
+//	return rr
+//}
+func ConvertStringToUint(s string) uint {
+	dbId, err := strconv.Atoi(s)
+	if err != nil {
+		fmt.Errorf("convert string to uint error, s: ", s)
+		return 0
+	}
 
-	rr := &RestReservation{}
-	rr.SetID(strconv.Itoa(int(v.ID)))
-	rr.BootFileName = v.BootFileName
-	rr.Duid = v.Duid
-
-	return rr
+	return uint(dbId)
 }
 
 func (r *reservationHandler) GetSubnetv4Reservations(subnetId string) []*RestReservation {
-
-	log.Println("rest, into get subnetv4 reservations, subnetId: ", subnetId)
-	list := PGDBConn.Subnetv4ReservationList(r.db, subnetId)
-
+	list := PGDBConn.OrmReservationList(r.db, subnetId)
 	rsv := ConvertReservationsFromOrmToRest(list)
+
+	return rsv
+}
+func (r *reservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id string) *RestReservation {
+	orm := PGDBConn.OrmGetReservation(r.db, subnetId, rsv_id)
+	rsv := r.convertSubnetv4ReservationFromOrmToRest(orm)
 
 	return rsv
 }

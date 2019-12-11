@@ -8,6 +8,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"log"
+	"strconv"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -57,9 +58,6 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 }
 
 func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into dhcprest DeleteSubnetv4")
-	fmt.Print(subnetv4)
-
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -157,7 +155,6 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 
 	return subnetv4, nil
 }
-
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	subnetv4 := ctx.Resource.(*Subnetv4)
 	log.Println("into dhcprest.go Delete")
@@ -170,16 +167,13 @@ func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	return nil
 
 }
-
 func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go List")
 
 	return h.subnetv4s.GetSubnetv4s()
 }
-
 func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
-	log.Println("into dhcprest.go Get")
 	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
 }
 
@@ -187,4 +181,41 @@ func (r *reservationHandler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go subnetv4ReservationHandler List")
 	rsv := ctx.Resource.(*RestReservation)
 	return r.GetSubnetv4Reservations(rsv.GetParent().GetID())
+}
+func (r *reservationHandler) Get(ctx *resource.Context) resource.Resource {
+	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
+	rsv := ctx.Resource.(*RestReservation)
+	return r.GetSubnetv4Reservation(rsv.GetParent().GetID(), rsv.GetID())
+}
+func (r *reservationHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into dhcprest.go rsv Create")
+
+	rsv := ctx.Resource.(*RestReservation)
+
+	if _, err := r.AddSubnetv4Reservation(rsv); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	log.Println("+++rsv. rsv.id", rsv.ID)
+	log.Print(rsv)
+
+	return rsv, nil
+}
+func (r *reservationHandler) AddSubnetv4Reservation(rsv *RestReservation) (*RestReservation, error) {
+	fmt.Println("into AddSubnetv4Reservation")
+	fmt.Print(rsv)
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	//todo check whether it exists
+
+	rsv2, err := PGDBConn.OrmCreateReservation(r.db, rsv.GetParent().GetID(), rsv)
+	if err != nil {
+		return &RestReservation{}, err
+	}
+
+	rsv.SetID(strconv.Itoa(int(rsv2.ID)))
+	rsv.SetCreationTimestamp(rsv2.CreatedAt)
+
+	return rsv, nil
 }

@@ -30,14 +30,8 @@ func NewPGDB() *PGDB {
 		log.Fatal(err)
 	}
 
-	p.DB.AutoMigrate(&dhcporm.Subnetv4{})
+	p.DB.AutoMigrate(&dhcporm.OrmSubnetv4{})
 	p.DB.AutoMigrate(&dhcporm.Reservation{})
-	//p.DB.AutoMigrate(&dhcporm.User{})
-	//p.DB.AutoMigrate(&dhcporm.CreditCard{})
-	//p.DB.AutoMigrate(&dhcporm.Userd{})
-	//p.DB.AutoMigrate(&dhcporm.CreditCardd{})
-	//.AddForeignKey("owner", "users(id)", "CASCADE", "CASCADE")
-	//one.db.AutoMigrate(&tb.DBACL{})
 
 	return p
 }
@@ -51,8 +45,8 @@ func GetDhcpv4Conf(db *gorm.DB) interface{} {
 	return nil
 }
 
-func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.Subnetv4 {
-	var subnetv4s []dhcporm.Subnetv4
+func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
+	var subnetv4s []dhcporm.OrmSubnetv4
 	query := db.Find(&subnetv4s)
 	if query.Error != nil {
 		log.Print(query.Error.Error())
@@ -68,13 +62,11 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.Subnetv4 {
 	return subnetv4s
 }
 
-func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.Subnetv4 {
+func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv4 {
 	log.Println("in GetSubnetv4ByName, name: ", name)
 
-	var subnetv4 *dhcporm.Subnetv4
-	//v := db.Raw("SELECT * FROM subnetv4s WHERE id = ?", id).Scan(&subnetv4s)
-	//v := db.First(&subnetv4, dbId)
-	db.Where(&dhcporm.Subnetv4{Subnet: name}).Find(&subnetv4)
+	var subnetv4 *dhcporm.OrmSubnetv4
+	db.Where(&dhcporm.OrmSubnetv4{Subnet: name}).Find(&subnetv4)
 
 	log.Println("in GetSubnetv4ByName, subnetv4")
 	log.Print(subnetv4)
@@ -83,15 +75,12 @@ func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.Subnet
 	return subnetv4
 }
 
-func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.Subnetv4 {
-	dbId, err := strconv.Atoi(id)
-	if err != nil {
-		return nil
-	}
+func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.OrmSubnetv4 {
+	dbId := ConvertStringToUint(id)
 
-	subnetv4 := dhcporm.Subnetv4{}
+	subnetv4 := dhcporm.OrmSubnetv4{}
 	reservations := []*dhcporm.Reservation{}
-	subnetv4.ID = uint(dbId)
+	subnetv4.ID = dbId
 	db.Model(&subnetv4).Related(&reservations)
 	subnetv4.Reservations = reservations
 
@@ -99,7 +88,7 @@ func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.Subnetv4 {
 }
 
 func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
-	var subnet = dhcporm.Subnetv4{
+	var subnet = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Subnet:        name,
 		ValidLifetime: validLifetime,
@@ -129,12 +118,9 @@ func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, name string, validLifetime stri
 }
 func (handler *PGDB) DeleteSubnetv4(db *gorm.DB, id string) error {
 	log.Println("into dhcprest DeleteSubnetv4, id ", id)
-	dbId, err := strconv.Atoi(id)
-	if err != nil {
-		return fmt.Errorf("string to int convert error, id: ", id)
-	}
+	dbId := ConvertStringToUint(id)
 
-	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Subnetv4{})
+	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
 
 	if query.Error != nil {
 		return fmt.Errorf("delete subnet error, subnet id: " + id)
@@ -143,25 +129,50 @@ func (handler *PGDB) DeleteSubnetv4(db *gorm.DB, id string) error {
 	return nil
 }
 
-func (handler *PGDB) Subnetv4ReservationList(db *gorm.DB, subnetId string) []*dhcporm.Reservation {
-	log.Println("in dhcprest, Subnetv4ReservationList, subnetId: ", subnetId)
-
+func (handler *PGDB) OrmReservationList(db *gorm.DB, subnetId string) []*dhcporm.Reservation {
+	log.Println("in dhcprest, OrmReservationList, subnetId: ", subnetId)
 	var reservations []*dhcporm.Reservation
 	var rsvs []dhcporm.Reservation
 
-	dbId, err := strconv.Atoi(subnetId)
-	if err != nil {
-		return nil
-	}
-	log.Println("in dhcprest, dbId: ", dbId)
-
+	dbId := ConvertStringToUint(subnetId)
 	if err := db.Where("subnetv4_id = ?", dbId).Find(&rsvs).Error; err != nil {
 		return nil
 	}
 
-	log.Println("in dhcprest, Subnetv4ReservationList, rsvs")
-	log.Print(rsvs)
-	log.Println("in dhcprest, Subnetv4ReservationList, rsvs over")
+	for _, rsv := range rsvs {
+		rsv2 := rsv
+		reservations = append(reservations, &rsv2)
+	}
 
 	return reservations
+}
+
+func (handler *PGDB) OrmGetReservation(db *gorm.DB, subnetId string, rsv_id string) *dhcporm.Reservation {
+	dbRsvId := ConvertStringToUint(rsv_id)
+
+	rsv := dhcporm.Reservation{}
+	if err := db.First(&rsv, int(dbRsvId)).Error; err != nil {
+		fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
+		return nil
+	}
+
+	return &rsv
+}
+
+func (handler *PGDB) OrmCreateReservation(db *gorm.DB, subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
+	var rsv = dhcporm.Reservation{
+		Duid:         r.Duid,
+		BootFileName: r.BootFileName,
+		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
+		Hostname:     r.Hostname,
+		//DhcpVer:       Dhcpv4Ver,
+	}
+
+	query := db.Create(&rsv)
+
+	if query.Error != nil {
+		return dhcporm.Reservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
+	}
+
+	return rsv, nil
 }

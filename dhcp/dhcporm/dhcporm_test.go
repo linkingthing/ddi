@@ -36,7 +36,7 @@ func TestCreateSubnetv4(t *testing.T) {
 	err = CreateSubnetv4(db, "subnetname2", "3333")
 	ut.Assert(t, err == nil, "create subnetv4 ok")
 
-	var subnets []Subnetv4
+	var subnets []OrmSubnetv4
 	subnets = GetSubnetv4(db, "subnetname2")
 
 	if len(subnets) > 0 {
