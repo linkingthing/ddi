@@ -17,9 +17,9 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	zoneKind = resource.DefaultKindName(Zone{})
-	viewKind = resource.DefaultKindName(View{})
 	aCLKind  = resource.DefaultKindName(ACL{})
+	viewKind = resource.DefaultKindName(View{})
+	zoneKind = resource.DefaultKindName(Zone{})
 	rRKind   = resource.DefaultKindName(RR{})
 	db       *gorm.DB
 )
@@ -144,16 +144,13 @@ func (h *viewHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 }
 
-/*func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
 	view := ctx.Resource.(*View)
-	if _, err := DBCon.GetView(view.GetID()); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.NotFound, err.Error())
-	}
 	if err := DBCon.UpdateView(view); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.ServerError, err.Error())
 	}
 	return view, nil
-}*/
+}
 
 func (h *viewHandler) Get(ctx *resource.Context) resource.Resource {
 	var err error
@@ -211,7 +208,7 @@ func (h *zoneHandler) List(ctx *resource.Context) interface{} {
 	return DBCon.GetZones(zone.GetParent().GetID())
 }
 
-func (h *zoneHandler) Get(ctx *resource.Context) interface{} {
+func (h *zoneHandler) Get(ctx *resource.Context) resource.Resource {
 	zone := ctx.Resource.(*Zone)
 	one := &Zone{}
 	var err error
@@ -219,6 +216,14 @@ func (h *zoneHandler) Get(ctx *resource.Context) interface{} {
 		return nil
 	}
 	return one
+}
+
+func (z Zone) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{View{}}
+}
+
+func (z Zone) CreateDefaultResource() resource.Resource {
+	return &Zone{}
 }
 
 type rrHandler struct {
@@ -261,7 +266,7 @@ func (h *rrHandler) List(ctx *resource.Context) interface{} {
 	return one
 }
 
-func (h *rrHandler) Get(ctx *resource.Context) interface{} {
+func (h *rrHandler) Get(ctx *resource.Context) resource.Resource {
 	rr := ctx.Resource.(*RR)
 	one := &RR{}
 	var err error
@@ -269,4 +274,8 @@ func (h *rrHandler) Get(ctx *resource.Context) interface{} {
 		return nil
 	}
 	return one
+}
+
+func (r RR) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{Zone{}}
 }

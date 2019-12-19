@@ -332,6 +332,74 @@ func (controller *DBController) DeleteView(id string) error {
 	return nil
 }
 
+func (controller *DBController) UpdateView(view *View) error {
+	var one tb.DBView
+	var num int
+	var err error
+	if num, err = strconv.Atoi(view.ID); err != nil {
+		return err
+	}
+	one.ID = uint(num)
+	one.Name = view.Name
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	//check wether the view is exists
+	var dbView tb.DBView
+	if err := tx.First(&dbView, view.GetID()).Error; err != nil {
+		return fmt.Errorf("the id %s of the view is not exists!%w", view.GetID(), err)
+	}
+	//adjust view priority
+	var allDBView []tb.DBView
+	if err := tx.Find(&allDBView).Error; err != nil {
+		return err
+	}
+	origin := dbView.Priority
+	dest := view.Priority
+	if origin < dest {
+		for k, v := range allDBView {
+			if v.Priority > origin && v.Priority <= dest {
+				allDBView[k].Priority--
+			} else if v.Priority == origin {
+				allDBView[k].Priority = dest
+			} else {
+				allDBView = append(allDBView[:k], allDBView[k+1:]...)
+			}
+		}
+	} else if origin > dest {
+		for k, v := range allDBView {
+			if v.Priority >= dest && v.Priority < origin {
+				allDBView[k].Priority++
+			} else if v.Priority == origin {
+				allDBView[k].Priority = dest
+			} else {
+				allDBView = append(allDBView[:k], allDBView[k+1:]...)
+			}
+		}
+	}
+	//update the priority in the database.
+	for _, viewDB := range allDBView {
+		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
+			return err
+		}
+	}
+	//delete the relationship between view and acl
+	if err := tx.Model(&tb.DBACL{}).Where("view_id = ?", view.GetID()).UpdateColumn("view_id", "").Error; err != nil {
+		return err
+	}
+	//check wether the acl is exists,if exists, update
+	for _, id := range view.ACLIDs {
+		var dbACL tb.DBACL
+		if err := tx.Where("view_id = ''").First(&dbACL, id).Error; err != nil {
+			return fmt.Errorf("the acl of id %s is not exists or has been used!%w", id, err)
+		}
+		if err := tx.Model(&dbACL).UpdateColumn("view_id", view.GetID()).Error; err != nil {
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
 func (controller *DBController) GetView(id string) (*View, error) {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
@@ -606,7 +674,7 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 		return err
 	}
 	var rr tb.DBRR
-	if err := tx.Where("zone_id = ?", viewID).First(&rr, num).Error; err != nil {
+	if err := tx.Where("zone_id = ?", zoneID).First(&rr, num).Error; err != nil {
 		return err
 	}
 	if err := tx.Delete(&rrDB).Error; err != nil {

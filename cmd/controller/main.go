@@ -25,6 +25,7 @@ func main() {
 	state := api.NewViewsState()
 	schemas.Import(&version, api.View{}, api.NewViewHandler(state))
 	schemas.Import(&version, api.Zone{}, api.NewZoneHandler(state))
+	schemas.Import(&version, api.RR{}, api.NewRRHandler(state))
 	router := gin.Default()
 	adaptor.RegisterHandler(router, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
 	router.Run("0.0.0.0:1234")
