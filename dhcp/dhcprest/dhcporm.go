@@ -148,11 +148,12 @@ func (handler *PGDB) OrmReservationList(db *gorm.DB, subnetId string) []*dhcporm
 }
 
 func (handler *PGDB) OrmGetReservation(db *gorm.DB, subnetId string, rsv_id string) *dhcporm.Reservation {
+    log.Println("into rest OrmGetReservation, subnetId: ", subnetId, "rsv_id: ", rsv_id)
 	dbRsvId := ConvertStringToUint(rsv_id)
 
 	rsv := dhcporm.Reservation{}
 	if err := db.First(&rsv, int(dbRsvId)).Error; err != nil {
-		fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
+		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
 		return nil
 	}
 

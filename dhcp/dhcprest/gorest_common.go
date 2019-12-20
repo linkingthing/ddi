@@ -167,7 +167,7 @@ func (n RestReservation) GetParents() []resource.ResourceKind {
 func ConvertStringToUint(s string) uint {
 	dbId, err := strconv.Atoi(s)
 	if err != nil {
-		fmt.Errorf("convert string to uint error, s: ", s)
+		fmt.Errorf("convert string to uint error, s: %s", s)
 		return 0
 	}
 
