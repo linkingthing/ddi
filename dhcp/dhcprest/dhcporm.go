@@ -65,24 +65,18 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
 func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv4 {
 	log.Println("in GetSubnetv4ByName, name: ", name)
 
-	var subnetv4 *dhcporm.OrmSubnetv4
+	var subnetv4 dhcporm.OrmSubnetv4
 	db.Where(&dhcporm.OrmSubnetv4{Subnet: name}).Find(&subnetv4)
 
-	log.Println("in GetSubnetv4ByName, subnetv4")
-	log.Print(subnetv4)
-	log.Println("in GetSubnetv4ByName over")
-
-	return subnetv4
+	return &subnetv4
 }
 
 func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.OrmSubnetv4 {
 	dbId := ConvertStringToUint(id)
 
 	subnetv4 := dhcporm.OrmSubnetv4{}
-	reservations := []*dhcporm.Reservation{}
 	subnetv4.ID = dbId
-	db.Model(&subnetv4).Related(&reservations)
-	subnetv4.Reservations = reservations
+	db.Preload("Reservations").First(&subnetv4)
 
 	return &subnetv4
 }
@@ -148,7 +142,7 @@ func (handler *PGDB) OrmReservationList(db *gorm.DB, subnetId string) []*dhcporm
 }
 
 func (handler *PGDB) OrmGetReservation(db *gorm.DB, subnetId string, rsv_id string) *dhcporm.Reservation {
-    log.Println("into rest OrmGetReservation, subnetId: ", subnetId, "rsv_id: ", rsv_id)
+	log.Println("into rest OrmGetReservation, subnetId: ", subnetId, "rsv_id: ", rsv_id)
 	dbRsvId := ConvertStringToUint(rsv_id)
 
 	rsv := dhcporm.Reservation{}
@@ -191,10 +185,10 @@ func (handler *PGDB) OrmUpdateReservation(db *gorm.DB, subnetv4_id string, r *Re
 	ormRsv := dhcporm.Reservation{}
 	ormRsv.ID = ConvertStringToUint(r.GetID())
 
-    //ormRsv := dhcporm.Reservation{}
-    ormRsv.Hostname = r.Hostname
-    ormRsv.Duid = r.Duid
-    ormRsv.BootFileName = r.BootFileName
+	//ormRsv := dhcporm.Reservation{}
+	ormRsv.Hostname = r.Hostname
+	ormRsv.Duid = r.Duid
+	ormRsv.BootFileName = r.BootFileName
 
 	db.Model(&ormRsv).Updates(ormRsv)
 

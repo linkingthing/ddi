@@ -27,7 +27,10 @@ func (s *Dhcpv4) AddSubnetv4(subnetv4 *Subnetv4) error {
 	defer s.lock.Unlock()
 
 	if c := s.getSubnetv4ByName(subnetv4.Subnet); c != nil {
-		return fmt.Errorf("subnet %s already exist", subnetv4.Subnet)
+		errStr := "subnet " + subnetv4.Subnet + " already exist"
+		log.Println(errStr)
+		log.Print(c)
+		return fmt.Errorf(errStr)
 	}
 
 	err := PGDBConn.CreateSubnetv4(s.db, subnetv4.Subnet, subnetv4.ValidLifetime)
@@ -94,7 +97,7 @@ func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
 	log.Println("In dhcprest getSubnetv4ByName, name: ", name)
 
 	v := PGDBConn.GetSubnetv4ByName(s.db, name)
-	if v == nil {
+	if v.ID == 0 {
 		return nil
 	}
 
