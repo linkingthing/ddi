@@ -96,7 +96,6 @@ func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
 	if v.ID == 0 {
 		return nil
 	}
-
 	v4 := s.convertSubnetv4FromOrmToRest(v)
 
 	return v4
@@ -248,11 +247,14 @@ func (r *ReservationHandler) CreateReservation(rsv *RestReservation) (*RestReser
 
 func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 	fmt.Println("into UpdateReservation")
+	log.Print(rsv)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	subnetId := rsv.GetParent().GetID()
+	log.Println("+++subnetId")
+	log.Print(subnetId)
 	err := PGDBConn.OrmUpdateReservation(r.db, subnetId, rsv)
 	if err != nil {
 		return err

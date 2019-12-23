@@ -120,7 +120,9 @@ func ConvertReservationsFromOrmToRest(rs []*dhcporm.Reservation) []*RestReservat
 		restR := RestReservation{
 			Duid:         v.Duid,
 			BootFileName: v.BootFileName,
+			Hostname:     v.Hostname,
 		}
+		restR.ID = strconv.Itoa(int(v.ID))
 		restRs = append(restRs, &restR)
 	}
 

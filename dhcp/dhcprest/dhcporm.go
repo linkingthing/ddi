@@ -128,13 +128,16 @@ func (handler *PGDB) OrmReservationList(db *gorm.DB, subnetId string) []*dhcporm
 	var reservations []*dhcporm.Reservation
 	var rsvs []dhcporm.Reservation
 
-	dbId := ConvertStringToUint(subnetId)
-	if err := db.Where("subnetv4_id = ?", dbId).Find(&rsvs).Error; err != nil {
+	subnetIdUint := ConvertStringToUint(subnetId)
+	if err := db.Where("subnetv4_id = ?", subnetIdUint).Find(&rsvs).Error; err != nil {
 		return nil
 	}
 
 	for _, rsv := range rsvs {
 		rsv2 := rsv
+		rsv2.ID = rsv.ID
+		rsv2.Subnetv4ID = subnetIdUint
+
 		reservations = append(reservations, &rsv2)
 	}
 
@@ -165,7 +168,6 @@ func (handler *PGDB) OrmCreateReservation(db *gorm.DB, subnetv4_id string, r *Re
 	}
 
 	query := db.Create(&rsv)
-
 	if query.Error != nil {
 		return dhcporm.Reservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
 	}
@@ -185,8 +187,6 @@ func (handler *PGDB) OrmUpdateReservation(db *gorm.DB, subnetv4_id string, r *Re
 
 	ormRsv := dhcporm.Reservation{}
 	ormRsv.ID = ConvertStringToUint(r.GetID())
-
-	//ormRsv := dhcporm.Reservation{}
 	ormRsv.Hostname = r.Hostname
 	ormRsv.Duid = r.Duid
 	ormRsv.BootFileName = r.BootFileName

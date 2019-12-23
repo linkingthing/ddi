@@ -68,7 +68,7 @@ func TestCreateReservation(t *testing.T) {
 
 	_, err := PGDBConn.OrmCreateReservation(dhcpv4.db, subnetv4.ID, &rsv)
 
-	unittest.Assert(t, err == nil, "Reservation  create error")
+	unittest.Assert(t, err == nil, "Reservation create error")
 }
 
 func TestUpdateReservation(t *testing.T) {
@@ -76,25 +76,46 @@ func TestUpdateReservation(t *testing.T) {
 
 	subnetv4 := dhcpv4.getSubnetv4ByName("test01")
 
-	var rsv RestReservation
-	rsv.ID = subnetv4.GetID()
-	rsv.Hostname = "hostname"
-	rsv.BootFileName = "boot file 02"
-	rsv.IpAddress = "1.1.1.3"
+	var err error
+	rsvs := rsvController.GetReservations(subnetv4.ID)
+	for _, v := range rsvs {
 
-	err := PGDBConn.OrmUpdateReservation(dhcpv4.db, subnetv4.ID, &rsv)
+		if v.Hostname == "hostname" {
+			var rsv RestReservation
+			rsv.ID = v.ID
+			rsv.Hostname = v.Hostname
+			rsv.BootFileName = "boot file 05"
+			rsv.IpAddress = "1.1.1.5"
+			err = PGDBConn.OrmUpdateReservation(dhcpv4.db, subnetv4.ID, &rsv)
+			log.Println("rsv.ID: ", rsv.ID, ", subnetId: ", subnetv4.ID)
+		}
+	}
 
-	unittest.Assert(t, err == nil, "Reservation  create error")
+	unittest.Assert(t, err == nil, "Reservation update error")
+}
+
+func TestDeleteReservation(t *testing.T) {
+	log.Print("---begin to delete reservation")
+
+	subnetv4 := dhcpv4.getSubnetv4ByName("test01")
+
+	var err error
+	rsvs := rsvController.GetReservations(subnetv4.ID)
+	for _, v := range rsvs {
+		if v.Hostname == "hostname" {
+			err = PGDBConn.OrmDeleteReservation(dhcpv4.db, v.ID)
+			log.Println("v.ID: ", v.ID, ", subnetId: ", subnetv4.ID)
+		}
+	}
+
+	unittest.Assert(t, err == nil, "Reservation delete error")
 }
 
 func TestDeleteSubnetv4(t *testing.T) {
-	log.Print("---begin to delete subnet v4")
-
+	log.Print("---begin to delete Subnetv4")
 	var subnetv4 Subnetv4
 	subnetv4.Subnet = "test01"
-	//subnetv4.ValidLifetime = "3001"
 	subnetv4.ID = dhcpv4.getSubnetv4ByName(subnetv4.Subnet).ID
-
 	err := dhcpv4.DeleteSubnetv4(&subnetv4)
 
 	unittest.Assert(t, err == nil, "subnetv4 delete error")
