@@ -155,6 +155,7 @@ func (handler *PGDB) OrmGetReservation(db *gorm.DB, subnetId string, rsv_id stri
 }
 
 func (handler *PGDB) OrmCreateReservation(db *gorm.DB, subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
+	log.Println("into OrmCreateReservation")
 	var rsv = dhcporm.Reservation{
 		Duid:         r.Duid,
 		BootFileName: r.BootFileName,

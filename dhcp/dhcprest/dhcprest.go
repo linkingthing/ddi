@@ -19,17 +19,14 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 //	return &Subnetv4State{db: db}
 //}
 
-func (s *Dhcpv4) AddSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into AddSubnetv4")
-	fmt.Print(subnetv4)
+func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
+	fmt.Println("into CreateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if c := s.getSubnetv4ByName(subnetv4.Subnet); c != nil {
 		errStr := "subnet " + subnetv4.Subnet + " already exist"
-		log.Println(errStr)
-		log.Print(c)
 		return fmt.Errorf(errStr)
 	}
 
@@ -43,7 +40,6 @@ func (s *Dhcpv4) AddSubnetv4(subnetv4 *Subnetv4) error {
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	fmt.Println("into UpdateSubnetv4")
-	fmt.Print(subnetv4)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -141,7 +137,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 	subnetv4 := ctx.Resource.(*Subnetv4)
 	subnetv4.SetID(subnetv4.Subnet)
 	subnetv4.SetCreationTimestamp(time.Now())
-	if err := h.subnetv4s.AddSubnetv4(subnetv4); err != nil {
+	if err := h.subnetv4s.CreateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	} else {
 		return subnetv4, nil
@@ -158,11 +154,9 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 
 	return subnetv4, nil
 }
+
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	subnetv4 := ctx.Resource.(*Subnetv4)
-	log.Println("into dhcprest.go Delete")
-	log.Print(subnetv4)
-	log.Println("subnetv4 over")
 
 	if err := h.subnetv4s.DeleteSubnetv4(subnetv4); err != nil {
 		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
@@ -170,32 +164,36 @@ func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	return nil
 
 }
+
 func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go List")
 
 	return h.subnetv4s.GetSubnetv4s()
 }
+
 func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
 	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
 }
 
-func (r *reservationHandler) List(ctx *resource.Context) interface{} {
+func (r *ReservationHandler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go subnetv4ReservationHandler List")
 	rsv := ctx.Resource.(*RestReservation)
 	return r.GetReservations(rsv.GetParent().GetID())
 }
-func (r *reservationHandler) Get(ctx *resource.Context) resource.Resource {
+
+func (r *ReservationHandler) Get(ctx *resource.Context) resource.Resource {
 	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
 	rsv := ctx.Resource.(*RestReservation)
 	return r.GetSubnetv4Reservation(rsv.GetParent().GetID(), rsv.GetID())
 }
-func (r *reservationHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+
+func (r *ReservationHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go rsv Create")
 
 	rsv := ctx.Resource.(*RestReservation)
 
-	if _, err := r.OrmAddReservation(rsv); err != nil {
+	if _, err := r.CreateReservation(rsv); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	}
 
@@ -205,7 +203,7 @@ func (r *reservationHandler) Create(ctx *resource.Context) (resource.Resource, *
 	return rsv, nil
 }
 
-func (r *reservationHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+func (r *ReservationHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into rest rsv Update")
 
 	rsv := ctx.Resource.(*RestReservation)
@@ -216,11 +214,8 @@ func (r *reservationHandler) Update(ctx *resource.Context) (resource.Resource, *
 	return rsv, nil
 }
 
-func (r *reservationHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+func (r *ReservationHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	rsv := ctx.Resource.(*RestReservation)
-	log.Println("into dhcprest.go rsv Delete")
-	log.Print(rsv)
-	log.Println("subnetv4 over")
 
 	if err := r.DeleteReservation(rsv); err != nil {
 		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
@@ -228,16 +223,20 @@ func (r *reservationHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	return nil
 }
 
-func (r *reservationHandler) OrmAddReservation(rsv *RestReservation) (*RestReservation, error) {
-	fmt.Println("into OrmAddReservation")
-	fmt.Print(rsv)
+func (r *ReservationHandler) CreateReservation(rsv *RestReservation) (*RestReservation, error) {
+	fmt.Println("into CreateReservation")
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	//todo check whether it exists
 
-	rsv2, err := PGDBConn.OrmCreateReservation(r.db, rsv.GetParent().GetID(), rsv)
+	subnetv4ID := rsv.GetParent().GetID()
+	fmt.Println("before OrmCreateReservation")
+	rsv2, err := PGDBConn.OrmCreateReservation(r.db, subnetv4ID, rsv)
 	if err != nil {
+		log.Println("OrmCreateReservation error")
+		log.Print(err)
 		return &RestReservation{}, err
 	}
 
@@ -247,16 +246,11 @@ func (r *reservationHandler) OrmAddReservation(rsv *RestReservation) (*RestReser
 	return rsv, nil
 }
 
-func (r *reservationHandler) UpdateReservation(rsv *RestReservation) error {
+func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 	fmt.Println("into UpdateReservation")
-	fmt.Print(rsv)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	//if c := s.getSubnetv4ByName(subnetv4.Subnet); c == nil {
-	//    return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
-	//}
 
 	subnetId := rsv.GetParent().GetID()
 	err := PGDBConn.OrmUpdateReservation(r.db, subnetId, rsv)
@@ -267,7 +261,7 @@ func (r *reservationHandler) UpdateReservation(rsv *RestReservation) error {
 	return nil
 }
 
-func (r *reservationHandler) DeleteReservation(rsv *RestReservation) error {
+func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

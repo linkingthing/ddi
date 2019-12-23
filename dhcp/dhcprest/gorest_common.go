@@ -99,14 +99,14 @@ func NewSubnetv4s(db *gorm.DB) *Subnetv4s {
 	return &Subnetv4s{db: db}
 }
 
-type reservationHandler struct {
+type ReservationHandler struct {
 	subnetv4s *Subnetv4s
 	db        *gorm.DB
 	lock      sync.Mutex
 }
 
-func NewReservationHandler(s *Subnetv4s) *reservationHandler {
-	return &reservationHandler{
+func NewReservationHandler(s *Subnetv4s) *ReservationHandler {
+	return &ReservationHandler{
 		subnetv4s: s,
 		db:        s.db,
 	}
@@ -136,7 +136,7 @@ func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *Subnetv4 
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	return v4
 }
-func (r *reservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
+func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
 	rsv := &RestReservation{}
 
 	if v == nil {
@@ -174,13 +174,13 @@ func ConvertStringToUint(s string) uint {
 	return uint(dbId)
 }
 
-func (r *reservationHandler) GetReservations(subnetId string) []*RestReservation {
+func (r *ReservationHandler) GetReservations(subnetId string) []*RestReservation {
 	list := PGDBConn.OrmReservationList(r.db, subnetId)
 	rsv := ConvertReservationsFromOrmToRest(list)
 
 	return rsv
 }
-func (r *reservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id string) *RestReservation {
+func (r *ReservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id string) *RestReservation {
 	orm := PGDBConn.OrmGetReservation(r.db, subnetId, rsv_id)
 	rsv := r.convertSubnetv4ReservationFromOrmToRest(orm)
 
