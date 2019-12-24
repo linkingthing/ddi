@@ -3,7 +3,6 @@ package dhcporm
 import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/linkingthing/ddi/dhcp"
 )
 
 type Dhcpv4Conf struct {
@@ -19,10 +18,10 @@ type Dhcpv4Conf struct {
 // table.
 type OrmSubnetv4 struct {
 	gorm.Model
-	Dhcpv4ConfId    uint
-	Subnet          string `gorm:"column:subnet"`
-	ValidLifetime   string        `gorm:"column:valid_life_time"`
-	Reservations    []*Reservation `gorm:"foreignkey:Subnetv4ID"`
+	Dhcpv4ConfId  uint
+	Subnet        string         `gorm:"column:subnet"`
+	ValidLifetime string         `gorm:"column:valid_life_time"`
+	Reservations  []*Reservation `gorm:"foreignkey:Subnetv4ID"`
 	//Pools []Pool `gorm:"foreignkey:SubnetRefer"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
@@ -37,8 +36,8 @@ type Reservation struct {
 	BootFileName string `json:"boot_file_name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
-	Duid string `json:"duid"`
-	Hostname   string `json:"hostname"`
+	Duid     string `json:"duid"`
+	Hostname string `json:"hostname"`
 	//IpAddress  string `json:"ip-address"`
 	//NextServer string `json:"next-server"`
 	//OptionData     []Option `json:"option-data"`
@@ -66,23 +65,4 @@ type Pool struct {
 	OptionData  []Option `json:"option-data"`
 	Pool        string   `json:"pool"`
 	SubnetRefer uint
-}
-
-type Dhcpv6Conf struct {
-	gorm.Model
-	//ID       string `gorm:"primary_key"`
-	Subnetv6 []Subnetv6
-
-	ValidLifetime string
-	OptionData    []Option
-}
-
-type Subnetv6 struct {
-	gorm.Model
-	//ID            string `gorm:"primary_key"`
-	Subnet        string `gorm:"column:subnet"`
-	DhcpVer       string `gorm:"column:dhcpver"`
-	ValidLifetime string `gorm:"column:validlifetime"`
-	Reservations  []dhcp.Reservation
-	Pools         []dhcp.Pool
 }

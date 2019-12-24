@@ -24,12 +24,11 @@ func main() {
 
 	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
-
-	//dhcpv6 := newDhcpv6()
-	//schemas.Import(&version, Subnetv6{}, newSubnetv4Handler(dhcpv6))
-
 	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+
+	dhcpv6 := dhcprest.NewDhcpv6(dhcprest.NewPGDB().DB)
+	schemas.Import(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
 
 	router := gin.Default()
 	adaptor.RegisterHandler(router, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())

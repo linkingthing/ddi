@@ -57,6 +57,7 @@ type RestPool struct {
 	OptionData            []RestOption `json:"option-data"`
 	Pool                  string       `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 }
+
 type Subnetv4 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`

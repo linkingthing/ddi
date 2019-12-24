@@ -9,7 +9,7 @@ import (
 )
 
 const Dhcpv4Ver string = "4"
-const Dhcpv6Ver string = "6"
+
 const CRDBAddr = "postgresql://maxroach@localhost:26257/postgres?ssl=true&sslmode=require&sslrootcert=/root/download/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/download/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/download/cockroach-v19.2.0/certs/client.maxroach.crt"
 
 var PGDBConn *PGDB
@@ -32,6 +32,11 @@ func NewPGDB() *PGDB {
 
 	p.DB.AutoMigrate(&dhcporm.OrmSubnetv4{})
 	p.DB.AutoMigrate(&dhcporm.Reservation{})
+	p.DB.AutoMigrate(&dhcporm.Pool{})
+
+	p.DB.AutoMigrate(&dhcporm.OrmSubnetv6{})
+	p.DB.AutoMigrate(&dhcporm.Reservationv6{})
+	p.DB.AutoMigrate(&dhcporm.Poolv6{})
 
 	return p
 }
@@ -40,10 +45,10 @@ func (handler *PGDB) Close() {
 	handler.DB.Close()
 }
 
-func GetDhcpv4Conf(db *gorm.DB) interface{} {
-
-	return nil
-}
+//func GetDhcpv4Conf(db *gorm.DB) interface{} {
+//
+//	return nil
+//}
 
 func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
@@ -97,6 +102,7 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, validLifetime stri
 
 	return nil
 }
+
 func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
 
 	log.Println("into dhcporm, UpdateSubnetv4, name: ", name)
