@@ -217,19 +217,11 @@ func (handler *BindHandler) CreateView(req pb.CreateViewReq) error {
 	if err := handler.addKVs(viewsPath+req.ViewID, namekvs); err != nil {
 		return err
 	}
-	aCLs, err := handler.aCLsFromTopPath(req.ACLIDs)
-	if err != nil {
-		return err
-	}
-	//delete ACLs from acls+aclid path
-	for _, ID := range req.ACLIDs {
-		if err := handler.db.DeleteTable(kv.TableName(aCLsPath + ID)); err != nil {
+	//insert aCLIDs into viewid table
+	for _, id := range req.ACLIDs {
+		if _, err := handler.tables(viewsPath + req.ViewID + aCLsPath + id); err != nil {
 			return err
 		}
-	}
-	//insert aCLs into viewid table
-	if err := handler.insertACLs(req.ViewID, aCLs); err != nil {
-		return err
 	}
 	if err := handler.rewriteNamedFile(); err != nil {
 		return err
@@ -434,12 +426,12 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 		}
 		var aCLs []ACL
 		for _, aCLid := range tables {
-			aCLNames, err := handler.tableKVs(viewsPath + string(viewid) + aCLsPath + aCLid)
+			aCLNames, err := handler.tableKVs(aCLsPath + aCLid)
 			if err != nil {
 				return data, err
 			}
 			aCLName := aCLNames["name"]
-			ipsMap, err := handler.tableKVs(viewsPath + string(viewid) + aCLsPath + aCLid + iPsEndPath)
+			ipsMap, err := handler.tableKVs(aCLsPath + aCLid + iPsEndPath)
 			if err != nil {
 				return data, err
 			}
@@ -874,22 +866,6 @@ func (handler *BindHandler) aCLsFromTopPath(aCLids []string) ([]ACL, error) {
 		aCLs = append(aCLs, aCL)
 	}
 	return aCLs, nil
-}
-func (handler *BindHandler) insertACLs(viewid string, aCLs []ACL) error {
-	for _, aCL := range aCLs {
-		nameMap := map[string][]byte{"name": []byte(aCL.Name)}
-		if err := handler.addKVs(viewsPath+viewid+aCLsPath+aCL.ID, nameMap); err != nil {
-			return err
-		}
-		ipsMap := map[string][]byte{}
-		for _, ip := range aCL.IPs {
-			ipsMap[ip] = []byte("")
-		}
-		if err := handler.addKVs(viewsPath+viewid+aCLsPath+aCL.ID+iPsEndPath, ipsMap); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (handler *BindHandler) rndcReconfig() error {

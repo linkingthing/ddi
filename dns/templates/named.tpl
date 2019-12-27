@@ -11,7 +11,7 @@ key key1 {
 
 {{range $k, $view := .Views}}
 view "{{$view.Name}}" {
-	match-clients {{{range $kk, $acl := $view.ACLs}}
+	match-clients { {{range $kk, $acl := $view.ACLs}}
 	{{$acl.Name}};{{end}}
 	key key1;
 	};
