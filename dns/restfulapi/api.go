@@ -17,18 +17,19 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	aCLKind  = resource.DefaultKindName(ACL{})
-	viewKind = resource.DefaultKindName(View{})
-	zoneKind = resource.DefaultKindName(Zone{})
-	rRKind   = resource.DefaultKindName(RR{})
-	db       *gorm.DB
+	aCLKind     = resource.DefaultKindName(ACL{})
+	viewKind    = resource.DefaultKindName(View{})
+	zoneKind    = resource.DefaultKindName(Zone{})
+	rRKind      = resource.DefaultKindName(RR{})
+	db          *gorm.DB
+	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
 )
 
 type View struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	Priority              int      `json:"priority" rest:"required=true,min=1,max=100"`
-	ACLIDs                []string `json:"aclids" rest:"required=true"`
+	ACLIDs                []string `json:"aclids"`
 	zones                 []*Zone  `json:"-"`
 }
 
@@ -65,7 +66,7 @@ func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *gorester
 	var one tb.DBACL
 	var err error
 	if one, err = DBCon.CreateACL(aCL); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	aCL.SetID(strconv.Itoa(int(one.ID)))
 	aCL.SetCreationTimestamp(one.CreatedAt)
@@ -87,7 +88,7 @@ func (h *aCLHandler) Update(ctx *resource.Context) (resource.Resource, *gorester
 		return nil, goresterr.NewAPIError(goresterr.NotFound, err.Error())
 	}
 	if err := DBCon.UpdateACL(aCL); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return aCL, nil
 }
@@ -128,7 +129,7 @@ func (h *viewHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 	var one tb.DBView
 	var err error
 	if one, err = DBCon.CreateView(view); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	view.SetID(strconv.Itoa(int(one.ID)))
 	view.SetCreationTimestamp(one.CreatedAt)
@@ -147,7 +148,7 @@ func (h *viewHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
 	view := ctx.Resource.(*View)
 	if err := DBCon.UpdateView(view); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return view, nil
 }
@@ -188,7 +189,7 @@ func (h *zoneHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 	var err error
 	var dbZone tb.DBZone
 	if dbZone, err = DBCon.CreateZone(zone, zone.GetParent().GetID()); err != nil {
-		return zone, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return zone, goresterr.NewAPIError(FormatError, err.Error())
 	}
 
 	zone.SetID(strconv.Itoa(int(dbZone.ID)))
@@ -199,10 +200,11 @@ func (h *zoneHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 func (h *zoneHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	zone := ctx.Resource.(*Zone)
 	if err := DBCon.DeleteZone(zone.GetID(), zone.GetParent().GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return nil
 }
+
 func (h *zoneHandler) List(ctx *resource.Context) interface{} {
 	zone := ctx.Resource.(*Zone)
 	return DBCon.GetZones(zone.GetParent().GetID())
@@ -241,7 +243,7 @@ func (h *rrHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr
 	var err error
 	var dbRR tb.DBRR
 	if dbRR, err = DBCon.CreateRR(rr, rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
-		return rr, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return rr, goresterr.NewAPIError(FormatError, err.Error())
 	}
 
 	rr.SetID(strconv.Itoa(int(dbRR.ID)))
@@ -249,10 +251,21 @@ func (h *rrHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr
 	return rr, nil
 }
 
+func (h *rrHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	rr := ctx.Resource.(*RR)
+	if _, err := DBCon.GetRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	if err := DBCon.UpdateRR(rr, rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return rr, nil
+}
+
 func (h *rrHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	rr := ctx.Resource.(*RR)
 	if err := DBCon.DeleteRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return nil
 }

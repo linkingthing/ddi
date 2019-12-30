@@ -45,6 +45,14 @@ func (service *DNSService) CreateACL(context context.Context, req *pb.CreateACLR
 		return &pb.OperResult{RetCode: opSuccess}, nil
 	}
 }
+func (service *DNSService) UpdateACL(context context.Context, req *pb.UpdateACLReq) (*pb.OperResult, error) {
+	err := service.handler.UpdateACL(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
 func (service *DNSService) DeleteACL(context context.Context, req *pb.DeleteACLReq) (*pb.OperResult, error) {
 	err := service.handler.DeleteACL(*req)
 	if err != nil {

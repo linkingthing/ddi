@@ -13,6 +13,7 @@ const (
 	STARTDNS   = "StartDNS"
 	STOPDNS    = "StopDNS"
 	CREATEACL  = "CreateACL"
+	UPDATEACL  = "UpdateACL"
 	DELETEACL  = "DeleteACL"
 	CREATEVIEW = "CreateView"
 	UPDATEVIEW = "UpdateView"
@@ -78,6 +79,11 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.CreateACL(context.Background(), &target)
+		case UPDATEACL:
+			var target pb.UpdateACLReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.UpdateACL(context.Background(), &target)
 		case DELETEACL:
 			var target pb.DeleteACLReq
 			if err := proto.Unmarshal(message.Value, &target); err != nil {

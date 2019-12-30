@@ -25,15 +25,25 @@ func TestStartDNS(t *testing.T) {
 func TestCreateACL(t *testing.T) {
 	var ipList = []string{"192.168.199.0/24", "192.168.198.0/24"}
 	createACLReq := pb.CreateACLReq{
-		ACLName: "southchina",
-		ACLID:   "ACL001",
-		IPs:     ipList}
+		Name: "southchina",
+		ID:   "ACL001",
+		IPs:  ipList}
 	err := handler.CreateACL(createACLReq)
 	ut.Assert(t, err == nil, "Create ACL successfully!:%v", err)
 }
 
+func TestUpdateACL(t *testing.T) {
+	var ipList = []string{"192.168.190.0/24", "192.168.191.0/24"}
+	updateACLReq := pb.UpdateACLReq{
+		Name:   "southchina_1",
+		ID:     "ACL001",
+		NewIPs: ipList}
+	err := handler.UpdateACL(updateACLReq)
+	ut.Assert(t, err == nil, "Create ACL successfully!:%v", err)
+}
+
 func TestDeleteACL(t *testing.T) {
-	deleteACLReq := pb.DeleteACLReq{ACLID: "ACL001"}
+	deleteACLReq := pb.DeleteACLReq{ID: "ACL001"}
 	err := handler.DeleteACL(deleteACLReq)
 	ut.Assert(t, err == nil, "Delete ACL successfully!:%v", err)
 }
@@ -46,6 +56,23 @@ func TestCreateView(t *testing.T) {
 		Priority: 1,
 		ACLIDs:   []string{"ACL001"}}
 	err := handler.CreateView(createViewReq)
+	ut.Assert(t, err == nil, "Create View Success!:%v", err)
+}
+
+func TestUpdateView(t *testing.T) {
+	var ipList = []string{"192.168.199.0/24", "192.168.198.0/24"}
+	createACLReq := pb.CreateACLReq{
+		Name: "southchina_2",
+		ID:   "ACL002",
+		IPs:  ipList}
+	err := handler.CreateACL(createACLReq)
+	ut.Assert(t, err == nil, "Create ACL successfully!:%v", err)
+	updateViewReq := pb.UpdateViewReq{
+		ViewID:       "viewID001",
+		Priority:     1,
+		DeleteACLIDs: []string{"ACL001"},
+		AddACLIDs:    []string{"ACL002"}}
+	err = handler.UpdateView(updateViewReq)
 	ut.Assert(t, err == nil, "Create View Success!:%v", err)
 }
 
@@ -93,7 +120,12 @@ func TestDeleteView(t *testing.T) {
 	delViewReq := pb.DeleteViewReq{ViewID: "viewID001"}
 	err := handler.DeleteView(delViewReq)
 	ut.Assert(t, err == nil, "Delete View Success!:%v", err)
-	TestDeleteACL(t)
+	deleteACLReq := pb.DeleteACLReq{ID: "ACL001"}
+	err = handler.DeleteACL(deleteACLReq)
+	ut.Assert(t, err == nil, "Delete ACL successfully!:%v", err)
+	deleteACLReq.ID = "ACL002"
+	err = handler.DeleteACL(deleteACLReq)
+	ut.Assert(t, err == nil, "Delete ACL successfully!:%v", err)
 }
 
 func TestStopDNS(t *testing.T) {

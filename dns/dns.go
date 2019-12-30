@@ -168,7 +168,7 @@ func (handler *BindHandler) StopDNS() error {
 }
 
 func (handler *BindHandler) CreateACL(req pb.CreateACLReq) error {
-	err := handler.addKVs(aCLsPath+req.ACLID, map[string][]byte{"name": []byte(req.ACLName)})
+	err := handler.addKVs(aCLsPath+req.ID, map[string][]byte{"name": []byte(req.Name)})
 	if err != nil {
 		return err
 	}
@@ -176,23 +176,32 @@ func (handler *BindHandler) CreateACL(req pb.CreateACLReq) error {
 	for _, ip := range req.IPs {
 		values[ip] = []byte("")
 	}
-	if err := handler.addKVs(aCLsPath+req.ACLID+iPsEndPath, values); err != nil {
+	if err := handler.addKVs(aCLsPath+req.ID+iPsEndPath, values); err != nil {
 		return err
 	}
-	aCLData := ACL{ID: req.ACLID, Name: req.ACLName, IPs: req.IPs}
+	aCLData := ACL{ID: req.ID, Name: req.Name, IPs: req.IPs}
 	buffer := new(bytes.Buffer)
 	if err = handler.tpl.ExecuteTemplate(buffer, aCLTpl, aCLData); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(handler.dnsConfPath+req.ACLName+".conf", buffer.Bytes(), 0644); err != nil {
+	if err := ioutil.WriteFile(handler.dnsConfPath+req.Name+".conf", buffer.Bytes(), 0644); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func (handler *BindHandler) UpdateACL(req pb.UpdateACLReq) error {
+	err := handler.db.DeleteTable(kv.TableName(aCLsPath + req.ID))
+	if err != nil {
+		return err
+	}
+	reqTmp := pb.CreateACLReq{Name: req.Name, ID: req.ID, IPs: req.NewIPs}
+	return handler.CreateACL(reqTmp)
+}
+
 func (handler *BindHandler) DeleteACL(req pb.DeleteACLReq) error {
-	kvs, err := handler.tableKVs(aCLsPath + req.ACLID)
+	kvs, err := handler.tableKVs(aCLsPath + req.ID)
 	if err != nil {
 		return err
 	}
@@ -204,7 +213,7 @@ func (handler *BindHandler) DeleteACL(req pb.DeleteACLReq) error {
 		return err
 	}
 
-	handler.db.DeleteTable(kv.TableName(aCLsPath + req.ACLID))
+	handler.db.DeleteTable(kv.TableName(aCLsPath + req.ID))
 	return nil
 }
 
@@ -237,17 +246,17 @@ func (handler *BindHandler) UpdateView(req pb.UpdateViewReq) error {
 	if err := handler.updatePriority(int(req.Priority), req.ViewID); err != nil {
 		return err
 	}
-	//add new ips for aCL
-	ipsMap := map[string][]byte{}
-	for _, ip := range req.NewIPs {
-		ipsMap[ip] = []byte("")
+	//delete aclids for aCL
+	for _, id := range req.DeleteACLIDs {
+		if err := handler.db.DeleteTable(kv.TableName(viewsPath + req.ViewID + aCLsPath + id)); err != nil {
+			return err
+		}
 	}
-	if err := handler.addKVs(viewsPath+req.ViewID+aCLsPath+req.ACLID+iPsEndPath, ipsMap); err != nil {
-		return err
-	}
-	//delete ips for aCL
-	if err := handler.deleteKVs(viewsPath+req.ViewID+aCLsPath+req.ACLID+iPsEndPath, req.DeleteIPs); err != nil {
-		return err
+	//add new aclids for aCL
+	for _, id := range req.AddACLIDs {
+		if _, err := handler.db.CreateOrGetTable(kv.TableName(viewsPath + req.ViewID + aCLsPath + id)); err != nil {
+			return err
+		}
 	}
 	if err := handler.rewriteNamedFile(); err != nil {
 		return err
