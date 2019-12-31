@@ -10,9 +10,10 @@ key key1 {
 };
 
 {{range $k, $view := .Views}}
-view "{{$view.Name}}" {
+view "{{$view.Name}}" { {{$length:=len $view.ACLs}}
 	match-clients { {{range $kk, $acl := $view.ACLs}}
 	{{$acl.Name}};{{end}}
+	{{if eq $length 0}}any;{{end}}
 	key key1;
 	};
 	allow-update {key key1;};
