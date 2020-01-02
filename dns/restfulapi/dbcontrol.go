@@ -145,7 +145,6 @@ func (controller *DBController) GetACL(id string) (*ACL, error) {
 	if err := tx.Where("acl_id = ?", id).Find(&iPs).Error; err != nil {
 		return nil, err
 	}
-	fmt.Println(iPs)
 	for _, dBIP := range iPs {
 		aCL.IPs = append(aCL.IPs, dBIP.IP)
 	}
@@ -502,13 +501,13 @@ func (controller *DBController) GetViews() []*View {
 	if err := tx.Find(&viewDBs).Error; err != nil {
 		return nil
 	}
+	var err error
 	for _, viewDB := range viewDBs {
-		var view View
-		view.SetID(strconv.Itoa(int(viewDB.ID)))
-		view.Name = viewDB.Name
-		view.Priority = viewDB.Priority
-		view.SetCreationTimestamp(viewDB.CreatedAt)
-		views = append(views, &view)
+		tmp := &View{}
+		if tmp, err = controller.GetView(strconv.Itoa(int(viewDB.ID))); err != nil {
+			return nil
+		}
+		views = append(views, tmp)
 	}
 	return views
 }

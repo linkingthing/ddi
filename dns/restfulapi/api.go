@@ -48,7 +48,7 @@ type ACL struct {
 
 type RR struct {
 	resource.ResourceBase `json:",inline"`
-	Data                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	Data                  string `json:"data" rest:"required=true,minLen=1,maxLen=20"`
 }
 
 type aCLHandler struct {
