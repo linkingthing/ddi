@@ -6,8 +6,9 @@ import (
 
 type DBACL struct {
 	gorm.Model
-	Name string
-	IPs  []DBIP `gorm:"foreignkey:ACLID"`
+	Name   string
+	IsUsed int
+	IPs    []DBIP `gorm:"foreignkey:ACLID"`
 }
 
 type DBIP struct {
@@ -19,6 +20,7 @@ type DBView struct {
 	gorm.Model
 	Name     string
 	Priority int
+	IsUsed   int
 	ACLs     []DBACL  `gorm:"many2many:view_acls;"`
 	Zones    []DBZone `gorm:"foreignkey:ViewID"`
 }
@@ -27,12 +29,14 @@ type DBZone struct {
 	gorm.Model
 	Name     string
 	ZoneFile string
-	ViewID   uint   `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	ViewID   uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	IsUsed   int
 	RRs      []DBRR `gorm:"foreignkey:ZoneID"`
 }
 
 type DBRR struct {
 	gorm.Model
 	Data   string
+	IsUsed int
 	ZoneID uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
 }

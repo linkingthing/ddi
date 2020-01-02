@@ -29,6 +29,7 @@ type View struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	Priority              int      `json:"priority" rest:"required=true,min=1,max=100"`
+	IsUsed                int      `json:"isused" rest:"required=true,min=0,max=2"`
 	ACLIDs                []string `json:"aclids"`
 	zones                 []*Zone  `json:"-"`
 }
@@ -36,19 +37,22 @@ type View struct {
 type Zone struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	ZoneFile              string `json:"zone file" rest:"required=true,minLen=1,maxLen=20"`
-	rRs                   []*RR  `json:"-"`
+	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
+	//ZoneFile              string `json:"-"`
+	rRs []*RR `json:"-"`
 }
 
 type ACL struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	IPs                   []string `json:"IP" rest:"required=true"`
+	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	//IsUsed                int      `json:"isused" rest:"required=true,min=0,max=2"`
+	IPs []string `json:"IP" rest:"required=true"`
 }
 
 type RR struct {
 	resource.ResourceBase `json:",inline"`
 	Data                  string `json:"data" rest:"required=true,minLen=1,maxLen=20"`
+	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 
 type aCLHandler struct {

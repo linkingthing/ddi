@@ -423,6 +423,9 @@ func (controller *DBController) UpdateView(view *View) error {
 			return err
 		}
 		tmp.ID = uint(index)
+		if err := tx.First(&tmp, index).Error; err != nil {
+			return fmt.Errorf("the acl of id:%d is not exists!%w", index, err)
+		}
 		dbACLs = append(dbACLs, tmp)
 	}
 	if err := tx.Model(&one).Association("ACLs").Append(dbACLs).Error; err != nil {
@@ -487,7 +490,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 		var zone Zone
 		zone.SetID(strconv.Itoa(int(dbZone.ID)))
 		zone.Name = dbZone.Name
-		zone.ZoneFile = dbZone.ZoneFile
+		//zone.ZoneFile = dbZone.ZoneFile
 		view.zones = append(view.zones, &zone)
 	}
 	return &view, nil
@@ -518,7 +521,6 @@ func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.DBZone
 	//create new data in the database
 	var one tb.DBZone
 	one.Name = zone.Name
-	one.ZoneFile = zone.ZoneFile
 	var num int
 	var err error
 	if num, err = strconv.Atoi(viewID); err != nil {
@@ -527,6 +529,12 @@ func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.DBZone
 	one.ViewID = uint(num)
 	tx := controller.db.Begin()
 	defer tx.Rollback()
+	//set zone file name
+	var dbview tb.DBView
+	if err := tx.First(&dbview, num).Error; err != nil {
+		return tb.DBZone{}, err
+	}
+	one.ZoneFile = zone.Name + dbview.Name + ".zone"
 	var dbZones []tb.DBZone
 	if err := tx.Where("name = ?", zone.Name).Find(&dbZones).Error; err != nil {
 		return tb.DBZone{}, err
@@ -539,7 +547,7 @@ func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.DBZone
 	}
 	var last tb.DBZone
 	tx.Last(&last)
-	req := pb.CreateZoneReq{ViewID: viewID, ZoneName: zone.Name, ZoneID: strconv.Itoa(int(last.ID)), ZoneFileName: zone.ZoneFile}
+	req := pb.CreateZoneReq{ViewID: viewID, ZoneName: zone.Name, ZoneID: strconv.Itoa(int(last.ID)), ZoneFileName: one.ZoneFile}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return last, err
@@ -650,7 +658,7 @@ func (controller *DBController) GetZones(viewID string) []*Zone {
 		var zone Zone
 		zone.SetID(strconv.Itoa(int(zoneDB.ID)))
 		zone.Name = zoneDB.Name
-		zone.ZoneFile = zoneDB.ZoneFile
+		//zone.ZoneFile = zoneDB.ZoneFile
 		zones = append(zones, &zone)
 	}
 	return zones
