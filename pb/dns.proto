@@ -79,14 +79,20 @@ message CreateRRReq{
 string viewID = 1;
 string zoneID = 2;
 string rRID = 3;
-string rRData = 4;
+string name = 4;
+string type = 5;
+string value = 6;
+string tTL = 7;
 }
 
 message UpdateRRReq{
 string viewID = 1;
 string zoneID = 2;
 string rRID = 3;
-string newRRData = 4;
+string name = 4;
+string type = 5;
+string value = 6;
+string tTL = 7;
 }
 
 message DeleteRRReq{

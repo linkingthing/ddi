@@ -51,7 +51,10 @@ type ACL struct {
 
 type RR struct {
 	resource.ResourceBase `json:",inline"`
-	Data                  string `json:"data" rest:"required=true,minLen=1,maxLen=20"`
+	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	DataType              string `json:"type" rest:"required=true,minLen=1,maxLen=20"`
+	TTL                   uint   `json:"ttl" rest:"required=true"`
+	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=20"`
 	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 

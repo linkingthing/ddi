@@ -25,6 +25,7 @@ const (
 	aCLsPath     = "/acls/"
 	aCLsEndPath  = "/acls"
 	rRsEndPath   = "/rrs"
+	rRsPath      = "/rrs/"
 	iPsEndPath   = "/ips"
 	namedTpl     = "named.tpl"
 	zoneTpl      = "zone.tpl"
@@ -118,7 +119,10 @@ type zoneData struct {
 }
 
 type RR struct {
-	Data string
+	Name  string
+	Type  string
+	Value string
+	TTL   string
 }
 
 type ACL struct {
@@ -192,8 +196,8 @@ func (handler *BindHandler) CreateACL(req pb.CreateACLReq) error {
 }
 
 func (handler *BindHandler) UpdateACL(req pb.UpdateACLReq) error {
-	err := handler.db.DeleteTable(kv.TableName(aCLsPath + req.ID))
-	if err != nil {
+	reqDel := pb.DeleteACLReq{ID: req.ID}
+	if err := handler.DeleteACL(reqDel); err != nil {
 		return err
 	}
 	reqTmp := pb.CreateACLReq{Name: req.Name, ID: req.ID, IPs: req.NewIPs}
@@ -349,8 +353,11 @@ func (handler *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
 
 func (handler *BindHandler) CreateRR(req pb.CreateRRReq) error {
 	rrsMap := map[string][]byte{}
-	rrsMap[req.RRID] = []byte(req.RRData)
-	if err := handler.addKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsEndPath, rrsMap); err != nil {
+	rrsMap["name"] = []byte(req.Name)
+	rrsMap["type"] = []byte(req.Type)
+	rrsMap["value"] = []byte(req.Value)
+	rrsMap["TTL"] = []byte(req.TTL)
+	if err := handler.addKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsPath+req.RRID, rrsMap); err != nil {
 		return err
 	}
 	var names map[string][]byte
@@ -358,7 +365,9 @@ func (handler *BindHandler) CreateRR(req pb.CreateRRReq) error {
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, req.RRData, string(names["name"]), true); err != nil {
+	var data string
+	data = req.Name + " " + req.TTL + " IN " + req.Type + " " + req.Value
+	if err := rrupdate.UpdateRR(rrKey, rrSecret, data, string(names["name"]), true); err != nil {
 		return err
 	}
 	return nil
@@ -367,22 +376,26 @@ func (handler *BindHandler) CreateRR(req pb.CreateRRReq) error {
 func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 	var rrsMap map[string][]byte
 	var err error
-	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsEndPath); err != nil {
+	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID); err != nil {
 		return err
 	}
-	rrData := rrsMap[req.RRID]
+	oldData := string(rrsMap["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
+	newData := req.Name + " " + req.TTL + " IN " + req.Type + " " + req.Value
 	var names map[string][]byte
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, string(rrData), string(names["name"]), false); err != nil { //string(rrData[:])
+	if err := rrupdate.UpdateRR(rrKey, rrSecret, oldData, string(names["name"]), false); err != nil {
 		return err
 	}
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, req.NewRRData, string(names["name"]), true); err != nil {
+	if err := rrupdate.UpdateRR(rrKey, rrSecret, newData, string(names["name"]), true); err != nil {
 		return err
 	}
-	rrsMap[req.RRID] = []byte(req.NewRRData)
-	if err := handler.updateKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsEndPath, rrsMap); err != nil {
+	rrsMap["name"] = []byte(req.Name)
+	rrsMap["type"] = []byte(req.Type)
+	rrsMap["value"] = []byte(req.Value)
+	rrsMap["TTL"] = []byte(req.TTL)
+	if err := handler.updateKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsPath+req.RRID, rrsMap); err != nil {
 		return err
 	}
 	return nil
@@ -391,18 +404,18 @@ func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 	var rrsMap map[string][]byte
 	var err error
-	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsEndPath); err != nil {
+	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID); err != nil {
 		return err
 	}
-	rrData := rrsMap[req.RRID]
+	rrData := string(rrsMap["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
 	var names map[string][]byte
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, string(rrData), string(names["name"]), false); err != nil { //string(rrData[:])
+	if err := rrupdate.UpdateRR(rrKey, rrSecret, rrData, string(names["name"]), false); err != nil { //string(rrData[:])
 		return err
 	}
-	if err := handler.deleteKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsEndPath, []string{req.RRID}); err != nil {
+	if err := handler.db.DeleteTable(kv.TableName(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID)); err != nil {
 		return err
 	}
 	return nil
@@ -572,12 +585,16 @@ func (handler *BindHandler) zonesData() ([]zoneData, error) {
 			}
 			zoneName := names["name"]
 			zoneFile := names["zonefile"]
-			datas, err := handler.tableKVs(viewsPath + viewid + zonesPath + zoneID + rRsEndPath)
+			rrTables, err := handler.tables(viewsPath + viewid + zonesPath + zoneID + rRsEndPath)
 			if err != nil {
 				return nil, err
 			}
-			for _, data := range datas {
-				rr := RR{Data: string(data)}
+			for _, rrID := range rrTables {
+				datas, err := handler.tableKVs(viewsPath + viewid + zonesPath + zoneID + rRsPath + rrID)
+				if err != nil {
+					return nil, err
+				}
+				rr := RR{Name: string(datas["name"]), TTL: string(datas["TTL"]), Type: string(datas["type"]), Value: string(datas["value"])}
 				rrs = append(rrs, rr)
 			}
 			one := zoneData{ViewName: string(viewName), Name: string(zoneName), ZoneFile: string(zoneFile), RRs: rrs}

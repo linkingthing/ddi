@@ -243,6 +243,7 @@ func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
 		return tb.DBView{}, err
 	}
 	one.Priority = view.Priority
+	one.IsUsed = view.IsUsed
 	if len(allView)+1 < view.Priority {
 		one.Priority = len(allView) + 1
 	} else if view.Priority < 0 {
@@ -471,6 +472,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	view.SetID(id)
 	view.Name = a.Name
 	view.Priority = a.Priority
+	view.IsUsed = a.IsUsed
 	view.Type = "view"
 	view.SetCreationTimestamp(a.CreatedAt)
 	var acls []tb.DBACL
@@ -573,7 +575,7 @@ func (controller *DBController) DeleteZone(id string, viewID string) error {
 	zoneDB.ID = uint(num)
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Delete(&zoneDB).Error; err != nil {
+	if err := tx.Unscoped().Delete(&zoneDB).Error; err != nil {
 		return err
 	}
 	req := pb.DeleteZoneReq{ViewID: viewID, ZoneID: id}
@@ -609,7 +611,10 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 	}
 	for _, dbRR := range rrs {
 		rr := &RR{}
-		rr.Data = dbRR.Data
+		rr.Name = dbRR.Name
+		rr.DataType = dbRR.DataType
+		rr.TTL = dbRR.TTL
+		rr.Value = dbRR.Value
 		zone.rRs = append(zone.rRs, rr)
 	}
 	zone.Type = "zone"
@@ -673,7 +678,11 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 		return tb.DBRR{}, err
 	}
 	one.ZoneID = uint(num)
-	one.Data = rr.Data
+	one.Name = rr.Name
+	one.DataType = rr.DataType
+	one.TTL = rr.TTL
+	one.Value = rr.Value
+	one.IsUsed = rr.IsUsed
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Create(&one).Error; err != nil {
@@ -681,7 +690,7 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 	}
 	var last tb.DBRR
 	tx.Last(&last)
-	req := pb.CreateRRReq{ViewID: viewID, ZoneID: zoneID, RRID: strconv.Itoa(int(last.ID)), RRData: last.Data}
+	req := pb.CreateRRReq{ViewID: viewID, ZoneID: zoneID, RRID: strconv.Itoa(int(last.ID)), Name: rr.Name, Type: rr.DataType, TTL: strconv.Itoa(int(rr.TTL)), Value: rr.Value}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return last, err
@@ -724,7 +733,7 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 	if err := tx.Where("zone_id = ?", zoneID).First(&rr, num).Error; err != nil {
 		return err
 	}
-	if err := tx.Delete(&rrDB).Error; err != nil {
+	if err := tx.Unscoped().Delete(&rrDB).Error; err != nil {
 		return err
 	}
 	req := pb.DeleteRRReq{ViewID: viewID, ZoneID: zoneID, RRID: id}
@@ -767,7 +776,10 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 	}
 	rr := RR{}
 	rr.SetID(id)
-	rr.Data = dbRR.Data
+	rr.Name = dbRR.Name
+	rr.DataType = dbRR.DataType
+	rr.TTL = dbRR.TTL
+	rr.Value = dbRR.Value
 	rr.Type = "rr"
 	rr.SetCreationTimestamp(dbRR.CreatedAt)
 	return &rr, nil
@@ -781,13 +793,17 @@ func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) e
 		return err
 	}
 	one.ID = uint(num)
-	one.Data = rr.Data
+	one.Name = rr.Name
+	one.DataType = rr.DataType
+	one.TTL = rr.TTL
+	one.Value = rr.Value
+	one.IsUsed = rr.IsUsed
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Model(&one).UpdateColumn("data", one.Data).Error; err != nil {
+	if err := tx.Save(&one).Error; err != nil {
 		return err
 	}
-	req := pb.UpdateRRReq{ViewID: viewID, ZoneID: zoneID, RRID: rr.ID, NewRRData: rr.Data}
+	req := pb.UpdateRRReq{ViewID: viewID, ZoneID: zoneID, RRID: rr.ID, Name: rr.Name, Type: rr.DataType, TTL: strconv.Itoa(int(rr.TTL)), Value: rr.Value}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err
@@ -827,7 +843,10 @@ func (controller *DBController) GetRRs(zoneID string, viewID string) ([]*RR, err
 	for _, dbRR := range dbRRs {
 		one := &RR{}
 		one.SetID(strconv.Itoa(int(dbRR.ID)))
-		one.Data = dbRR.Data
+		one.Name = dbRR.Name
+		one.DataType = dbRR.DataType
+		one.TTL = dbRR.TTL
+		one.Value = dbRR.Value
 		one.SetCreationTimestamp(dbRR.CreatedAt)
 		rrs = append(rrs, one)
 	}

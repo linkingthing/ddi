@@ -83,20 +83,20 @@ func TestCreateZone(t *testing.T) {
 }
 
 func TestCreateRR(t *testing.T) {
-	createRRReq := pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr002", RRData: "mail.test1031.com 1000 IN A	10.2.21.1"}
+	createRRReq := pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr002", Name: "mail.test1031.com", TTL: "1000", Type: "A", Value: "10.2.21.1"}
 	err := handler.CreateRR(createRRReq)
 	ut.Assert(t, err == nil, "Create RR Success!:%v", err)
-	createRRReq = pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr003", RRData: "mail.test1031.com 1000 IN A	10.2.21.2"}
+	createRRReq = pb.CreateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr003", Name: "mail.test1031.com", TTL: "1000", Type: "A", Value: "10.2.21.2"}
 	err = handler.CreateRR(createRRReq)
 	ut.Assert(t, err == nil, "Create RR Success!:%v", err)
 }
 
 func TestUpdateRR(t *testing.T) {
-	updateRRReq := pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr002", NewRRData: "mail.test1031.com 1000 IN  A       10.2.21.3"}
+	updateRRReq := pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr002", Name: "mail.test1031.com", TTL: "1000", Type: "A", Value: "10.2.21.3"}
 	err := handler.UpdateRR(updateRRReq)
 	ut.Assert(t, err == nil, "Update RR Success!:%v", err)
 
-	updateRRReq = pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr003", NewRRData: "mail.test1031.com 1000 IN  A       10.2.21.4"}
+	updateRRReq = pb.UpdateRRReq{ViewID: "viewID001", ZoneID: "zoneID001", RRID: "rr003", Name: "mail.test1031.com", TTL: "1000", Type: "A", Value: "10.2.21.4"}
 	err = handler.UpdateRR(updateRRReq)
 	ut.Assert(t, err == nil, "Update RR Success!:%v", err)
 }

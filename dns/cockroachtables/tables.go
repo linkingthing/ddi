@@ -36,7 +36,10 @@ type DBZone struct {
 
 type DBRR struct {
 	gorm.Model
-	Data   string
-	IsUsed int
-	ZoneID uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
+	Name     string
+	DataType string
+	TTL      uint
+	Value    string
+	IsUsed   int
+	ZoneID   uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
 }
