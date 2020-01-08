@@ -7,6 +7,12 @@ import (
 	"net/http"
 	"os/exec"
 	"reflect"
+	"strconv"
+)
+
+var (
+	promServer = "10.0.0.23:9090"
+	host       = "10.0.0.15:9100"
 )
 
 func cmd(command string) (string, error) {
@@ -54,6 +60,11 @@ func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("welcome"))
 }
 
+func query_range(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fmt.Println("in query_range() Form: ", r.Form)
+
+}
 func query(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -76,18 +87,21 @@ func query(w http.ResponseWriter, r *http.Request) {
 	result.Code = 200
 	result.Message = "host and promType ok"
 
-	//向客户端返回JSON数据
-	//bytes, _ := json.Marshal(result)
-	//fmt.Fprint(w, string(bytes))
-
 	resp, err := GetPromItem("cpu", "10.0.0.15:9100")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	w.Write([]byte(resp)) //todo resp.Status
-	//w.Write([]byte("bye bye ,this is v2 httpServer"))
+	cpuUsage, err := strconv.ParseFloat(resp, 64)
+	resp = fmt.Sprintf("%.2f", cpuUsage)
+
+	result.Data = resp
+	bytes, _ := json.Marshal(result)
+	//fmt.Fprint(w, string(bytes))
+	w.Write([]byte(bytes))
+
+	return
 }
 
 // getProm get prometheus data from prometheus api
@@ -102,6 +116,10 @@ func GetPromItem(promType string, host string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	log.Println("+++ out")
+	log.Println(out)
+	log.Println("--- out")
 
 	err = json.Unmarshal([]byte(out), &rsp)
 	if err != nil {
@@ -131,6 +149,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", &myHandler{})
 	mux.HandleFunc("/query", query)
+	mux.HandleFunc("/query_range", query_range)
 
 	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1210", mux))
