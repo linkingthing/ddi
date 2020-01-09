@@ -3,6 +3,8 @@ options {
 	pid-file "named.pid";
 	allow-new-zones yes;
 	allow-query {any;};
+	dnssec-enable no;
+	dnssec-validation no;
 };
 key key1 {
     algorithm hmac-md5;

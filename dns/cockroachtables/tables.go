@@ -27,11 +27,14 @@ type DBView struct {
 
 type DBZone struct {
 	gorm.Model
-	Name     string
-	ZoneFile string
-	ViewID   uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
-	IsUsed   int
-	RRs      []DBRR `gorm:"foreignkey:ZoneID"`
+	Name        string
+	ZoneFile    string
+	ViewID      uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	IsUsed      int
+	IsForward   int
+	ForwardType string
+	RRs         []DBRR      `gorm:"foreignkey:ZoneID"`
+	Forwarders  []Forwarder `gorm:"foreignkey:ZoneID"`
 }
 
 type DBRR struct {
@@ -42,4 +45,22 @@ type DBRR struct {
 	Value    string
 	IsUsed   int
 	ZoneID   uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
+}
+
+type Forwarder struct {
+	gorm.Model
+	IP     string
+	ZoneID uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
+}
+
+type DefaultForward struct {
+	gorm.Model
+	ForwardType string
+	Forwarders  []DefaultForwarder `gorm:"foreignkey:ForwardID"`
+}
+
+type DefaultForwarder struct {
+	gorm.Model
+	IP        string
+	ForwardID uint `sql:"type:integer REFERENCES default_forwards(id) on update cascade on delete cascade"`
 }

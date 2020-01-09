@@ -21,6 +21,7 @@ var (
 	viewKind    = resource.DefaultKindName(View{})
 	zoneKind    = resource.DefaultKindName(Zone{})
 	rRKind      = resource.DefaultKindName(RR{})
+	forwardKind = resource.DefaultKindName(Forward{})
 	db          *gorm.DB
 	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
 )
@@ -31,15 +32,18 @@ type View struct {
 	Priority              int      `json:"priority" rest:"required=true,min=1,max=100"`
 	IsUsed                int      `json:"isused" rest:"required=true,min=0,max=2"`
 	ACLIDs                []string `json:"aclids"`
-	zones                 []*Zone  `json:"-"`
+	Zones                 []*Zone  `json:"-"`
+	ACLs                  []*ACL   `json:"acls"`
+	ZoneSize              int      `json:"zonesize"`
 }
 
 type Zone struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
-	//ZoneFile              string `json:"-"`
-	rRs []*RR `json:"-"`
+	Name                  string  `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	IsUsed                int     `json:"isused" rest:"required=true,min=0,max=2"`
+	rRs                   []*RR   `json:"-"`
+	forwards              Forward `json:"-"`
+	ForwarderSize         int     `json:"forwardsize"`
 }
 
 type ACL struct {
@@ -58,15 +62,44 @@ type RR struct {
 	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 
-type aCLHandler struct {
-	aCLs *ACLsState
+type forwardHandler struct {
+	forwardState *ForwardState
 }
 
-func NewACLHandler(s *ACLsState) *aCLHandler {
-	return &aCLHandler{
-		aCLs: s,
+func NewForwardHandler(s *ForwardState) *forwardHandler {
+	return &forwardHandler{
+		forwardState: s,
 	}
 }
+
+func (z Zone) CreateAction(name string) *resource.Action {
+	switch name {
+	case "forward":
+		return &resource.Action{
+			Name:  "forward",
+			Input: &ForwardData{},
+		}
+	default:
+		return nil
+	}
+}
+
+type ForwardData struct {
+	resource.ResourceBase `json:",inline"`
+	Oper                  string   `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+	ForwardType           string   `json:"type" rest:"required=true,minLen=1,maxLen=20"`
+	IPs                   []string `json:"ips" rest:"required=true"`
+}
+
+type Forward struct {
+	resource.ResourceBase `json:",inline"`
+	ForwardType           string   `json:"type" rest:"required=true,minLen=1,maxLen=20"`
+	IPs                   []string `json:"ip" rest:"required=true"`
+}
+
+/*func (f Forward) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{Zone{}}
+}*/
 
 func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
@@ -227,11 +260,43 @@ func (h *zoneHandler) Get(ctx *resource.Context) resource.Resource {
 	return one
 }
 
+func (h *zoneHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	r := ctx.Resource
+	var z *Zone
+	z = ctx.Resource.(*Zone)
+	forwardData, _ := r.GetAction().Input.(*ForwardData)
+	switch r.GetAction().Name {
+	case "forward":
+		if forwardData.Oper == "GET" {
+			fw, err := DBCon.GetForward(z.GetID())
+			if err != nil {
+				return nil, goresterr.NewAPIError(FormatError, err.Error())
+			}
+			return fw, nil
+		}
+		if forwardData.Oper == "DEL" {
+			if err := DBCon.DeleteForward(z.GetID()); err != nil {
+				return nil, goresterr.NewAPIError(FormatError, err.Error())
+			}
+			return "del success!", nil
+		}
+		if forwardData.Oper == "MOD" {
+			if err := DBCon.UpdateForward(forwardData, z.GetID()); err != nil {
+				return nil, goresterr.NewAPIError(FormatError, err.Error())
+			}
+			return forwardData, nil
+		}
+	default:
+		panic("it should never come here")
+	}
+	return nil, nil
+}
+
 func (z Zone) GetParents() []resource.ResourceKind {
 	return []resource.ResourceKind{View{}}
 }
 
-func (z Zone) CreateDefaultResource() resource.Resource {
+func (z Zone) CreateForwardResource() resource.Resource {
 	return &Zone{}
 }
 
@@ -298,4 +363,70 @@ func (h *rrHandler) Get(ctx *resource.Context) resource.Resource {
 
 func (r RR) GetParents() []resource.ResourceKind {
 	return []resource.ResourceKind{Zone{}}
+}
+
+type aCLHandler struct {
+	aCLs *ACLsState
+}
+
+func NewACLHandler(s *ACLsState) *aCLHandler {
+	return &aCLHandler{
+		aCLs: s,
+	}
+}
+
+type ForwardState struct {
+	forward *Forward
+}
+
+func NewForwardState() *ForwardState {
+	return &ForwardState{}
+}
+
+func (h *forwardHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	forward := ctx.Resource.(*Forward)
+	var one tb.DefaultForward
+	var err error
+	if one, err = DBCon.CreateDefaultForward(forward); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	forward.SetID(strconv.Itoa(int(one.ID)))
+	forward.SetCreationTimestamp(one.CreatedAt)
+	return forward, nil
+}
+
+func (h *forwardHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	forward := ctx.Resource.(*Forward)
+	if err := DBCon.DeleteDefaultForward(forward.GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (h *forwardHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	forward := ctx.Resource.(*Forward)
+	if err := DBCon.UpdateDefaultForward(forward); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return forward, nil
+}
+
+func (h *forwardHandler) List(ctx *resource.Context) interface{} {
+	var one []*Forward
+	var err error
+	if one, err = DBCon.GetDefaultForwards(); err != nil {
+		return nil
+	}
+	return one
+}
+
+func (h *forwardHandler) Get(ctx *resource.Context) resource.Resource {
+	fw := ctx.Resource.(*Forward)
+	one := &Forward{}
+	var err error
+	if one, err = DBCon.GetDefaultForward(fw.GetID()); err != nil {
+		return nil
+	}
+	return one
 }

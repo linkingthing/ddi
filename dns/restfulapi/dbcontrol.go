@@ -39,11 +39,33 @@ func NewDBController() *DBController {
 	if err != nil {
 		panic(err)
 	}
-	one.db.AutoMigrate(&tb.DBView{})
-	one.db.AutoMigrate(&tb.DBZone{})
-	one.db.AutoMigrate(&tb.DBRR{})
-	one.db.AutoMigrate(&tb.DBACL{})
-	one.db.AutoMigrate(&tb.DBIP{})
+	tx := one.db.Begin()
+	defer tx.Rollback()
+	if err := tx.AutoMigrate(&tb.DBView{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DBZone{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DBRR{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DBACL{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DBIP{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.Forwarder{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DefaultForward{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DefaultForwarder{}).Error; err != nil {
+		panic(err)
+	}
+	tx.Commit()
 	return one
 }
 func (controller *DBController) Close() {
@@ -372,6 +394,7 @@ func (controller *DBController) UpdateView(view *View) error {
 	}
 	//adjust view priority
 	var allDBView []tb.DBView
+	var newDBViews []tb.DBView
 	if err := tx.Find(&allDBView).Error; err != nil {
 		return err
 	}
@@ -381,25 +404,25 @@ func (controller *DBController) UpdateView(view *View) error {
 		for k, v := range allDBView {
 			if v.Priority > origin && v.Priority <= dest {
 				allDBView[k].Priority--
+				newDBViews = append(newDBViews, allDBView[k])
 			} else if v.Priority == origin {
 				allDBView[k].Priority = dest
-			} else {
-				allDBView = append(allDBView[:k], allDBView[k+1:]...)
+				newDBViews = append(newDBViews, allDBView[k])
 			}
 		}
 	} else if origin > dest {
 		for k, v := range allDBView {
 			if v.Priority >= dest && v.Priority < origin {
 				allDBView[k].Priority++
+				newDBViews = append(newDBViews, allDBView[k])
 			} else if v.Priority == origin {
 				allDBView[k].Priority = dest
-			} else {
-				allDBView = append(allDBView[:k], allDBView[k+1:]...)
+				newDBViews = append(newDBViews, allDBView[k])
 			}
 		}
 	}
 	//update the priority in the database.
-	for _, viewDB := range allDBView {
+	for _, viewDB := range newDBViews {
 		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
 			return err
 		}
@@ -482,6 +505,10 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	var ids []string
 	for _, acl := range acls {
 		ids = append(ids, strconv.Itoa(int(acl.ID)))
+		var tmp ACL
+		tmp.ID = strconv.Itoa(int(acl.ID))
+		tmp.Name = acl.Name
+		view.ACLs = append(view.ACLs, &tmp)
 	}
 	view.ACLIDs = ids
 	var zones []tb.DBZone
@@ -493,8 +520,9 @@ func (controller *DBController) GetView(id string) (*View, error) {
 		zone.SetID(strconv.Itoa(int(dbZone.ID)))
 		zone.Name = dbZone.Name
 		//zone.ZoneFile = dbZone.ZoneFile
-		view.zones = append(view.zones, &zone)
+		view.Zones = append(view.Zones, &zone)
 	}
+	view.ZoneSize = len(zones)
 	return &view, nil
 }
 
@@ -664,6 +692,11 @@ func (controller *DBController) GetZones(viewID string) []*Zone {
 		zone.SetID(strconv.Itoa(int(zoneDB.ID)))
 		zone.Name = zoneDB.Name
 		//zone.ZoneFile = zoneDB.ZoneFile
+		var forwarders []tb.Forwarder
+		if err := tx.Where("zone_id = ?", zone.ID).Find(&forwarders).Error; err != nil {
+			return nil
+		}
+		zone.ForwarderSize = len(forwarders)
 		zones = append(zones, &zone)
 	}
 	return zones
@@ -771,7 +804,7 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 	if index, err = strconv.Atoi(id); err != nil {
 		return nil, err
 	}
-	if err := tx.Where("zone_id = ?", viewID).First(&dbRR, index).Error; err != nil {
+	if err := tx.Where("zone_id = ?", zoneID).First(&dbRR, index).Error; err != nil {
 		return nil, err
 	}
 	rr := RR{}
@@ -782,6 +815,7 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 	rr.Value = dbRR.Value
 	rr.Type = "rr"
 	rr.SetCreationTimestamp(dbRR.CreatedAt)
+	rr.IsUsed = dbRR.IsUsed
 	return &rr, nil
 }
 
@@ -798,6 +832,11 @@ func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) e
 	one.TTL = rr.TTL
 	one.Value = rr.Value
 	one.IsUsed = rr.IsUsed
+	var id int
+	if id, err = strconv.Atoi(zoneID); err != nil {
+		return err
+	}
+	one.ZoneID = uint(id)
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&one).Error; err != nil {
@@ -848,8 +887,216 @@ func (controller *DBController) GetRRs(zoneID string, viewID string) ([]*RR, err
 		one.TTL = dbRR.TTL
 		one.Value = dbRR.Value
 		one.SetCreationTimestamp(dbRR.CreatedAt)
+		one.IsUsed = dbRR.IsUsed
 		rrs = append(rrs, one)
 	}
 	defer tx.Rollback()
 	return rrs, nil
+}
+
+func (controller *DBController) CreateDefaultForward(fw *Forward) (tb.DefaultForward, error) {
+	//check wether the default forward had been exists.
+	many := []tb.DefaultForward{}
+	tx := controller.db.Begin()
+	if err := tx.Find(&many).Error; err != nil {
+		return tb.DefaultForward{}, err
+	}
+	if len(many) >= 1 {
+		return tb.DefaultForward{}, fmt.Errorf("Just allow one default forward configuration!")
+	}
+	defaultfw := tb.DefaultForward{ForwardType: fw.ForwardType}
+	for _, ip := range fw.IPs {
+		tmp := tb.DefaultForwarder{IP: ip}
+		defaultfw.Forwarders = append(defaultfw.Forwarders, tmp)
+	}
+	if err := tx.Create(&defaultfw).Error; err != nil {
+		return tb.DefaultForward{}, err
+	}
+	tx.Commit()
+	return defaultfw, nil
+}
+
+func (controller *DBController) DeleteDefaultForward(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	defaultfw := tb.DefaultForward{}
+	if err := tx.Unscoped().Delete(&defaultfw).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) UpdateDefaultForward(forward *Forward) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var many []tb.DefaultForward
+	if err := tx.Find(&many).Error; err != nil {
+		return err
+	}
+	fmt.Println(many)
+	fmt.Println(len(many))
+	if len(many) == 0 {
+		forward.ID = ""
+		fw, err := controller.CreateDefaultForward(forward)
+		if err != nil {
+			return err
+		}
+		forward.ID = strconv.Itoa(int(fw.ID))
+	} else {
+		fw := tb.DefaultForward{}
+		fw.ID = many[0].ID
+		fw.ForwardType = forward.ForwardType
+		for _, ip := range forward.IPs {
+			tmp := tb.DefaultForwarder{IP: ip}
+			fw.Forwarders = append(fw.Forwarders, tmp)
+		}
+		//delete the old ips
+		if err := tx.Unscoped().Where("forward_id = ?", many[0].ID).Delete(&tb.DefaultForwarder{}).Error; err != nil {
+			return err
+		}
+		//update new data
+		if err := tx.Save(&fw).Error; err != nil {
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetDefaultForward(id string) (*Forward, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	fw := tb.DefaultForward{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return nil, err
+	}
+	fw.ID = uint(num)
+	if err := tx.First(&fw).Error; err != nil {
+		return nil, err
+	}
+	if err := tx.Model(&fw).Association("Forwarders").Find(&fw.Forwarders).Error; err != nil {
+		return nil, err
+	}
+	one := Forward{}
+	one.ID = id
+	one.ForwardType = fw.ForwardType
+	for _, v := range fw.Forwarders {
+		one.IPs = append(one.IPs, v.IP)
+	}
+	one.Type = "forward"
+	one.SetCreationTimestamp(fw.CreatedAt)
+	return &one, nil
+}
+
+func (controller *DBController) GetDefaultForwards() ([]*Forward, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	fws := []*Forward{}
+	tbFWs := []tb.DefaultForward{}
+	if err := tx.Find(&tbFWs).Error; err != nil {
+		return nil, err
+	}
+	var err error
+	for _, one := range tbFWs {
+		tmp := &Forward{}
+		if tmp, err = controller.GetDefaultForward(strconv.Itoa(int(one.ID))); err != nil {
+			return nil, err
+		}
+		fws = append(fws, tmp)
+	}
+	if len(fws) == 0 {
+		tmp := &Forward{}
+		tmp.ID = "0"
+		fws = append(fws, tmp)
+		return fws, nil
+	}
+	return fws, nil
+}
+
+func (controller *DBController) GetForward(id string) (*ForwardData, error) {
+	var fws []tb.Forwarder
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return nil, err
+	}
+	var zone tb.DBZone
+	zone.ID = uint(num)
+	if err := tx.First(&zone).Error; err != nil {
+		return nil, err
+	}
+	if zone.IsForward == 0 {
+		tmp := ForwardData{}
+		tmp.ID = "0"
+		return &tmp, nil
+	}
+	if err := tx.Model(&zone).Association("Forwarders").Find(&fws).Error; err != nil {
+		return nil, err
+	}
+	tmp := ForwardData{}
+	tmp.ID = "0"
+	tmp.ForwardType = zone.ForwardType
+	for _, fw := range fws {
+		tmp.ID = strconv.Itoa(int(fw.ID))
+		tmp.IPs = append(tmp.IPs, fw.IP)
+	}
+	return &tmp, nil
+}
+
+func (controller *DBController) UpdateForward(forward *ForwardData, zoneID string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var zone tb.DBZone
+	var num int
+	var err error
+	if num, err = strconv.Atoi(zoneID); err != nil {
+		return err
+	}
+	zone.ID = uint(num)
+	if err := tx.First(&zone).Error; err != nil {
+		return err
+	}
+	//delete all the old data in the Forwarders;
+	if err := tx.Unscoped().Where("zone_id = ?", zoneID).Delete(&tb.Forwarder{}).Error; err != nil {
+		return err
+	}
+	//add new data to the zone and forwarders.
+	zone.IsForward = 1
+	zone.ForwardType = forward.ForwardType
+	for _, ip := range forward.IPs {
+		tmp := tb.Forwarder{}
+		tmp.IP = ip
+		zone.Forwarders = append(zone.Forwarders, tmp)
+	}
+	if err := tx.Save(&zone).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) DeleteForward(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	//delete the old ips
+	if err := tx.Unscoped().Where("zone_id = ?", id).Delete(&tb.Forwarder{}).Error; err != nil {
+		return err
+	}
+	zone := tb.DBZone{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+	zone.ID = uint(num)
+	if err := tx.Model(&zone).UpdateColumn("is_forward", 0).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
 }

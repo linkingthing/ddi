@@ -23,7 +23,7 @@ func TestStartDNS(t *testing.T) {
 }
 
 func TestCreateACL(t *testing.T) {
-	var ipList = []string{"192.168.199.0/24", "192.168.198.0/24"}
+	var ipList = []string{"10.0.0.0/24", "192.168.198.0/24"}
 	createACLReq := pb.CreateACLReq{
 		Name: "southchina",
 		ID:   "ACL001",
@@ -33,9 +33,9 @@ func TestCreateACL(t *testing.T) {
 }
 
 func TestUpdateACL(t *testing.T) {
-	var ipList = []string{"192.168.190.0/24", "192.168.191.0/24"}
+	var ipList = []string{"10.0.0.0/24", "192.168.191.0/24"}
 	updateACLReq := pb.UpdateACLReq{
-		Name:   "southchina_1",
+		Name:   "southchina",
 		ID:     "ACL001",
 		NewIPs: ipList}
 	err := handler.UpdateACL(updateACLReq)
