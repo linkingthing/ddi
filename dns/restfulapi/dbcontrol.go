@@ -65,6 +65,9 @@ func NewDBController() *DBController {
 	if err := tx.AutoMigrate(&tb.DefaultForwarder{}).Error; err != nil {
 		panic(err)
 	}
+	if err := tx.AutoMigrate(&tb.Redirection{}).Error; err != nil {
+		panic(err)
+	}
 	tx.Commit()
 	return one
 }
@@ -523,6 +526,15 @@ func (controller *DBController) GetView(id string) (*View, error) {
 		view.Zones = append(view.Zones, &zone)
 	}
 	view.ZoneSize = len(zones)
+	var redirections []tb.Redirection
+	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "rpc").Find(&redirections).Error; err != nil {
+		return nil, err
+	}
+	view.RPZSize = len(redirections)
+	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "redirect").Find(&redirections).Error; err != nil {
+		return nil, err
+	}
+	view.RedirectSize = len(redirections)
 	return &view, nil
 }
 
@@ -898,6 +910,7 @@ func (controller *DBController) CreateDefaultForward(fw *Forward) (tb.DefaultFor
 	//check wether the default forward had been exists.
 	many := []tb.DefaultForward{}
 	tx := controller.db.Begin()
+	defer tx.Rollback()
 	if err := tx.Find(&many).Error; err != nil {
 		return tb.DefaultForward{}, err
 	}
@@ -1099,4 +1112,111 @@ func (controller *DBController) DeleteForward(id string) error {
 	}
 	tx.Commit()
 	return nil
+}
+
+////////////////
+func (controller *DBController) CreateRedirection(rd *Redirection, viewID string) (tb.Redirection, error) {
+	var view tb.DBView
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var num int
+	var err error
+	if num, err = strconv.Atoi(viewID); err != nil {
+		return tb.Redirection{}, err
+	}
+	view.ID = uint(num)
+	if err := tx.First(&view).Error; err != nil {
+		return tb.Redirection{}, fmt.Errorf("id %s of view not exists, %w", viewID, err)
+	}
+	tbrd := tb.Redirection{Name: rd.Name, TTL: rd.TTL, DataType: rd.DataType, RedirectType: rd.RedirectType, Value: rd.Value}
+	view.Redirections = append(view.Redirections, tbrd)
+	if err := tx.Save(&view).Error; err != nil {
+		return tb.Redirection{}, err
+	}
+	if err := tx.Last(&tbrd).Error; err != nil {
+		return tb.Redirection{}, err
+	}
+	tx.Commit()
+	return tbrd, nil
+}
+
+func (controller *DBController) DeleteRedirection(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+	rd := tb.Redirection{}
+	rd.ID = uint(num)
+	if err := tx.Unscoped().Delete(&rd).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) UpdateRedirection(rd *Redirection) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var one tb.Redirection
+	var num int
+	var err error
+	if num, err = strconv.Atoi(rd.ID); err != nil {
+		return err
+	}
+	one.ID = uint(num)
+	one.Name = rd.Name
+	one.TTL = rd.TTL
+	one.DataType = rd.DataType
+	one.RedirectType = rd.RedirectType
+	one.Value = rd.Value
+	if err := tx.Save(&rd).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetRedirection(id string) (*Redirection, error) {
+	var rd tb.Redirection
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return nil, err
+	}
+	rd.ID = uint(num)
+	if err := tx.First(&rd).Error; err != nil {
+		return nil, err
+	}
+	var tmp Redirection
+	tmp.ID = id
+	tmp.Name = rd.Name
+	tmp.TTL = rd.TTL
+	tmp.DataType = rd.DataType
+	tmp.RedirectType = rd.RedirectType
+	tmp.Value = rd.Value
+	return &tmp, nil
+}
+
+func (controller *DBController) GetRedirections(viewID string) ([]*Redirection, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	rds := []*Redirection{}
+	var tbrds []tb.Redirection
+	if err := tx.Where("view_id = ?", viewID).Find(&tbrds).Error; err != nil {
+		return nil, err
+	}
+	var err error
+	for _, one := range tbrds {
+		tmp := &Redirection{}
+		if tmp, err = controller.GetRedirection(strconv.Itoa(int(one.ID))); err != nil {
+			return nil, err
+		}
+		rds = append(rds, tmp)
+	}
+	return rds, nil
 }

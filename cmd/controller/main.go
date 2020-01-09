@@ -31,6 +31,7 @@ func main() {
 	schemas.Import(&version, api.View{}, api.NewViewHandler(state))
 	schemas.Import(&version, api.Zone{}, api.NewZoneHandler(state))
 	schemas.Import(&version, api.RR{}, api.NewRRHandler(state))
+	schemas.Import(&version, api.Redirection{}, api.NewRedirectionHandler(state))
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",

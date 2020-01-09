@@ -18,11 +18,12 @@ type DBIP struct {
 
 type DBView struct {
 	gorm.Model
-	Name     string
-	Priority int
-	IsUsed   int
-	ACLs     []DBACL  `gorm:"many2many:view_acls;"`
-	Zones    []DBZone `gorm:"foreignkey:ViewID"`
+	Name         string
+	Priority     int
+	IsUsed       int
+	ACLs         []DBACL       `gorm:"many2many:view_acls;"`
+	Zones        []DBZone      `gorm:"foreignkey:ViewID"`
+	Redirections []Redirection `gorm:"foreignkey:ViewID"`
 }
 
 type DBZone struct {
@@ -63,4 +64,14 @@ type DefaultForwarder struct {
 	gorm.Model
 	IP        string
 	ForwardID uint `sql:"type:integer REFERENCES default_forwards(id) on update cascade on delete cascade"`
+}
+
+type Redirection struct {
+	gorm.Model
+	Name         string
+	TTL          uint
+	DataType     string
+	RedirectType string
+	Value        string
+	ViewID       uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
 }

@@ -17,24 +17,28 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	aCLKind     = resource.DefaultKindName(ACL{})
-	viewKind    = resource.DefaultKindName(View{})
-	zoneKind    = resource.DefaultKindName(Zone{})
-	rRKind      = resource.DefaultKindName(RR{})
-	forwardKind = resource.DefaultKindName(Forward{})
-	db          *gorm.DB
-	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
+	aCLKind         = resource.DefaultKindName(ACL{})
+	viewKind        = resource.DefaultKindName(View{})
+	zoneKind        = resource.DefaultKindName(Zone{})
+	rRKind          = resource.DefaultKindName(RR{})
+	forwardKind     = resource.DefaultKindName(Forward{})
+	redirectionKind = resource.DefaultKindName(Redirection{})
+	db              *gorm.DB
+	FormatError     = goresterr.ErrorCode{"Unauthorized", 400}
 )
 
 type View struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	Priority              int      `json:"priority" rest:"required=true,min=1,max=100"`
-	IsUsed                int      `json:"isused" rest:"required=true,min=0,max=2"`
-	ACLIDs                []string `json:"aclids"`
-	Zones                 []*Zone  `json:"-"`
-	ACLs                  []*ACL   `json:"acls"`
-	ZoneSize              int      `json:"zonesize"`
+	Name                  string         `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	Priority              int            `json:"priority" rest:"required=true,min=1,max=100"`
+	IsUsed                int            `json:"isused" rest:"required=true,min=0,max=2"`
+	ACLIDs                []string       `json:"aclids"`
+	Zones                 []*Zone        `json:"-"`
+	ACLs                  []*ACL         `json:"acls"`
+	ZoneSize              int            `json:"zonesize"`
+	Redirections          []*Redirection `json:"-"`
+	RPZSize               int            `json:"rpzsize"`
+	RedirectSize          int            `json:"redirectsize"`
 }
 
 type Zone struct {
@@ -62,16 +66,6 @@ type RR struct {
 	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 
-type forwardHandler struct {
-	forwardState *ForwardState
-}
-
-func NewForwardHandler(s *ForwardState) *forwardHandler {
-	return &forwardHandler{
-		forwardState: s,
-	}
-}
-
 func (z Zone) CreateAction(name string) *resource.Action {
 	switch name {
 	case "forward":
@@ -95,6 +89,15 @@ type Forward struct {
 	resource.ResourceBase `json:",inline"`
 	ForwardType           string   `json:"type" rest:"required=true,minLen=1,maxLen=20"`
 	IPs                   []string `json:"ip" rest:"required=true"`
+}
+
+type Redirection struct {
+	resource.ResourceBase `json:",inline"`
+	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	TTL                   uint   `json:"ttl" rest:"required=true"`
+	DataType              string `json:"datatype" rest:"required=true,options=A|AAAA|CNAME"`
+	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpc|redirect"`
+	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=20"`
 }
 
 /*func (f Forward) GetParents() []resource.ResourceKind {
@@ -383,6 +386,16 @@ func NewForwardState() *ForwardState {
 	return &ForwardState{}
 }
 
+type forwardHandler struct {
+	forwardState *ForwardState
+}
+
+func NewForwardHandler(s *ForwardState) *forwardHandler {
+	return &forwardHandler{
+		forwardState: s,
+	}
+}
+
 func (h *forwardHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	forward := ctx.Resource.(*Forward)
 	var one tb.DefaultForward
@@ -426,6 +439,69 @@ func (h *forwardHandler) Get(ctx *resource.Context) resource.Resource {
 	one := &Forward{}
 	var err error
 	if one, err = DBCon.GetDefaultForward(fw.GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+type redirectionHandler struct {
+	views *ViewsState
+}
+
+func NewRedirectionHandler(s *ViewsState) *redirectionHandler {
+	return &redirectionHandler{
+		views: s,
+	}
+}
+
+func (r Redirection) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{View{}}
+}
+
+func (r *redirectionHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	redirection := ctx.Resource.(*Redirection)
+	var one tb.Redirection
+	var err error
+	if one, err = DBCon.CreateRedirection(redirection, redirection.GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	redirection.SetID(strconv.Itoa(int(one.ID)))
+	redirection.SetCreationTimestamp(one.CreatedAt)
+	return redirection, nil
+}
+
+func (r *redirectionHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	redirection := ctx.Resource.(*Redirection)
+	if err := DBCon.DeleteRedirection(redirection.GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (r *redirectionHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	redirection := ctx.Resource.(*Redirection)
+	if err := DBCon.UpdateRedirection(redirection); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return redirection, nil
+}
+
+func (r *redirectionHandler) List(ctx *resource.Context) interface{} {
+	redirection := ctx.Resource.(*Redirection)
+	var one []*Redirection
+	var err error
+	if one, err = DBCon.GetRedirections(redirection.GetParent().GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+func (r *redirectionHandler) Get(ctx *resource.Context) resource.Resource {
+	fw := ctx.Resource.(*Redirection)
+	one := &Redirection{}
+	var err error
+	if one, err = DBCon.GetRedirection(fw.GetID()); err != nil {
 		return nil
 	}
 	return one
