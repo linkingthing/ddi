@@ -36,6 +36,7 @@ type PromRole struct {
 
 var OnlinePromHosts = make(map[string]PromRole)
 var OfflinePromHosts = make(map[string]PromRole)
+var KafkaOffset int64 = 0
 
 // produceProm node uses kafka to report it's alive state
 func ProduceProm(msg kafka.Message) {
@@ -51,9 +52,13 @@ func ProduceProm(msg kafka.Message) {
 func ConsumerProm() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 
-		Brokers: []string{KafkaServerProm},
-		Topic:   KafkaTopicProm,
+		Brokers:     []string{KafkaServerProm},
+		Topic:       KafkaTopicProm,
+		StartOffset: kafka.LastOffset,
 	})
+	log.Println("kafkaoffset: ", KafkaOffset)
+	r.SetOffset(KafkaOffset)
+
 	defer r.Close()
 
 	for {
@@ -65,6 +70,13 @@ func ConsumerProm() {
 		//_, file, line, _ := runtime.Caller(1)
 		log.Printf(", message at offset %d: key: %s, value: %s\n", m.Offset, string(m.Key),
 			string(m.Value))
+
+		KafkaOffset = int64(m.Offset) + 1
+		err = r.SetOffset(KafkaOffset)
+		if err != nil {
+			log.Println("r.setoffset error", err)
+		}
+		log.Println("r.setoffset ok ", KafkaOffset)
 
 		var Role PromRole
 
