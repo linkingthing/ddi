@@ -25,13 +25,16 @@ func main() {
 	schemas := schema.NewSchemaManager()
 	aCLsState := api.NewACLsState()
 	forwardState := api.NewForwardState()
+	dnsState := api.NewDefaultDNS64State()
 	schemas.Import(&version, api.ACL{}, api.NewACLHandler(aCLsState))
 	schemas.Import(&version, api.Forward{}, api.NewForwardHandler(forwardState))
+	schemas.Import(&version, api.DefaultDNS64{}, api.NewDefaultDNS64Handler(dnsState))
 	state := api.NewViewsState()
 	schemas.Import(&version, api.View{}, api.NewViewHandler(state))
 	schemas.Import(&version, api.Zone{}, api.NewZoneHandler(state))
 	schemas.Import(&version, api.RR{}, api.NewRRHandler(state))
 	schemas.Import(&version, api.Redirection{}, api.NewRedirectionHandler(state))
+	schemas.Import(&version, api.DNS64{}, api.NewDNS64Handler(state))
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",

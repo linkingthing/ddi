@@ -17,14 +17,16 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	aCLKind         = resource.DefaultKindName(ACL{})
-	viewKind        = resource.DefaultKindName(View{})
-	zoneKind        = resource.DefaultKindName(Zone{})
-	rRKind          = resource.DefaultKindName(RR{})
-	forwardKind     = resource.DefaultKindName(Forward{})
-	redirectionKind = resource.DefaultKindName(Redirection{})
-	db              *gorm.DB
-	FormatError     = goresterr.ErrorCode{"Unauthorized", 400}
+	aCLKind          = resource.DefaultKindName(ACL{})
+	viewKind         = resource.DefaultKindName(View{})
+	zoneKind         = resource.DefaultKindName(Zone{})
+	rRKind           = resource.DefaultKindName(RR{})
+	forwardKind      = resource.DefaultKindName(Forward{})
+	redirectionKind  = resource.DefaultKindName(Redirection{})
+	defaultDNS64Kind = resource.DefaultKindName(DefaultDNS64{})
+	DNS64Kind        = resource.DefaultKindName(DNS64{})
+	db               *gorm.DB
+	FormatError      = goresterr.ErrorCode{"Unauthorized", 400}
 )
 
 type View struct {
@@ -39,6 +41,8 @@ type View struct {
 	Redirections          []*Redirection `json:"-"`
 	RPZSize               int            `json:"rpzsize"`
 	RedirectSize          int            `json:"redirectsize"`
+	DNS64s                []*DNS64       `json:"-"`
+	DNS64Size             int            `json:"dns64size"`
 }
 
 type Zone struct {
@@ -62,7 +66,7 @@ type RR struct {
 	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	DataType              string `json:"type" rest:"required=true,minLen=1,maxLen=20"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
-	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=20"`
+	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=39"`
 	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 
@@ -97,12 +101,34 @@ type Redirection struct {
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	DataType              string `json:"datatype" rest:"required=true,options=A|AAAA|CNAME"`
 	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpc|redirect"`
-	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=20"`
+	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=39"`
 }
 
-/*func (f Forward) GetParents() []resource.ResourceKind {
-	return []resource.ResourceKind{Zone{}}
-}*/
+type DefaultDNS64 struct {
+	resource.ResourceBase `json:",inline"`
+	Prefix                string `json:"prefix" rest:"required=true,minLen=1,maxLen=39"`
+	ClientWhite           string `json:"clientwhite" rest:"required=true,minLen=1,maxLen=20"`
+	WhiteName             string `json:"whitename"`
+	ClientBlack           string `json:"clientblack" rest:"required=true,minLen=1,maxLen=20"`
+	BlackName             string `json:"blackname"`
+	AAddress              string `json:"aaddress" rest:"required=true,minLen=1,maxLen=20"`
+	AddressName           string `json:"addressname"`
+}
+
+type DNS64 struct {
+	resource.ResourceBase `json:",inline"`
+	Prefix                string `json:"prefix" rest:"required=true,minLen=1,maxLen=39"`
+	ClientWhite           string `json:"clientwhite" rest:"required=true,minLen=1,maxLen=20"`
+	WhiteName             string `json:"whitename"`
+	ClientBlack           string `json:"clientblack" rest:"required=true,minLen=1,maxLen=20"`
+	BlackName             string `json:"blackname"`
+	AAddress              string `json:"aaddress" rest:"required=true,minLen=1,maxLen=20"`
+	AddressName           string `json:"addressname"`
+}
+
+func (d DNS64) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{View{}}
+}
 
 func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
@@ -299,7 +325,7 @@ func (z Zone) GetParents() []resource.ResourceKind {
 	return []resource.ResourceKind{View{}}
 }
 
-func (z Zone) CreateForwardResource() resource.Resource {
+func (z Zone) CreateDefaultResource() resource.Resource {
 	return &Zone{}
 }
 
@@ -481,7 +507,7 @@ func (r *redirectionHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 
 func (r *redirectionHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
 	redirection := ctx.Resource.(*Redirection)
-	if err := DBCon.UpdateRedirection(redirection); err != nil {
+	if err := DBCon.UpdateRedirection(redirection, redirection.GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return redirection, nil
@@ -502,6 +528,131 @@ func (r *redirectionHandler) Get(ctx *resource.Context) resource.Resource {
 	one := &Redirection{}
 	var err error
 	if one, err = DBCon.GetRedirection(fw.GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+type DefaultDNS64State struct {
+	dns64 *DefaultDNS64
+}
+
+func NewDefaultDNS64State() *DefaultDNS64State {
+	return &DefaultDNS64State{}
+}
+
+type defaultDNS64Handler struct {
+	dns64State *DefaultDNS64State
+}
+
+func NewDefaultDNS64Handler(s *DefaultDNS64State) *defaultDNS64Handler {
+	return &defaultDNS64Handler{
+		dns64State: s,
+	}
+}
+
+func (h *defaultDNS64Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	dns64 := ctx.Resource.(*DefaultDNS64)
+	var one *tb.DefaultDNS64
+	var err error
+	if one, err = DBCon.CreateDefaultDNS64(dns64); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	dns64.SetID(strconv.Itoa(int(one.ID)))
+	dns64.SetCreationTimestamp(one.CreatedAt)
+	return dns64, nil
+}
+
+func (h *defaultDNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	dns64 := ctx.Resource.(*DefaultDNS64)
+	if err := DBCon.DeleteDefaultDNS64(dns64.GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (h *defaultDNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	dns64 := ctx.Resource.(*DefaultDNS64)
+	if err := DBCon.UpdateDefaultDNS64(dns64); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return dns64, nil
+}
+
+func (h *defaultDNS64Handler) List(ctx *resource.Context) interface{} {
+	var one []*DefaultDNS64
+	var err error
+	if one, err = DBCon.GetDefaultDNS64s(); err != nil {
+		return nil
+	}
+	return one
+}
+
+func (h *defaultDNS64Handler) Get(ctx *resource.Context) resource.Resource {
+	dns64 := ctx.Resource.(*DefaultDNS64)
+	one := &DefaultDNS64{}
+	var err error
+	if one, err = DBCon.GetDefaultDNS64(dns64.GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+type DNS64Handler struct {
+	views *ViewsState
+}
+
+func NewDNS64Handler(s *ViewsState) *DNS64Handler {
+	return &DNS64Handler{
+		views: s,
+	}
+}
+
+func (h *DNS64Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	dns64 := ctx.Resource.(*DNS64)
+	var one *tb.DNS64
+	var err error
+	if one, err = DBCon.CreateDNS64(dns64, dns64.GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	dns64.SetID(strconv.Itoa(int(one.ID)))
+	dns64.SetCreationTimestamp(one.CreatedAt)
+	return dns64, nil
+}
+
+func (h *DNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	dns64 := ctx.Resource.(*DNS64)
+	if err := DBCon.DeleteDNS64(dns64.GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (h *DNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	dns64 := ctx.Resource.(*DNS64)
+	if err := DBCon.UpdateDNS64(dns64); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return dns64, nil
+}
+
+func (h *DNS64Handler) List(ctx *resource.Context) interface{} {
+	dns64 := ctx.Resource.(*DNS64)
+	var one []*DNS64
+	var err error
+	if one, err = DBCon.GetDNS64s(dns64.GetParent().GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+func (h *DNS64Handler) Get(ctx *resource.Context) resource.Resource {
+	dns64 := ctx.Resource.(*DNS64)
+	one := &DNS64{}
+	var err error
+	if one, err = DBCon.GetDNS64(dns64.GetID()); err != nil {
 		return nil
 	}
 	return one

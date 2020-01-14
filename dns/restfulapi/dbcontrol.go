@@ -68,6 +68,36 @@ func NewDBController() *DBController {
 	if err := tx.AutoMigrate(&tb.Redirection{}).Error; err != nil {
 		panic(err)
 	}
+	if err := tx.AutoMigrate(&tb.DefaultDNS64{}).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DNS64{}).Error; err != nil {
+		panic(err)
+	}
+	any := tb.DBACL{}
+	any.ID = 1
+	if err := tx.Find(&any).Error; err != nil {
+		any.Name = "any"
+		any.IsUsed = 1
+		if err := tx.Create(&any).Error; err != nil {
+			panic(err)
+		}
+	}
+	viewDefault := tb.DBView{}
+	viewDefault.ID = 1
+	var many []tb.DBView
+	if err := tx.Find(&many).Error; err != nil {
+		panic(err)
+	}
+	if err := tx.Find(&viewDefault).Error; err != nil {
+		viewDefault.Name = "default"
+		viewDefault.Priority = len(many) + 1
+		viewDefault.IsUsed = 1
+		viewDefault.ACLs = append(viewDefault.ACLs, any)
+		if err := tx.Create(&viewDefault).Error; err != nil {
+			panic(err)
+		}
+	}
 	tx.Commit()
 	return one
 }
@@ -119,6 +149,9 @@ func (controller *DBController) CreateACL(aCL *ACL) (tb.DBACL, error) {
 
 func (controller *DBController) DeleteACL(id string) error {
 	var err error
+	if id == "1" {
+		fmt.Errorf("It's not allow to delete the default any acl!")
+	}
 	one := tb.DBACL{}
 	var index int
 	if index, err = strconv.Atoi(id); err != nil {
@@ -182,6 +215,9 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 	var one tb.DBACL
 	var num int
 	var err error
+	if aCL.ID == "1" {
+		fmt.Errorf("It's not allow to modify the default any acl!")
+	}
 	if num, err = strconv.Atoi(aCL.ID); err != nil {
 		return err
 	}
@@ -535,6 +571,11 @@ func (controller *DBController) GetView(id string) (*View, error) {
 		return nil, err
 	}
 	view.RedirectSize = len(redirections)
+	var dns64s []tb.DNS64
+	if err := tx.Where("view_id = ?", id).Find(&dns64s).Error; err != nil {
+		return nil, err
+	}
+	view.DNS64Size = len(dns64s)
 	return &view, nil
 }
 
@@ -947,8 +988,6 @@ func (controller *DBController) UpdateDefaultForward(forward *Forward) error {
 	if err := tx.Find(&many).Error; err != nil {
 		return err
 	}
-	fmt.Println(many)
-	fmt.Println(len(many))
 	if len(many) == 0 {
 		forward.ID = ""
 		fw, err := controller.CreateDefaultForward(forward)
@@ -1157,12 +1196,20 @@ func (controller *DBController) DeleteRedirection(id string) error {
 	return nil
 }
 
-func (controller *DBController) UpdateRedirection(rd *Redirection) error {
+func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var one tb.Redirection
+	var view tb.DBView
 	var num int
 	var err error
+	if num, err = strconv.Atoi(viewID); err != nil {
+		return err
+	}
+	view.ID = uint(num)
+	if err := tx.First(&view).Error; err != nil {
+		return fmt.Errorf("the id %s of view does not exists!")
+	}
+	var one tb.Redirection
 	if num, err = strconv.Atoi(rd.ID); err != nil {
 		return err
 	}
@@ -1172,7 +1219,8 @@ func (controller *DBController) UpdateRedirection(rd *Redirection) error {
 	one.DataType = rd.DataType
 	one.RedirectType = rd.RedirectType
 	one.Value = rd.Value
-	if err := tx.Save(&rd).Error; err != nil {
+	view.Redirections = append(view.Redirections, one)
+	if err := tx.Save(&view).Error; err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1219,4 +1267,264 @@ func (controller *DBController) GetRedirections(viewID string) ([]*Redirection, 
 		rds = append(rds, tmp)
 	}
 	return rds, nil
+}
+
+/////
+func (controller *DBController) CreateDefaultDNS64(dns64 *DefaultDNS64) (*tb.DefaultDNS64, error) {
+	//check whether the acl is exists.
+	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
+		return nil, err
+	}
+	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+		return nil, err
+	}
+	if err := controller.CheckACL(dns64.AAddress); err != nil {
+		return nil, err
+	}
+	//create the default dns64 data.There is not any relationship between default dns64 table and the view table.
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	tbdns64 := tb.DefaultDNS64{}
+	tbdns64.Prefix = dns64.Prefix
+	tbdns64.ClientWhite = dns64.ClientWhite
+	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.AAddress = dns64.AAddress
+	if err := tx.Create(&tbdns64).Error; err != nil {
+		return nil, err
+	}
+	tx.Commit()
+	return &tbdns64, nil
+}
+
+func (controller *DBController) DeleteDefaultDNS64(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64 := tb.DefaultDNS64{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+	dns64.ID = uint(num)
+	if err := tx.Unscoped().Delete(&dns64).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) UpdateDefaultDNS64(dns64 *DefaultDNS64) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	tbdns64 := tb.DefaultDNS64{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(dns64.ID); err != nil {
+		return err
+	}
+	tbdns64.ID = uint(num)
+	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
+		return err
+	}
+	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+		return err
+	}
+	if err := controller.CheckACL(dns64.AAddress); err != nil {
+		return err
+	}
+	tbdns64.Prefix = dns64.Prefix
+	tbdns64.ClientWhite = dns64.ClientWhite
+	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.AAddress = dns64.AAddress
+	if err := tx.Save(&tbdns64).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) CheckACL(id string) error {
+	if err := controller.db.First(&tb.DBACL{}, id).Error; err != nil {
+		return fmt.Errorf("id %s of acl not exists, %w", id, err)
+	}
+	return nil
+}
+
+func (controller *DBController) GetDefaultDNS64(id string) (*DefaultDNS64, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64 := tb.DefaultDNS64{}
+	if err := tx.First(&dns64, id).Error; err != nil {
+		return nil, err
+	}
+	one := DefaultDNS64{}
+	one.ID = id
+	one.Prefix = dns64.Prefix
+	one.ClientWhite = dns64.ClientWhite
+	var acl tb.DBACL
+	if err := tx.First(&acl, dns64.ClientWhite).Error; err != nil {
+		return nil, err
+	}
+	one.WhiteName = acl.Name
+	one.ClientBlack = dns64.ClientBlack
+	acl.ID = 0
+	if err := tx.First(&acl, dns64.ClientBlack).Error; err != nil {
+		return nil, err
+	}
+	one.BlackName = acl.Name
+	one.AAddress = dns64.AAddress
+	acl.ID = 0
+	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
+		return nil, err
+	}
+	one.AddressName = acl.Name
+	return &one, nil
+}
+
+func (controller *DBController) GetDefaultDNS64s() ([]*DefaultDNS64, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64s := []*DefaultDNS64{}
+	tbDNS64s := []tb.DefaultDNS64{}
+	if err := tx.Find(&tbDNS64s).Error; err != nil {
+		return nil, err
+	}
+	var err error
+	for _, one := range tbDNS64s {
+		tmp := &DefaultDNS64{}
+		if tmp, err = controller.GetDefaultDNS64(strconv.Itoa(int(one.ID))); err != nil {
+			return nil, err
+		}
+		dns64s = append(dns64s, tmp)
+	}
+	return dns64s, nil
+}
+
+func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DNS64, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	view := tb.DBView{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(viewID); err != nil {
+		return nil, err
+	}
+	view.ID = uint(num)
+	if err := tx.First(&view).Error; err != nil {
+		return nil, err
+	}
+	tbdns64 := tb.DNS64{}
+	tbdns64.Prefix = dns64.Prefix
+	tbdns64.ClientWhite = dns64.ClientWhite
+	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.AAddress = dns64.AAddress
+	view.DNS64s = append(view.DNS64s, tbdns64)
+	if err := tx.Save(&view).Error; err != nil {
+		return nil, err
+	}
+	if err := tx.Last(&tbdns64).Error; err != nil {
+		return nil, err
+	}
+	tx.Commit()
+	return &tbdns64, nil
+}
+
+func (controller *DBController) DeleteDNS64(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64 := tb.DNS64{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+	dns64.ID = uint(num)
+	if err := tx.Unscoped().Delete(&dns64).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) UpdateDNS64(dns64 *DNS64) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	tbdns64 := tb.DNS64{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(dns64.ID); err != nil {
+		return err
+	}
+	tbdns64.ID = uint(num)
+	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
+		return err
+	}
+	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+		return err
+	}
+	if err := controller.CheckACL(dns64.AAddress); err != nil {
+		return err
+	}
+	if err := tx.Find(&tbdns64).Error; err != nil {
+		return err
+	}
+	tbdns64.Prefix = dns64.Prefix
+	tbdns64.ClientWhite = dns64.ClientWhite
+	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.AAddress = dns64.AAddress
+	if err := tx.Save(&tbdns64).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetDNS64(id string) (*DNS64, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64 := tb.DNS64{}
+	if err := tx.First(&dns64, id).Error; err != nil {
+		return nil, err
+	}
+	one := DNS64{}
+	one.ID = id
+	one.Prefix = dns64.Prefix
+	one.ClientWhite = dns64.ClientWhite
+	var acl tb.DBACL
+	if err := tx.First(&acl, dns64.ClientWhite).Error; err != nil {
+		return nil, err
+	}
+	one.WhiteName = acl.Name
+	one.ClientBlack = dns64.ClientBlack
+	acl.ID = 0
+	if err := tx.First(&acl, dns64.ClientBlack).Error; err != nil {
+		return nil, err
+	}
+	one.BlackName = acl.Name
+	one.AAddress = dns64.AAddress
+	acl.ID = 0
+	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
+		return nil, err
+	}
+	one.AddressName = acl.Name
+	return &one, nil
+}
+
+func (controller *DBController) GetDNS64s(viewID string) ([]*DNS64, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	dns64s := []*DNS64{}
+	tbDNS64s := []tb.DNS64{}
+	if err := tx.Where("view_id = ?", viewID).Find(&tbDNS64s).Error; err != nil {
+		return nil, err
+	}
+	var err error
+	for _, one := range tbDNS64s {
+		tmp := &DNS64{}
+		if tmp, err = controller.GetDNS64(strconv.Itoa(int(one.ID))); err != nil {
+			return nil, err
+		}
+		dns64s = append(dns64s, tmp)
+	}
+	return dns64s, nil
 }

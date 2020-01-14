@@ -24,6 +24,7 @@ type DBView struct {
 	ACLs         []DBACL       `gorm:"many2many:view_acls;"`
 	Zones        []DBZone      `gorm:"foreignkey:ViewID"`
 	Redirections []Redirection `gorm:"foreignkey:ViewID"`
+	DNS64s       []DNS64       `gorm:"foreignkey:ViewID"`
 }
 
 type DBZone struct {
@@ -74,4 +75,21 @@ type Redirection struct {
 	RedirectType string
 	Value        string
 	ViewID       uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+}
+
+type DNS64 struct {
+	gorm.Model
+	Prefix      string
+	ClientWhite string
+	ClientBlack string
+	AAddress    string
+	ViewID      uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+}
+
+type DefaultDNS64 struct {
+	gorm.Model
+	Prefix      string
+	ClientWhite string
+	ClientBlack string
+	AAddress    string
 }
