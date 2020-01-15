@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -97,7 +98,15 @@ func isTransportOver(data string) (over bool) {
 func main() {
 
 	port := 3333
+	go SocketServer(port)
 
-	SocketServer(port)
+	mux := http.NewServeMux()
+	mux.Handle("/", &myHandler{})
+	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", query)
+	mux.HandleFunc("/apis/linkingthing/node/v1/hists", query_range) //history
 
+	log.Println("Starting v2 httpserver")
+	log.Fatal(http.ListenAndServe(":1210", mux))
+
+	log.Println("end of main, should not come here")
 }
