@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"reflect"
 	"strconv"
@@ -71,6 +72,17 @@ type BaseJsonBean struct {
 	Message string `json:"message"`
 }
 
+type Nodes struct {
+	Metric map[string]string
+	Values []interface{}
+}
+
+type BaseJsonRange struct {
+	Status  string `json:"status"`
+	Data    Nodes  `json:"data"`
+	Message string `json:"message"`
+}
+
 func NewBaseJsonBean() *BaseJsonBean {
 	return &BaseJsonBean{}
 }
@@ -82,6 +94,41 @@ func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func query_range(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fmt.Println("in query_range() Form: ", r.Form)
+
+	paramStart, _ := r.Form["start"]
+	paramEnd, _ := r.Form["end"]
+	paramStep, _ := r.Form["step"]
+	paramHost, _ := r.Form["node"]
+	paramType, _ := r.Form["type"]
+
+	if paramStart == nil || paramEnd == nil || paramStep == nil || paramHost == nil || paramType == nil {
+		fmt.Println("ERROR, param need to be checked")
+		return
+	}
+
+	start, err := strconv.Atoi(paramStart[0])
+	end, err := strconv.Atoi(paramEnd[0])
+	step, err := strconv.Atoi(paramStep[0])
+	host := paramHost[0]
+	t := paramType[0]
+
+	result := NewBaseJsonBean()
+	result.Status = "success"
+	result.Message = "ok"
+	result.Data.Nodes = utils.OnlinePromHosts
+
+	//
+	//cpuResp, err := GetPromRange("cpu", "10.0.0.15", 1579150980, 1579154580, 323)
+	cpuResp, err := GetPromRange(t, host, start, end, step)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	result.Data.
+		//cpuHist, err := strconv.ParseFloat(cpuResp, 64)
+		//cpuResp = fmt.Sprintf("%.2f", cpuUsage)
+		log.Println("xxx cpuHist: ", cpuResp)
 
 }
 func query(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +218,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	var command string
 	var rsp Response
 	if promType == "cpu" {
-		command = "curl -H \"Content-Type: application/json\" + " +
+		command = "curl -H \"Content-Type: application/json\"  " +
 			"http://10.0.0.23:9090/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
 	}
 	out, err := cmd(command)
@@ -180,6 +227,56 @@ func GetPromItem(promType string, host string) (string, error) {
 	}
 
 	log.Println("+++ in GetPromItem(), out")
+	log.Println(out)
+	log.Println("--- out")
+
+	err = json.Unmarshal([]byte(out), &rsp)
+	if err != nil {
+		return "", err
+	}
+	if rsp.Status != "success" {
+		return "", err
+	}
+
+	for _, v := range rsp.Data.Result {
+		if v.Metric.Instance == host {
+			for _, v2 := range v.Value {
+				varType := reflect.TypeOf(v2) //float64: timestamp, string: cpu usage
+				switch varType.Name() {
+				case "string":
+					return v2.(string), nil
+				}
+			}
+		}
+	}
+
+	return "", nil
+}
+
+func GetPromRange(promType string, host string, start int, end int, step int) (string, error) {
+	var command string
+	var rsp Response
+
+	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
+	return str, nil
+
+	fmt.Println("promType, host, start, end, step,", promType, host, start, end, step)
+	var urlStr string = "http://baidu.com/index.php/?abc= 1_羽毛"
+	l, err := url.ParseRequestURI(urlStr)
+	fmt.Println(l, err)
+
+	resUri, err := url.ParseRequestURI("query=100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) by (instance) * 100)&start=1579175189.588&end=1579178789.588&step=14 ")
+	urlPath := resUri.Query().Encode()
+	if promType == "cpu" {
+		command = "curl -H \"Content-Type: application/json\" " + "http://10.0.0.23:9090/api/v1/query_range" + urlPath + " 2>/dev/null"
+	}
+	log.Println("xxx command: ", command)
+	out, err := cmd(command)
+	if err != nil {
+		return "", err
+	}
+
+	log.Println("+++ in GetPromRange(), out")
 	log.Println(out)
 	log.Println("--- out")
 
