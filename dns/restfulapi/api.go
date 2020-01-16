@@ -24,7 +24,8 @@ var (
 	forwardKind      = resource.DefaultKindName(Forward{})
 	redirectionKind  = resource.DefaultKindName(Redirection{})
 	defaultDNS64Kind = resource.DefaultKindName(DefaultDNS64{})
-	DNS64Kind        = resource.DefaultKindName(DNS64{})
+	dNS64Kind        = resource.DefaultKindName(DNS64{})
+	ipBlackHoleKind  = resource.DefaultKindName(IPBlackHole{})
 	db               *gorm.DB
 	FormatError      = goresterr.ErrorCode{"Unauthorized", 400}
 )
@@ -51,6 +52,7 @@ type Zone struct {
 	IsUsed                int     `json:"isused" rest:"required=true,min=0,max=2"`
 	rRs                   []*RR   `json:"-"`
 	forwards              Forward `json:"-"`
+	RRSize                int     `json:"rrsize"`
 	ForwarderSize         int     `json:"forwardsize"`
 }
 
@@ -124,6 +126,12 @@ type DNS64 struct {
 	BlackName             string `json:"blackname"`
 	AAddress              string `json:"aaddress" rest:"required=true,minLen=1,maxLen=20"`
 	AddressName           string `json:"addressname"`
+}
+
+type IPBlackHole struct {
+	resource.ResourceBase `json:",inline"`
+	ACLID                 string `json:"aclid" rest:"required=true"`
+	ACLName               string `json:"name"`
 }
 
 func (d DNS64) GetParents() []resource.ResourceKind {
@@ -653,6 +661,72 @@ func (h *DNS64Handler) Get(ctx *resource.Context) resource.Resource {
 	one := &DNS64{}
 	var err error
 	if one, err = DBCon.GetDNS64(dns64.GetID()); err != nil {
+		return nil
+	}
+	return one
+}
+
+type IPBlackHoleState struct {
+	ipBlackHole *IPBlackHole
+}
+
+func NewIPBlackHoleState() *IPBlackHoleState {
+	return &IPBlackHoleState{}
+}
+
+type ipBlackHoleHandler struct {
+	ipBlackHoleState *IPBlackHoleState
+}
+
+func NewIPBlackHoleHandler(s *IPBlackHoleState) *ipBlackHoleHandler {
+	return &ipBlackHoleHandler{
+		ipBlackHoleState: s,
+	}
+}
+
+func (h *ipBlackHoleHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	ipBlackHole := ctx.Resource.(*IPBlackHole)
+	var one *tb.IPBlackHole
+	var err error
+	if one, err = DBCon.CreateIPBlackHole(ipBlackHole); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	ipBlackHole.SetID(strconv.Itoa(int(one.ID)))
+	ipBlackHole.SetCreationTimestamp(one.CreatedAt)
+	return ipBlackHole, nil
+}
+
+func (h *ipBlackHoleHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	ipBlackHole := ctx.Resource.(*IPBlackHole)
+	if err := DBCon.DeleteIPBlackHole(ipBlackHole.GetID()); err != nil {
+		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (h *ipBlackHoleHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+	ipBlackHole := ctx.Resource.(*IPBlackHole)
+	if err := DBCon.UpdateIPBlackHole(ipBlackHole); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipBlackHole, nil
+}
+
+func (h *ipBlackHoleHandler) List(ctx *resource.Context) interface{} {
+	var many []*IPBlackHole
+	var err error
+	if many, err = DBCon.GetIPBlackHoles(); err != nil {
+		return nil
+	}
+	return many
+}
+
+func (h *ipBlackHoleHandler) Get(ctx *resource.Context) resource.Resource {
+	ipBlackHole := ctx.Resource.(*IPBlackHole)
+	one := &IPBlackHole{}
+	var err error
+	if one, err = DBCon.GetIPBlackHole(ipBlackHole.GetID()); err != nil {
 		return nil
 	}
 	return one

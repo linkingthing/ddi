@@ -93,3 +93,8 @@ type DefaultDNS64 struct {
 	ClientBlack string
 	AAddress    string
 }
+
+type IPBlackHole struct {
+	gorm.Model
+	ACLID uint `sql:"type:integer REFERENCES dbacls(id) on update cascade on delete cascade"`
+}

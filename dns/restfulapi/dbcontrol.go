@@ -74,12 +74,24 @@ func NewDBController() *DBController {
 	if err := tx.AutoMigrate(&tb.DNS64{}).Error; err != nil {
 		panic(err)
 	}
+	if err := tx.AutoMigrate(&tb.IPBlackHole{}).Error; err != nil {
+		panic(err)
+	}
 	any := tb.DBACL{}
 	any.ID = 1
 	if err := tx.Find(&any).Error; err != nil {
 		any.Name = "any"
 		any.IsUsed = 1
 		if err := tx.Create(&any).Error; err != nil {
+			panic(err)
+		}
+	}
+	none := tb.DBACL{}
+	none.ID = 2
+	if err := tx.Find(&any).Error; err != nil {
+		none.Name = "none"
+		none.IsUsed = 1
+		if err := tx.Create(&none).Error; err != nil {
 			panic(err)
 		}
 	}
@@ -149,8 +161,8 @@ func (controller *DBController) CreateACL(aCL *ACL) (tb.DBACL, error) {
 
 func (controller *DBController) DeleteACL(id string) error {
 	var err error
-	if id == "1" {
-		fmt.Errorf("It's not allow to delete the default any acl!")
+	if id == "1" || id == "2" {
+		fmt.Errorf("It's not allow to delete the default any or none acl!")
 	}
 	one := tb.DBACL{}
 	var index int
@@ -215,8 +227,8 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 	var one tb.DBACL
 	var num int
 	var err error
-	if aCL.ID == "1" {
-		fmt.Errorf("It's not allow to modify the default any acl!")
+	if aCL.ID == "1" || aCL.ID == "2" {
+		fmt.Errorf("It's not allow to modify the default any or none acl!")
 	}
 	if num, err = strconv.Atoi(aCL.ID); err != nil {
 		return err
@@ -700,6 +712,12 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 	}
 	zone.Type = "zone"
 	zone.SetCreationTimestamp(a.CreatedAt)
+	zone.RRSize = len(rrs)
+	var forwarders []tb.Forwarder
+	if err := tx.Where("zone_id = ?", zone.ID).Find(&forwarders).Error; err != nil {
+		return nil, err
+	}
+	zone.ForwarderSize = len(forwarders)
 	return &zone, nil
 }
 
@@ -740,17 +758,13 @@ func (controller *DBController) GetZones(viewID string) []*Zone {
 	if err := tx.Where("view_id = ?", viewID).Find(&zoneDBs).Error; err != nil {
 		return nil
 	}
+	var err error
 	for _, zoneDB := range zoneDBs {
-		var zone Zone
-		zone.SetID(strconv.Itoa(int(zoneDB.ID)))
-		zone.Name = zoneDB.Name
-		//zone.ZoneFile = zoneDB.ZoneFile
-		var forwarders []tb.Forwarder
-		if err := tx.Where("zone_id = ?", zone.ID).Find(&forwarders).Error; err != nil {
+		var zone *Zone
+		if zone, err = controller.GetZone(viewID, strconv.Itoa(int(zoneDB.ID))); err != nil {
 			return nil
 		}
-		zone.ForwarderSize = len(forwarders)
-		zones = append(zones, &zone)
+		zones = append(zones, zone)
 	}
 	return zones
 }
@@ -1527,4 +1541,98 @@ func (controller *DBController) GetDNS64s(viewID string) ([]*DNS64, error) {
 		dns64s = append(dns64s, tmp)
 	}
 	return dns64s, nil
+}
+
+func (controller *DBController) CreateIPBlackHole(blackHole *IPBlackHole) (*tb.IPBlackHole, error) {
+	//create the blackHole data.
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	tbblackHole := tb.IPBlackHole{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(blackHole.ACLID); err != nil {
+		return nil, err
+	}
+	tbblackHole.ACLID = uint(num)
+	if err := tx.Create(&tbblackHole).Error; err != nil {
+		return nil, err
+	}
+	tx.Commit()
+	return &tbblackHole, nil
+}
+
+func (controller *DBController) DeleteIPBlackHole(id string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	blackHole := tb.IPBlackHole{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(id); err != nil {
+		return err
+	}
+	blackHole.ID = uint(num)
+	//delete the blackhole data.
+	if err := tx.Unscoped().Delete(&blackHole).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) UpdateIPBlackHole(blackHole *IPBlackHole) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	tbblackHole := tb.IPBlackHole{}
+	var num int
+	var err error
+	if num, err = strconv.Atoi(blackHole.ID); err != nil {
+		return err
+	}
+	tbblackHole.ID = uint(num)
+	if num, err = strconv.Atoi(blackHole.ACLID); err != nil {
+		return err
+	}
+	tbblackHole.ACLID = uint(num)
+	if err := tx.Save(&tbblackHole).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetIPBlackHole(id string) (*IPBlackHole, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	blackHole := tb.IPBlackHole{}
+	if err := tx.First(&blackHole, id).Error; err != nil {
+		return nil, err
+	}
+	one := IPBlackHole{}
+	var acl tb.DBACL
+	if err := tx.First(&acl, blackHole.ACLID).Error; err != nil {
+		return nil, fmt.Errorf("the id %d of acl is not exists!", blackHole.ACLID)
+	}
+	one.ACLID = strconv.Itoa(int(blackHole.ACLID))
+	one.ACLName = acl.Name
+	one.ID = id
+	return &one, nil
+}
+
+func (controller *DBController) GetIPBlackHoles() ([]*IPBlackHole, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	blackHoles := []*IPBlackHole{}
+	tbBlackHoles := []tb.IPBlackHole{}
+	if err := tx.Find(&tbBlackHoles).Error; err != nil {
+		return nil, err
+	}
+	var err error
+	for _, one := range tbBlackHoles {
+		tmp := &IPBlackHole{}
+		if tmp, err = controller.GetIPBlackHole(strconv.Itoa(int(one.ID))); err != nil {
+			return nil, err
+		}
+		blackHoles = append(blackHoles, tmp)
+	}
+	return blackHoles, nil
 }
