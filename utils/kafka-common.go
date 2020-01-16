@@ -27,13 +27,13 @@ const (
 )
 
 type PromRole struct {
-	Hostname string
-	PromHost string
-	PromPort string
-	IP       string
-	Role     uint  // 3 roles: Controller, Db, Kafka
-	State    uint  // 1 online 0 offline
-	OnTime   int64 //timestamp of the nearest online time
+	Hostname string `json:"hostname"`
+	PromHost string `json:"promHost"`
+	PromPort string `json:"promPort"`
+	IP       string `json:"ip"`
+	Role     uint   `json:"role"`   // 3 roles: Controller, Db, Kafka
+	State    uint   `json:"state"`  // 1 online 0 offline
+	OnTime   int64  `json:"onTime"` //timestamp of the nearest online time
 }
 
 var OnlinePromHosts = make(map[string]PromRole)
