@@ -72,9 +72,16 @@ type BaseJsonBean struct {
 	Message string `json:"message"`
 }
 
+//type values interface {
+//}
+
+type RangeMetric struct {
+	Node string `json:"node"`
+}
+
 type Nodes struct {
-	Metric map[string]string
-	Values []interface{}
+	Metric RangeMetric `json:"metric"`
+	Values interface{} `json:"values"`
 }
 
 type BaseJsonRange struct {
@@ -86,6 +93,9 @@ type BaseJsonRange struct {
 func NewBaseJsonBean() *BaseJsonBean {
 	return &BaseJsonBean{}
 }
+func NewBaseJsonRange() *BaseJsonRange {
+	return &BaseJsonRange{}
+}
 
 func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("welcome"))
@@ -94,6 +104,7 @@ func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func query_range(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fmt.Println("in query_range() Form: ", r.Form)
+	result := NewBaseJsonRange()
 
 	paramStart, _ := r.Form["start"]
 	paramEnd, _ := r.Form["end"]
@@ -103,6 +114,11 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 
 	if paramStart == nil || paramEnd == nil || paramStep == nil || paramHost == nil || paramType == nil {
 		fmt.Println("ERROR, param need to be checked")
+		result.Status = "error"
+		result.Message = "params not sent"
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
 		return
 	}
 
@@ -112,10 +128,9 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 	host := paramHost[0]
 	t := paramType[0]
 
-	result := NewBaseJsonBean()
 	result.Status = "success"
 	result.Message = "ok"
-	result.Data.Nodes = utils.OnlinePromHosts
+	result.Data.Metric.Node = host
 
 	//
 	//cpuResp, err := GetPromRange("cpu", "10.0.0.15", 1579150980, 1579154580, 323)
@@ -124,12 +139,21 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	var histData []interface{}
+	err = json.Unmarshal([]byte(cpuResp), &histData)
+	if err != nil {
+		log.Println("cpuResp unmarshal error ", err)
+	}
 
-	result.Data.
-		//cpuHist, err := strconv.ParseFloat(cpuResp, 64)
-		//cpuResp = fmt.Sprintf("%.2f", cpuUsage)
-		log.Println("xxx cpuHist: ", cpuResp)
+	result.Data.Values = histData
 
+	//cpuHist, err := strconv.ParseFloat(cpuResp, 64)
+	//cpuResp = fmt.Sprintf("%.2f", cpuUsage)
+	log.Println("xxx cpuHist: ", cpuResp)
+
+	bytes, _ := json.Marshal(result)
+	//fmt.Fprint(w, string(bytes))
+	w.Write([]byte(bytes))
 }
 func query(w http.ResponseWriter, r *http.Request) {
 
@@ -195,12 +219,15 @@ func query(w http.ResponseWriter, r *http.Request) {
 		postHost = host[0]
 	}
 
+	log.Println("postHost: ", postHost)
 	if postHost != "" {
+
 		HostUsage[postHost] = Usage
 	} else {
 		HostUsage["10.0.0.15"] = Usage
 		HostUsage["10.0.0.23"] = Usage
 	}
+	log.Println("hostUsage: ", HostUsage)
 	result.Data.Usage = HostUsage
 
 	//log.Println("+++ result")
@@ -260,10 +287,10 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
 	return str, nil
 
-	fmt.Println("promType, host, start, end, step,", promType, host, start, end, step)
-	var urlStr string = "http://baidu.com/index.php/?abc= 1_羽毛"
-	l, err := url.ParseRequestURI(urlStr)
-	fmt.Println(l, err)
+	//fmt.Println("promType, host, start, end, step,", promType, host, start, end, step)
+	//var urlStr string = "http://baidu.com/index.php/?abc= 1_羽毛"
+	//l, err := url.ParseRequestURI(urlStr)
+	//fmt.Println(l, err)
 
 	resUri, err := url.ParseRequestURI("query=100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) by (instance) * 100)&start=1579175189.588&end=1579178789.588&step=14 ")
 	urlPath := resUri.Query().Encode()
