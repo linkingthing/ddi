@@ -18,5 +18,5 @@ $ORIGIN {{.Name}}.
 $ORIGIN {{.Name}}.
 $TTL 1000       ; 16 minutes 40 seconds
 ns1                     A       192.168.199.129
-{{range $k,$rr := .RRs}}{{$rr.Data}}
+{{range $k,$rr := .RRs}}{{$rr.Name}} {{$rr.TTL}} {{$rr.Type}} {{$rr.Value}}
 {{end}}

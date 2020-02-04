@@ -26,6 +26,7 @@ var (
 	defaultDNS64Kind = resource.DefaultKindName(DefaultDNS64{})
 	dNS64Kind        = resource.DefaultKindName(DNS64{})
 	ipBlackHoleKind  = resource.DefaultKindName(IPBlackHole{})
+	recursiveConKind = resource.DefaultKindName(RecursiveConcurrent{})
 	db               *gorm.DB
 	FormatError      = goresterr.ErrorCode{"Unauthorized", 400}
 )
@@ -109,10 +110,8 @@ type Redirection struct {
 type DefaultDNS64 struct {
 	resource.ResourceBase `json:",inline"`
 	Prefix                string `json:"prefix" rest:"required=true,minLen=1,maxLen=39"`
-	ClientWhite           string `json:"clientwhite" rest:"required=true,minLen=1,maxLen=20"`
-	WhiteName             string `json:"whitename"`
-	ClientBlack           string `json:"clientblack" rest:"required=true,minLen=1,maxLen=20"`
-	BlackName             string `json:"blackname"`
+	ClientACL             string `json:"clientacl" rest:"required=true,minLen=1,maxLen=20"`
+	ClientACLName         string `json:"clientaclname"`
 	AAddress              string `json:"aaddress" rest:"required=true,minLen=1,maxLen=20"`
 	AddressName           string `json:"addressname"`
 }
@@ -120,10 +119,8 @@ type DefaultDNS64 struct {
 type DNS64 struct {
 	resource.ResourceBase `json:",inline"`
 	Prefix                string `json:"prefix" rest:"required=true,minLen=1,maxLen=39"`
-	ClientWhite           string `json:"clientwhite" rest:"required=true,minLen=1,maxLen=20"`
-	WhiteName             string `json:"whitename"`
-	ClientBlack           string `json:"clientblack" rest:"required=true,minLen=1,maxLen=20"`
-	BlackName             string `json:"blackname"`
+	ClientACL             string `json:"clientacl" rest:"required=true,minLen=1,maxLen=20"`
+	ClientACLName         string `json:"clientaclname"`
 	AAddress              string `json:"aaddress" rest:"required=true,minLen=1,maxLen=20"`
 	AddressName           string `json:"addressname"`
 }
@@ -132,6 +129,12 @@ type IPBlackHole struct {
 	resource.ResourceBase `json:",inline"`
 	ACLID                 string `json:"aclid" rest:"required=true"`
 	ACLName               string `json:"name"`
+}
+
+type RecursiveConcurrent struct {
+	resource.ResourceBase `json:",inline"`
+	RecursiveClients      int `json:"recursiveClients" rest:"required=true"`
+	FetchesPerZone        int `json:"fetchesPerZone" rest:"required=true"`
 }
 
 func (d DNS64) GetParents() []resource.ResourceKind {
@@ -159,7 +162,7 @@ func (h *aCLHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 }
 
-func (h *aCLHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *aCLHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
 	if _, err := DBCon.GetACL(aCL.GetID()); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.NotFound, err.Error())
@@ -222,7 +225,7 @@ func (h *viewHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 }
 
-func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	view := ctx.Resource.(*View)
 	if err := DBCon.UpdateView(view); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -318,13 +321,12 @@ func (h *zoneHandler) Action(ctx *resource.Context) (interface{}, *goresterr.API
 			return "del success!", nil
 		}
 		if forwardData.Oper == "MOD" {
-			if err := DBCon.UpdateForward(forwardData, z.GetID()); err != nil {
+			if err := DBCon.UpdateForward(forwardData, z.GetID(), z.GetParent().GetID()); err != nil {
 				return nil, goresterr.NewAPIError(FormatError, err.Error())
 			}
 			return forwardData, nil
 		}
 	default:
-		panic("it should never come here")
 	}
 	return nil, nil
 }
@@ -360,7 +362,7 @@ func (h *rrHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr
 	return rr, nil
 }
 
-func (h *rrHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *rrHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	rr := ctx.Resource.(*RR)
 	if _, err := DBCon.GetRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -451,7 +453,7 @@ func (h *forwardHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 }
 
-func (h *forwardHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *forwardHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	forward := ctx.Resource.(*Forward)
 	if err := DBCon.UpdateDefaultForward(forward); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -494,7 +496,7 @@ func (r Redirection) GetParents() []resource.ResourceKind {
 
 func (r *redirectionHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	redirection := ctx.Resource.(*Redirection)
-	var one tb.Redirection
+	var one *tb.Redirection
 	var err error
 	if one, err = DBCon.CreateRedirection(redirection, redirection.GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -506,14 +508,14 @@ func (r *redirectionHandler) Create(ctx *resource.Context) (resource.Resource, *
 
 func (r *redirectionHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	redirection := ctx.Resource.(*Redirection)
-	if err := DBCon.DeleteRedirection(redirection.GetID()); err != nil {
+	if err := DBCon.DeleteRedirection(redirection.GetID(), redirection.GetParent().GetID()); err != nil {
 		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
 	} else {
 		return nil
 	}
 }
 
-func (r *redirectionHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (r *redirectionHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	redirection := ctx.Resource.(*Redirection)
 	if err := DBCon.UpdateRedirection(redirection, redirection.GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -580,7 +582,7 @@ func (h *defaultDNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError 
 	}
 }
 
-func (h *defaultDNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *defaultDNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	dns64 := ctx.Resource.(*DefaultDNS64)
 	if err := DBCon.UpdateDefaultDNS64(dns64); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -631,16 +633,16 @@ func (h *DNS64Handler) Create(ctx *resource.Context) (resource.Resource, *gorest
 
 func (h *DNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	dns64 := ctx.Resource.(*DNS64)
-	if err := DBCon.DeleteDNS64(dns64.GetID()); err != nil {
+	if err := DBCon.DeleteDNS64(dns64.GetID(), dns64.GetParent().GetID()); err != nil {
 		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
 	} else {
 		return nil
 	}
 }
 
-func (h *DNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *DNS64Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	dns64 := ctx.Resource.(*DNS64)
-	if err := DBCon.UpdateDNS64(dns64); err != nil {
+	if err := DBCon.UpdateDNS64(dns64, dns64.GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return dns64, nil
@@ -705,7 +707,7 @@ func (h *ipBlackHoleHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 }
 
-func (h *ipBlackHoleHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) { //全量
+func (h *ipBlackHoleHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	ipBlackHole := ctx.Resource.(*IPBlackHole)
 	if err := DBCon.UpdateIPBlackHole(ipBlackHole); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -730,4 +732,40 @@ func (h *ipBlackHoleHandler) Get(ctx *resource.Context) resource.Resource {
 		return nil
 	}
 	return one
+}
+
+////////////
+type RecursiveConcurrentState struct {
+	con *RecursiveConcurrent
+}
+
+func NewRecursiveConcurrentState() *RecursiveConcurrentState {
+	return &RecursiveConcurrentState{}
+}
+
+type recursiveConcurrentHandler struct {
+	conState *RecursiveConcurrentState
+}
+
+func NewRecursiveConcurrentHandler(s *RecursiveConcurrentState) *recursiveConcurrentHandler {
+	return &recursiveConcurrentHandler{
+		conState: s,
+	}
+}
+
+func (h *recursiveConcurrentHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	con := ctx.Resource.(*RecursiveConcurrent)
+	if err := DBCon.UpdateRecursiveConcurrent(con); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return con, nil
+}
+
+func (h *recursiveConcurrentHandler) List(ctx *resource.Context) interface{} {
+	var many []*RecursiveConcurrent
+	var err error
+	if many, err = DBCon.GetRecursiveConcurrents(); err != nil {
+		return nil
+	}
+	return many
 }

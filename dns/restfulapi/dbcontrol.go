@@ -10,19 +10,36 @@ import (
 )
 
 const (
-	STARTDNS   = "StartDNS"
-	STOPDNS    = "StopDNS"
-	CREATEACL  = "CreateACL"
-	DELETEACL  = "DeleteACL"
-	UPDATEACL  = "UpdateACL"
-	CREATEVIEW = "CreateView"
-	UPDATEVIEW = "UpdateView"
-	DELETEVIEW = "DeleteView"
-	CREATEZONE = "CreateZone"
-	DELETEZONE = "DeleteZone"
-	CREATERR   = "CreateRR"
-	UPDATERR   = "UpdateRR"
-	DELETERR   = "DeleteRR"
+	STARTDNS                  = "StartDNS"
+	STOPDNS                   = "StopDNS"
+	CREATEACL                 = "CreateACL"
+	DELETEACL                 = "DeleteACL"
+	UPDATEACL                 = "UpdateACL"
+	CREATEVIEW                = "CreateView"
+	UPDATEVIEW                = "UpdateView"
+	DELETEVIEW                = "DeleteView"
+	CREATEZONE                = "CreateZone"
+	DELETEZONE                = "DeleteZone"
+	CREATERR                  = "CreateRR"
+	UPDATERR                  = "UpdateRR"
+	DELETERR                  = "DeleteRR"
+	UPDATEDEFAULTFORWARD      = "UpdateDefaultForward"
+	DELETEDEFAULTFORWARD      = "DeleteDefaultForward"
+	UPDATEFORWARD             = "UpdateForward"
+	DELETEFORWARD             = "DeleteForward"
+	CREATEREDIRECTION         = "CreateRedirection"
+	UPDATEREDIRECTION         = "UpdateRedirection"
+	DELETEREDIRECTION         = "DeleteRedirection"
+	CREATEDEFAULTDNS64        = "CreateDefaultDNS64"
+	UPDATEDEFAULTDNS64        = "UpdateDefaultDNS64"
+	DELETEDEFAULTDNS64        = "DeleteDefaultDNS64"
+	CREATEDNS64               = "CreateDNS64"
+	UPDATEDNS64               = "UpdateDNS64"
+	DELETEDNS64               = "DeleteDNS64"
+	CREATEIPBLACKHOLE         = "CreateIPBlackHole"
+	UPDATEIPBLACKHOLE         = "UpdateIPBlackHole"
+	DELETEIPBLACKHOLE         = "DeleteIPBlackHole"
+	UPDATERECURSIVECONCURRENT = "UpdateRecursiveConcurrent"
 )
 
 var DBCon *DBController
@@ -77,6 +94,9 @@ func NewDBController() *DBController {
 	if err := tx.AutoMigrate(&tb.IPBlackHole{}).Error; err != nil {
 		panic(err)
 	}
+	if err := tx.AutoMigrate(&tb.RecursiveConcurrent{}).Error; err != nil {
+		panic(err)
+	}
 	any := tb.DBACL{}
 	any.ID = 1
 	if err := tx.Find(&any).Error; err != nil {
@@ -88,7 +108,7 @@ func NewDBController() *DBController {
 	}
 	none := tb.DBACL{}
 	none.ID = 2
-	if err := tx.Find(&any).Error; err != nil {
+	if err := tx.Find(&none).Error; err != nil {
 		none.Name = "none"
 		none.IsUsed = 1
 		if err := tx.Create(&none).Error; err != nil {
@@ -991,6 +1011,14 @@ func (controller *DBController) DeleteDefaultForward(id string) error {
 	if err := tx.Unscoped().Delete(&defaultfw).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteDefaultForwardReq{}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEDEFAULTFORWARD); err != nil {
+		return err
+	}
 	tx.Commit()
 	return nil
 }
@@ -1025,6 +1053,14 @@ func (controller *DBController) UpdateDefaultForward(forward *Forward) error {
 		if err := tx.Save(&fw).Error; err != nil {
 			return err
 		}
+	}
+	req := pb.UpdateDefaultForwardReq{Type: forward.ForwardType, IPs: forward.IPs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEDEFAULTFORWARD); err != nil {
+		return err
 	}
 	tx.Commit()
 	return nil
@@ -1114,7 +1150,7 @@ func (controller *DBController) GetForward(id string) (*ForwardData, error) {
 	return &tmp, nil
 }
 
-func (controller *DBController) UpdateForward(forward *ForwardData, zoneID string) error {
+func (controller *DBController) UpdateForward(forward *ForwardData, zoneID string, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var zone tb.DBZone
@@ -1142,6 +1178,14 @@ func (controller *DBController) UpdateForward(forward *ForwardData, zoneID strin
 	if err := tx.Save(&zone).Error; err != nil {
 		return err
 	}
+	req := pb.UpdateForwardReq{ViewID: viewID, ZoneID: zoneID, Type: forward.ForwardType, IPs: forward.IPs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEFORWARD); err != nil {
+		return err
+	}
 	tx.Commit()
 	return nil
 }
@@ -1163,37 +1207,53 @@ func (controller *DBController) DeleteForward(id string) error {
 	if err := tx.Model(&zone).UpdateColumn("is_forward", 0).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteForwardReq{}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEFORWARD); err != nil {
+		return err
+	}
 	tx.Commit()
 	return nil
 }
 
 ////////////////
-func (controller *DBController) CreateRedirection(rd *Redirection, viewID string) (tb.Redirection, error) {
+func (controller *DBController) CreateRedirection(rd *Redirection, viewID string) (*tb.Redirection, error) {
 	var view tb.DBView
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var num int
 	var err error
 	if num, err = strconv.Atoi(viewID); err != nil {
-		return tb.Redirection{}, err
+		return nil, err
 	}
 	view.ID = uint(num)
 	if err := tx.First(&view).Error; err != nil {
-		return tb.Redirection{}, fmt.Errorf("id %s of view not exists, %w", viewID, err)
+		return nil, fmt.Errorf("id %s of view not exists, %w", viewID, err)
 	}
 	tbrd := tb.Redirection{Name: rd.Name, TTL: rd.TTL, DataType: rd.DataType, RedirectType: rd.RedirectType, Value: rd.Value}
 	view.Redirections = append(view.Redirections, tbrd)
 	if err := tx.Save(&view).Error; err != nil {
-		return tb.Redirection{}, err
+		return nil, err
 	}
 	if err := tx.Last(&tbrd).Error; err != nil {
-		return tb.Redirection{}, err
+		return nil, err
+	}
+	req := pb.CreateRedirectionReq{ID: strconv.Itoa(int(tbrd.ID)), ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: rd.RedirectType, Value: rd.Value}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := SendCmd(data, CREATEREDIRECTION); err != nil {
+		return nil, err
 	}
 	tx.Commit()
-	return tbrd, nil
+	return &tbrd, nil
 }
 
-func (controller *DBController) DeleteRedirection(id string) error {
+func (controller *DBController) DeleteRedirection(id string, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var num int
@@ -1203,7 +1263,18 @@ func (controller *DBController) DeleteRedirection(id string) error {
 	}
 	rd := tb.Redirection{}
 	rd.ID = uint(num)
+	if err := tx.First(&rd).Error; err != nil {
+		return err
+	}
 	if err := tx.Unscoped().Delete(&rd).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteRedirectionReq{ID: id, ViewID: viewID, RedirectType: rd.RedirectType}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEREDIRECTION); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1235,6 +1306,14 @@ func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string
 	one.Value = rd.Value
 	view.Redirections = append(view.Redirections, one)
 	if err := tx.Save(&view).Error; err != nil {
+		return err
+	}
+	req := pb.UpdateRedirectionReq{ID: rd.ID, ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: rd.RedirectType, IP: rd.Value}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEREDIRECTION); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1286,10 +1365,7 @@ func (controller *DBController) GetRedirections(viewID string) ([]*Redirection, 
 /////
 func (controller *DBController) CreateDefaultDNS64(dns64 *DefaultDNS64) (*tb.DefaultDNS64, error) {
 	//check whether the acl is exists.
-	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
-		return nil, err
-	}
-	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+	if err := controller.CheckACL(dns64.ClientACL); err != nil {
 		return nil, err
 	}
 	if err := controller.CheckACL(dns64.AAddress); err != nil {
@@ -1300,10 +1376,17 @@ func (controller *DBController) CreateDefaultDNS64(dns64 *DefaultDNS64) (*tb.Def
 	defer tx.Rollback()
 	tbdns64 := tb.DefaultDNS64{}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientWhite = dns64.ClientWhite
-	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.ClientACL = dns64.ClientACL
 	tbdns64.AAddress = dns64.AAddress
 	if err := tx.Create(&tbdns64).Error; err != nil {
+		return nil, err
+	}
+	req := pb.CreateDefaultDNS64Req{ID: strconv.Itoa(int(tbdns64.ID)), Prefix: dns64.Prefix, ClientACL: dns64.ClientACL, AAddress: dns64.AAddress}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := SendCmd(data, CREATEDEFAULTDNS64); err != nil {
 		return nil, err
 	}
 	tx.Commit()
@@ -1323,6 +1406,14 @@ func (controller *DBController) DeleteDefaultDNS64(id string) error {
 	if err := tx.Unscoped().Delete(&dns64).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteDefaultDNS64Req{ID: id}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEDEFAULTDNS64); err != nil {
+		return err
+	}
 	tx.Commit()
 	return nil
 }
@@ -1337,20 +1428,24 @@ func (controller *DBController) UpdateDefaultDNS64(dns64 *DefaultDNS64) error {
 		return err
 	}
 	tbdns64.ID = uint(num)
-	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
-		return err
-	}
-	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+	if err := controller.CheckACL(dns64.ClientACL); err != nil {
 		return err
 	}
 	if err := controller.CheckACL(dns64.AAddress); err != nil {
 		return err
 	}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientWhite = dns64.ClientWhite
-	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.ClientACL = dns64.ClientACL
 	tbdns64.AAddress = dns64.AAddress
 	if err := tx.Save(&tbdns64).Error; err != nil {
+		return err
+	}
+	req := pb.UpdateDefaultDNS64Req{ID: strconv.Itoa(int(tbdns64.ID)), Prefix: dns64.Prefix, ClientACL: dns64.ClientACL, AAddress: dns64.AAddress}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEDEFAULTDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1374,18 +1469,13 @@ func (controller *DBController) GetDefaultDNS64(id string) (*DefaultDNS64, error
 	one := DefaultDNS64{}
 	one.ID = id
 	one.Prefix = dns64.Prefix
-	one.ClientWhite = dns64.ClientWhite
+	one.ClientACL = dns64.ClientACL
 	var acl tb.DBACL
-	if err := tx.First(&acl, dns64.ClientWhite).Error; err != nil {
+	if err := tx.First(&acl, dns64.ClientACL).Error; err != nil {
 		return nil, err
 	}
-	one.WhiteName = acl.Name
-	one.ClientBlack = dns64.ClientBlack
+	one.ClientACLName = acl.Name
 	acl.ID = 0
-	if err := tx.First(&acl, dns64.ClientBlack).Error; err != nil {
-		return nil, err
-	}
-	one.BlackName = acl.Name
 	one.AAddress = dns64.AAddress
 	acl.ID = 0
 	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
@@ -1429,8 +1519,7 @@ func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DN
 	}
 	tbdns64 := tb.DNS64{}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientWhite = dns64.ClientWhite
-	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.ClientACL = dns64.ClientACL
 	tbdns64.AAddress = dns64.AAddress
 	view.DNS64s = append(view.DNS64s, tbdns64)
 	if err := tx.Save(&view).Error; err != nil {
@@ -1439,11 +1528,19 @@ func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DN
 	if err := tx.Last(&tbdns64).Error; err != nil {
 		return nil, err
 	}
+	req := pb.CreateDNS64Req{ID: strconv.Itoa(int(tbdns64.ID)), ViewID: viewID, Prefix: dns64.Prefix, ClientACL: dns64.ClientACL, AAddress: dns64.AAddress}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := SendCmd(data, CREATEDNS64); err != nil {
+		return nil, err
+	}
 	tx.Commit()
 	return &tbdns64, nil
 }
 
-func (controller *DBController) DeleteDNS64(id string) error {
+func (controller *DBController) DeleteDNS64(id string, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	dns64 := tb.DNS64{}
@@ -1456,11 +1553,19 @@ func (controller *DBController) DeleteDNS64(id string) error {
 	if err := tx.Unscoped().Delete(&dns64).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteDNS64Req{ID: id, ViewID: viewID}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEDNS64); err != nil {
+		return err
+	}
 	tx.Commit()
 	return nil
 }
 
-func (controller *DBController) UpdateDNS64(dns64 *DNS64) error {
+func (controller *DBController) UpdateDNS64(dns64 *DNS64, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	tbdns64 := tb.DNS64{}
@@ -1470,10 +1575,7 @@ func (controller *DBController) UpdateDNS64(dns64 *DNS64) error {
 		return err
 	}
 	tbdns64.ID = uint(num)
-	if err := controller.CheckACL(dns64.ClientWhite); err != nil {
-		return err
-	}
-	if err := controller.CheckACL(dns64.ClientBlack); err != nil {
+	if err := controller.CheckACL(dns64.ClientACL); err != nil {
 		return err
 	}
 	if err := controller.CheckACL(dns64.AAddress); err != nil {
@@ -1483,10 +1585,17 @@ func (controller *DBController) UpdateDNS64(dns64 *DNS64) error {
 		return err
 	}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientWhite = dns64.ClientWhite
-	tbdns64.ClientBlack = dns64.ClientBlack
+	tbdns64.ClientACL = dns64.ClientACL
 	tbdns64.AAddress = dns64.AAddress
 	if err := tx.Save(&tbdns64).Error; err != nil {
+		return err
+	}
+	req := pb.UpdateDNS64Req{ID: strconv.Itoa(int(tbdns64.ID)), ViewID: viewID, Prefix: dns64.Prefix, ClientACL: dns64.ClientACL, AAddress: dns64.AAddress}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1503,18 +1612,13 @@ func (controller *DBController) GetDNS64(id string) (*DNS64, error) {
 	one := DNS64{}
 	one.ID = id
 	one.Prefix = dns64.Prefix
-	one.ClientWhite = dns64.ClientWhite
+	one.ClientACL = dns64.ClientACL
 	var acl tb.DBACL
-	if err := tx.First(&acl, dns64.ClientWhite).Error; err != nil {
+	if err := tx.First(&acl, dns64.ClientACL).Error; err != nil {
 		return nil, err
 	}
-	one.WhiteName = acl.Name
-	one.ClientBlack = dns64.ClientBlack
+	one.ClientACLName = acl.Name
 	acl.ID = 0
-	if err := tx.First(&acl, dns64.ClientBlack).Error; err != nil {
-		return nil, err
-	}
-	one.BlackName = acl.Name
 	one.AAddress = dns64.AAddress
 	acl.ID = 0
 	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
@@ -1557,6 +1661,14 @@ func (controller *DBController) CreateIPBlackHole(blackHole *IPBlackHole) (*tb.I
 	if err := tx.Create(&tbblackHole).Error; err != nil {
 		return nil, err
 	}
+	req := pb.CreateIPBlackHoleReq{ID: strconv.Itoa(int(tbblackHole.ID)), ACLID: blackHole.ACLID}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := SendCmd(data, CREATEIPBLACKHOLE); err != nil {
+		return nil, err
+	}
 	tx.Commit()
 	return &tbblackHole, nil
 }
@@ -1573,6 +1685,14 @@ func (controller *DBController) DeleteIPBlackHole(id string) error {
 	blackHole.ID = uint(num)
 	//delete the blackhole data.
 	if err := tx.Unscoped().Delete(&blackHole).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteIPBlackHoleReq{ID: id}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETEIPBLACKHOLE); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1594,6 +1714,14 @@ func (controller *DBController) UpdateIPBlackHole(blackHole *IPBlackHole) error 
 	}
 	tbblackHole.ACLID = uint(num)
 	if err := tx.Save(&tbblackHole).Error; err != nil {
+		return err
+	}
+	req := pb.UpdateIPBlackHoleReq{ID: blackHole.ID, ACLID: blackHole.ACLID}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATEIPBLACKHOLE); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1635,4 +1763,52 @@ func (controller *DBController) GetIPBlackHoles() ([]*IPBlackHole, error) {
 		blackHoles = append(blackHoles, tmp)
 	}
 	return blackHoles, nil
+}
+
+func (controller *DBController) GetRecursiveConcurrents() ([]*RecursiveConcurrent, error) {
+	var con tb.RecursiveConcurrent
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	if err := tx.First(&con).Error; err != nil {
+		con.RecursiveClients = 1000
+		con.FetchesPerZone = 0
+		if err := tx.Create(&con).Error; err != nil {
+			return nil, err
+		}
+	}
+	var many []*RecursiveConcurrent
+	var tmp RecursiveConcurrent
+	tmp.RecursiveClients = int(con.RecursiveClients)
+	tmp.FetchesPerZone = int(con.FetchesPerZone)
+	many = append(many, &tmp)
+	tx.Commit()
+	return many, nil
+}
+
+func (controller *DBController) UpdateRecursiveConcurrent(max *RecursiveConcurrent) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var con tb.RecursiveConcurrent
+	if err := tx.First(&con).Error; err != nil {
+		con.RecursiveClients = 1000
+		con.FetchesPerZone = 0
+		if err := tx.Create(&con).Error; err != nil {
+			return err
+		}
+	}
+	con.RecursiveClients = uint(max.RecursiveClients)
+	con.FetchesPerZone = uint(max.FetchesPerZone)
+	if err := tx.Save(&con).Error; err != nil {
+		return err
+	}
+	req := pb.UpdateRecurConcuReq{RecursiveClients: strconv.Itoa(int(max.RecursiveClients)), FetchesPerZone: strconv.Itoa(int(max.FetchesPerZone))}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATERECURSIVECONCURRENT); err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
 }

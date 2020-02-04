@@ -79,22 +79,26 @@ type Redirection struct {
 
 type DNS64 struct {
 	gorm.Model
-	Prefix      string
-	ClientWhite string
-	ClientBlack string
-	AAddress    string
-	ViewID      uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	Prefix    string
+	ClientACL string
+	AAddress  string
+	ViewID    uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
 }
 
 type DefaultDNS64 struct {
 	gorm.Model
-	Prefix      string
-	ClientWhite string
-	ClientBlack string
-	AAddress    string
+	Prefix    string
+	ClientACL string
+	AAddress  string
 }
 
 type IPBlackHole struct {
 	gorm.Model
 	ACLID uint `sql:"type:integer REFERENCES dbacls(id) on update cascade on delete cascade"`
+}
+
+type RecursiveConcurrent struct {
+	gorm.Model
+	RecursiveClients uint
+	FetchesPerZone   uint
 }
