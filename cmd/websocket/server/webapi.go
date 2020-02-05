@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"os/exec"
 	"reflect"
 	"strconv"
@@ -284,45 +283,34 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	var command string
 	var rsp Response
 
-	query := url.Values{}
-	query.Add("query", "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) by (instance) * 100)")
-	query.Add("start", "1579175189.588")
-	query.Add("end", "1579178789.588")
-	query.Add("step", "14")
-	fmt.Printf("query str: %s", query.Encode())
+	if promType == "cpu" {
+		//curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=100%20-%20(avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))%20by%20(instance)%20*%20100)&start=1579150980&end=1585886888&step=2222s'
+		promStr := "100%20-%20(avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m]))%20by%20(instance)%20*%20100)"
+		command = "curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=" + promStr +
+			"&start=" + strconv.Itoa(start) +
+			"&end=" + strconv.Itoa(end) +
+			"&step=" + strconv.Itoa(step) + "s'"
+		out, err := cmd(command)
 
-	resUri, err := url.ParseRequestURI("query=&start=&end=&step=14")
-	log.Println("resUri: ", resUri)
+		log.Println("+++ in GetPromRange(), out")
+		log.Println(out)
+		log.Println("--- out")
+		if err != nil {
+			return "", err
+		}
+
+		err = json.Unmarshal([]byte(out), &rsp)
+		if err != nil {
+			return "", err
+		}
+		if rsp.Status != "success" {
+			return "", err
+		}
+
+	}
 
 	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
 	return str, nil
-
-	urlPath := resUri.Query().Encode()
-	if promType == "cpu" {
-		command = "curl -H \"Content-Type: application/json\" " + "http://10.0.0.23:9090/api/v1/query_range" + urlPath + " 2>/dev/null"
-	}
-	log.Println("xxx command: ", command)
-	out, err := cmd(command)
-	if err != nil {
-		return "", err
-	}
-
-	log.Println("+++ in GetPromRange(), out")
-	log.Println(out)
-	log.Println("--- out")
-
-	//fmt.Println("promType, host, start, end, step,", promType, host, start, end, step)
-	//var urlStr string = "http://baidu.com/index.php/?abc= 1_羽毛"
-	//l, err := url.ParseRequestURI(urlStr)
-	//fmt.Println(l, err)
-
-	err = json.Unmarshal([]byte(out), &rsp)
-	if err != nil {
-		return "", err
-	}
-	if rsp.Status != "success" {
-		return "", err
-	}
 
 	for _, v := range rsp.Data.Result {
 		if v.Metric.Instance == host {
