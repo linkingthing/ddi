@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin/render"
 	"github.com/linkingthing/ddi/utils"
 	"log"
 	"math/rand"
@@ -35,10 +34,12 @@ type Metric struct {
 
 type ValueIntf [2]interface {
 }
+type ValueIntfOne interface {
+}
 
 type Result struct {
 	Metric Metric
-	Value  []ValueIntf
+	Value  ValueIntfOne
 	Values []ValueIntf
 }
 type Data struct {
@@ -290,7 +291,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	if promType == "cpu" {
 		//curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=100%20-%20(avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))%20by%20(instance)%20*%20100)&start=1579150980&end=1585886888&step=2222s'
 		promStr := "100%20-%20(avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m]))%20by%20(instance)%20*%20100)"
-		command = "curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=" + promStr +
+		command = "curl -g 'http://10.0.0.24:9090/api/v1/query_range?query=" + promStr +
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
