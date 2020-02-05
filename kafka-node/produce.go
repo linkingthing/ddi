@@ -40,10 +40,10 @@ func main() {
 	utils.ProduceProm(msg)
 
 	var PromInfo2 = utils.PromRole{
-		Hostname: utils.Hostname,
+		Hostname: "ip-24",
 		PromHost: utils.KafkaServerProm,
 		PromPort: utils.PromMetricsPort,
-		IP:       "10.0.0.23",
+		IP:       "10.0.0.24",
 		Role:     utils.RoleController,
 		State:    1,
 		OnTime:   time.Now().Unix(),

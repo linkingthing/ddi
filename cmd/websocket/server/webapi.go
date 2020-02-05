@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin/render"
 	"github.com/linkingthing/ddi/utils"
 	"log"
 	"math/rand"
@@ -10,10 +12,11 @@ import (
 	"os/exec"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 var (
-	promServer = "10.0.0.23:9090"
+	promServer = "10.0.0.24:9090"
 	host       = "10.0.0.15:9100"
 )
 
@@ -30,12 +33,13 @@ type Metric struct {
 	Job      string
 }
 
-type ValueIntf interface {
+type ValueIntf [2]interface {
 }
 
 type Result struct {
 	Metric Metric
 	Value  []ValueIntf
+	Values []ValueIntf
 }
 type Data struct {
 	ResultType string
@@ -224,7 +228,7 @@ func query(w http.ResponseWriter, r *http.Request) {
 		HostUsage[postHost] = Usage
 	} else {
 		HostUsage["10.0.0.15"] = Usage
-		HostUsage["10.0.0.23"] = Usage
+		HostUsage["10.0.0.24"] = Usage
 	}
 	log.Println("hostUsage: ", HostUsage)
 	result.Data.Usage = HostUsage
@@ -245,7 +249,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	var rsp Response
 	if promType == "cpu" {
 		command = "curl -H \"Content-Type: application/json\"  " +
-			"http://10.0.0.23:9090/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
+			"http://10.0.0.24:9090/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
 	}
 	out, err := cmd(command)
 	if err != nil {
@@ -289,7 +293,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 		command = "curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=" + promStr +
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
-			"&step=" + strconv.Itoa(step) + "s'"
+			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err := cmd(command)
 
 		log.Println("+++ in GetPromRange(), out")
@@ -299,30 +303,36 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 			return "", err
 		}
 
-		err = json.Unmarshal([]byte(out), &rsp)
+		d := json.NewDecoder(bytes.NewReader([]byte(out)))
+		d.UseNumber()
+		err = d.Decode(&rsp)
+
+		//err = json.Unmarshal([]byte(out), &rsp)
 		if err != nil {
 			return "", err
 		}
 		if rsp.Status != "success" {
 			return "", err
 		}
+		for _, v := range rsp.Data.Result {
 
+			idx := strings.Index(v.Metric.Instance, ":")
+			log.Println("idx: ", idx)
+			newInstance := v.Metric.Instance[:idx]
+			if newInstance == host {
+
+				retJson, err := json.Marshal(v.Values)
+				if err != nil {
+					log.Println("json marshal err: ", err)
+				}
+				log.Println(string(retJson))
+
+				return string(retJson), nil
+			}
+		}
 	}
 
 	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
 	return str, nil
 
-	for _, v := range rsp.Data.Result {
-		if v.Metric.Instance == host {
-			for _, v2 := range v.Value {
-				varType := reflect.TypeOf(v2) //float64: timestamp, string: cpu usage
-				switch varType.Name() {
-				case "string":
-					return v2.(string), nil
-				}
-			}
-		}
-	}
-
-	return "", nil
 }
