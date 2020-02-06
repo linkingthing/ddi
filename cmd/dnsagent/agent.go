@@ -51,11 +51,11 @@ var (
 )
 
 func main() {
-	go dnsClient()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
 	}
+	go dnsClient()
 	s.Start()
 	defer s.Stop()
 }

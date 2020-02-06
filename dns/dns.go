@@ -14,6 +14,7 @@ import (
 	"github.com/ben-han-cn/kvzoo/backend/bolt"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/rrupdate"
+	"sort"
 )
 
 const (
@@ -80,35 +81,95 @@ func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
 	instance := &BindHandler{dnsConfPath: tmpDnsPath, dBPath: tmpDBPath, tplPath: tmpDBPath + "templates/"}
 	pbolt, err := bolt.New(agentPath + dBName)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.db = pbolt
 	instance.tpl, err = template.ParseFiles(instance.tplPath + namedTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.tpl, err = instance.tpl.ParseFiles(instance.tplPath + zoneTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.tpl, err = instance.tpl.ParseFiles(instance.tplPath + aCLTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.tpl, err = instance.tpl.ParseFiles(instance.tplPath + nzfTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.tpl, err = instance.tpl.ParseFiles(instance.tplPath + redirectTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.tpl, err = instance.tpl.ParseFiles(instance.tplPath + rpzTpl)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 	instance.ticker = time.NewTicker(checkPeriod * time.Second)
 	instance.quit = make(chan int)
+	//check wether the default acl "any" and "none" is exist.if not add the any and none into the database.
+	anykvs := map[string][]byte{}
+	anykvs, err = instance.tableKVs(aCLsPath + "1")
+	if err != nil {
+		panic(err)
+	}
+	if len(anykvs) == 0 {
+		anykvs["name"] = []byte("any")
+		if err := instance.addKVs(aCLsPath+"1", anykvs); err != nil {
+			panic(err)
+		}
+	}
+	nonekvs := map[string][]byte{}
+	nonekvs, err = instance.tableKVs(aCLsPath + "2")
+	if err != nil {
+		panic(err)
+	}
+	if len(nonekvs) == 0 {
+		nonekvs["name"] = []byte("none")
+		if err := instance.addKVs(aCLsPath+"2", nonekvs); err != nil {
+			panic(err)
+		}
+	}
+	//check wether the default view "default" is exists. if not add the default into the database, with the acl any,with the view's priority.
+	//the ID of the default view "default" is 100000.can not be 1.cause it will confilct with the priority kv pair ("1","1")
+	viewkvs := map[string][]byte{}
+	viewkvs, err = instance.tableKVs(viewsPath + "1000000")
+	if err != nil {
+		panic(err)
+	}
+	if len(viewkvs) == 0 {
+		//add priority
+		prikvs := map[string][]byte{}
+		if prikvs, err = instance.tableKVs(viewsEndPath); err != nil {
+			panic(err)
+		}
+		addkvs := map[string][]byte{strconv.Itoa(len(prikvs) + 1): []byte("1000000")}
+		if err := instance.addKVs(viewsEndPath, addkvs); err != nil {
+			panic(err)
+		}
+		//add the default view.
+		viewkvs["name"] = []byte("default")
+		if err := instance.addKVs(viewsPath+"1000000", viewkvs); err != nil {
+			panic(err)
+		}
+	}
+	var acls []string
+	acls, err = instance.tables(viewsPath + "1000000" + aCLsEndPath)
+	if err != nil {
+		panic(err)
+	}
+	if len(acls) == 0 {
+		if _, err := instance.db.CreateOrGetTable(kv.TableName(viewsPath + "1000000" + aCLsPath + "1")); err != nil {
+			panic(err)
+		}
+	}
+	req := pb.DNSStartReq{}
+	if err := instance.StartDNS(req); err != nil {
+		panic(err)
+	}
 	return instance
 }
 
@@ -519,7 +580,9 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 		if err != nil {
 			return data, err
 		}
-		data.ACLNames = append(data.ACLNames, string(nameKVs["name"]))
+		if aclid != "1" && aclid != "2" {
+			data.ACLNames = append(data.ACLNames, string(nameKVs["name"]))
+		}
 	}
 	//get the default forward data
 	var forwardKVs map[string][]byte
@@ -625,7 +688,13 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 	if len(kvs) == 0 {
 		return data, nil
 	}
-	for _, viewid := range kvs {
+	var keys []string
+	for k := range kvs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, priority := range keys {
+		viewid := kvs[priority]
 		nameKvs, err := handler.tableKVs(viewsPath + string(viewid))
 		if err != nil {
 			return data, err
@@ -1109,6 +1178,9 @@ func (handler *BindHandler) rewriteACLsFile() error {
 		if err = handler.tpl.ExecuteTemplate(buf, aCLTpl, aCL); err != nil {
 			return err
 		}
+		if aCL.Name == "any" || aCL.Name == "none" {
+			continue
+		}
 		if err := ioutil.WriteFile(handler.dnsConfPath+aCL.Name+".conf", buf.Bytes(), 0644); err != nil {
 			return err
 		}
@@ -1174,7 +1246,7 @@ func (handler *BindHandler) addPriority(pri int, viewid string) error {
 		return err
 	}
 	if pri > len(kvs)+1 {
-		pri = len(kvs) + 1
+		pri = len(kvs)
 	} else if pri < 1 {
 		pri = 1
 	}
@@ -1184,21 +1256,14 @@ func (handler *BindHandler) addPriority(pri int, viewid string) error {
 		i--
 	}
 	kvs[strconv.Itoa(pri)] = []byte(viewid)
-	if len(kvs) > 1 {
-		addKVs := map[string][]byte{strconv.Itoa(len(kvs)): kvs[strconv.Itoa(len(kvs))]}
-		if err := handler.addKVs(viewsEndPath, addKVs); err != nil {
-			return err
-		}
-		delete(kvs, strconv.Itoa(len(kvs)))
-		if err := handler.updateKVs(viewsEndPath, kvs); err != nil {
-			return err
-		}
-	} else {
-		if err := handler.addKVs(viewsEndPath, kvs); err != nil {
-			return err
-		}
+	addKVs := map[string][]byte{strconv.Itoa(len(kvs)): kvs[strconv.Itoa(len(kvs))]}
+	if err := handler.addKVs(viewsEndPath, addKVs); err != nil {
+		return err
 	}
-
+	delete(kvs, strconv.Itoa(len(kvs)))
+	if err := handler.updateKVs(viewsEndPath, kvs); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1250,15 +1315,18 @@ func (handler *BindHandler) deletePriority(viewID string) error {
 		return err
 	}
 	delete(kvs, k)
+	var keys []string
+	for k := range kvs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	i := 1
-	for _, v := range kvs {
-		kvs[strconv.Itoa(i)] = v
+	updateKVs := map[string][]byte{}
+	for _, pri := range keys {
+		updateKVs[strconv.Itoa(i)] = kvs[pri]
 		i++
 	}
-	if len(kvs) == 0 {
-		return nil
-	}
-	if err = handler.updateKVs(viewsEndPath, kvs); err != nil {
+	if err = handler.updateKVs(viewsEndPath, updateKVs); err != nil {
 		return err
 	}
 	return nil

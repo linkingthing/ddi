@@ -116,7 +116,7 @@ func NewDBController() *DBController {
 		}
 	}
 	viewDefault := tb.DBView{}
-	viewDefault.ID = 1
+	viewDefault.ID = 1000000
 	var many []tb.DBView
 	if err := tx.Find(&many).Error; err != nil {
 		panic(err)
@@ -342,14 +342,14 @@ func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
 	} else if view.Priority < 0 {
 		one.Priority = 1
 	}
+	var tmpView []tb.DBView
 	for i, viewDB := range allView {
 		if viewDB.Priority >= one.Priority {
 			allView[i].Priority++
-		} else {
-			allView = append(allView[:i], allView[i+1:]...)
 		}
+		tmpView = append(tmpView, allView[i])
 	}
-	for _, viewDB := range allView {
+	for _, viewDB := range tmpView {
 		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
 			return tb.DBView{}, err
 		}
