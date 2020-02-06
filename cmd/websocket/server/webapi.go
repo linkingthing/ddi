@@ -39,7 +39,7 @@ type ValueIntfOne interface {
 
 type Result struct {
 	Metric Metric
-	Value  ValueIntfOne
+	Value  []ValueIntfOne
 	Values []ValueIntf
 }
 type Data struct {
@@ -151,8 +151,6 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 
 	result.Data.Values = histData
 
-	//cpuHist, err := strconv.ParseFloat(cpuResp, 64)
-	//cpuResp = fmt.Sprintf("%.2f", cpuUsage)
 	log.Println("xxx cpuHist: ", cpuResp)
 
 	bytes, _ := json.Marshal(result)
@@ -288,18 +286,35 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	var command string
 	var rsp Response
 
+	url := "http://10.0.0.24:9090/api/v1/query_range?query="
+	if promType == "mem" {
+		promStr := "(node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
+		command = "curl -g '" + url + promStr +
+			"&start=" + strconv.Itoa(start) +
+			"&end=" + strconv.Itoa(end) +
+			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
+		out, err := cmd(command)
+		log.Println("+++ in GetPromRange(), out")
+		log.Println(out)
+		log.Println("--- out")
+		if err != nil {
+			log.Println("curl error: ", err)
+			return "", err
+		}
+	}
+
 	if promType == "cpu" {
 		//curl -i -g 'http://10.0.0.24:9090/api/v1/query_range?query=100%20-%20(avg(irate(node_cpu_seconds_total{mode="idle"}[5m]))%20by%20(instance)%20*%20100)&start=1579150980&end=1585886888&step=2222s'
 		promStr := "100%20-%20(avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m]))%20by%20(instance)%20*%20100)"
-		command = "curl -g 'http://10.0.0.24:9090/api/v1/query_range?query=" + promStr +
+		command = "curl -g '" + url + promStr +
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err := cmd(command)
 
-		log.Println("+++ in GetPromRange(), out")
-		log.Println(out)
-		log.Println("--- out")
+		//log.Println("+++ in GetPromRange(), out")
+		//log.Println(out)
+		//log.Println("--- out")
 		if err != nil {
 			return "", err
 		}
@@ -308,17 +323,13 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 		d.UseNumber()
 		err = d.Decode(&rsp)
 
-		//err = json.Unmarshal([]byte(out), &rsp)
-		if err != nil {
-			return "", err
-		}
 		if rsp.Status != "success" {
 			return "", err
 		}
 		for _, v := range rsp.Data.Result {
 
 			idx := strings.Index(v.Metric.Instance, ":")
-			log.Println("idx: ", idx)
+			//log.Println("idx: ", idx)
 			newInstance := v.Metric.Instance[:idx]
 			if newInstance == host {
 
@@ -326,7 +337,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 				if err != nil {
 					log.Println("json marshal err: ", err)
 				}
-				log.Println(string(retJson))
+				//log.Println(string(retJson))
 
 				return string(retJson), nil
 			}
