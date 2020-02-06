@@ -289,6 +289,23 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	var err error
 
 	url := "http://10.0.0.24:9090/api/v1/query_range?query="
+
+	if promType == "disk" {
+		promStr := "100%20-%20(node_filesystem_free_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20/%20node_filesystem_size_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20*%20100)"
+		command = "curl -g '" + url + promStr +
+			"&start=" + strconv.Itoa(start) +
+			"&end=" + strconv.Itoa(end) +
+			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
+		out, err = cmd(command)
+		log.Println("+++ in GetPromRange(), out")
+		log.Println(out)
+		log.Println("--- out")
+		if err != nil {
+			log.Println("curl error: ", err)
+			return "", err
+		}
+	}
+
 	if promType == "mem" {
 		promStr := "(node_memory_MemFree_bytes%2Bnode_memory_Cached_bytes%2Bnode_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
 		command = "curl -g '" + url + promStr +
