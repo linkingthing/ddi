@@ -285,15 +285,17 @@ func GetPromItem(promType string, host string) (string, error) {
 func GetPromRange(promType string, host string, start int, end int, step int) (string, error) {
 	var command string
 	var rsp Response
+	var out string
+	var err error
 
 	url := "http://10.0.0.24:9090/api/v1/query_range?query="
 	if promType == "mem" {
-		promStr := "(node_memory_MemFree_bytes+node_memory_Cached_bytes+node_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
+		promStr := "(node_memory_MemFree_bytes%2Bnode_memory_Cached_bytes%2Bnode_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
 		command = "curl -g '" + url + promStr +
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
-		out, err := cmd(command)
+		out, err = cmd(command)
 		log.Println("+++ in GetPromRange(), out")
 		log.Println(out)
 		log.Println("--- out")
@@ -310,7 +312,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
-		out, err := cmd(command)
+		out, err = cmd(command)
 
 		//log.Println("+++ in GetPromRange(), out")
 		//log.Println(out)
@@ -319,31 +321,33 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 			return "", err
 		}
 
-		d := json.NewDecoder(bytes.NewReader([]byte(out)))
-		d.UseNumber()
-		err = d.Decode(&rsp)
+	}
 
-		if rsp.Status != "success" {
-			return "", err
-		}
-		for _, v := range rsp.Data.Result {
+	d := json.NewDecoder(bytes.NewReader([]byte(out)))
+	d.UseNumber()
+	err = d.Decode(&rsp)
 
-			idx := strings.Index(v.Metric.Instance, ":")
-			//log.Println("idx: ", idx)
-			newInstance := v.Metric.Instance[:idx]
-			if newInstance == host {
+	if rsp.Status != "success" {
+		return "", err
+	}
+	for _, v := range rsp.Data.Result {
 
-				retJson, err := json.Marshal(v.Values)
-				if err != nil {
-					log.Println("json marshal err: ", err)
-				}
-				//log.Println(string(retJson))
+		idx := strings.Index(v.Metric.Instance, ":")
+		log.Println("idx: ", idx)
+		newInstance := v.Metric.Instance[:idx]
+		if newInstance == host {
 
-				return string(retJson), nil
+			retJson, err := json.Marshal(v.Values)
+			if err != nil {
+				log.Println("json marshal err: ", err)
 			}
+			log.Println("string retJson: ", string(retJson))
+
+			return string(retJson), nil
 		}
 	}
 
+	log.Println("return error")
 	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
 	return str, nil
 
