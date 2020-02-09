@@ -167,9 +167,10 @@ func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
 		}
 	}
 	req := pb.DNSStartReq{}
-	if err := instance.StartDNS(req); err != nil {
-		panic(err)
-	}
+	//if err := instance.StartDNS(req); err != nil {
+	//panic(err)  //can not exit the program cause other kafka cmd should be execuetd to fix the bind's configure.
+	//}
+	instance.StartDNS(req)
 	return instance
 }
 
