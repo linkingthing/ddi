@@ -471,6 +471,9 @@ func (controller *DBController) UpdateView(view *View) error {
 	}
 	origin := dbView.Priority
 	dest := view.Priority
+	if dest >= len(allDBView) {
+		dest = len(allDBView) - 1
+	}
 	if origin < dest {
 		for k, v := range allDBView {
 			if v.Priority > origin && v.Priority <= dest {
