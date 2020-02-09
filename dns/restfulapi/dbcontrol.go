@@ -337,8 +337,8 @@ func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
 	}
 	one.Priority = view.Priority
 	one.IsUsed = view.IsUsed
-	if len(allView)+1 < view.Priority {
-		one.Priority = len(allView) + 1
+	if view.Priority > len(allView) {
+		one.Priority = len(allView)
 	} else if view.Priority < 0 {
 		one.Priority = 1
 	}
