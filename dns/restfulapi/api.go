@@ -156,7 +156,7 @@ func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *gorester
 func (h *aCLHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	aCL := ctx.Resource.(*ACL)
 	if err := DBCon.DeleteACL(aCL.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (h *aCLHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 func (h *aCLHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
 	if _, err := DBCon.GetACL(aCL.GetID()); err != nil {
-		return nil, goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	if err := DBCon.UpdateACL(aCL); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -219,7 +219,7 @@ func (h *viewHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 func (h *viewHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	view := ctx.Resource.(*View)
 	if err := DBCon.DeleteView(view.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -447,7 +447,7 @@ func (h *forwardHandler) Create(ctx *resource.Context) (resource.Resource, *gore
 func (h *forwardHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	forward := ctx.Resource.(*Forward)
 	if err := DBCon.DeleteDefaultForward(forward.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -509,7 +509,7 @@ func (r *redirectionHandler) Create(ctx *resource.Context) (resource.Resource, *
 func (r *redirectionHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	redirection := ctx.Resource.(*Redirection)
 	if err := DBCon.DeleteRedirection(redirection.GetID(), redirection.GetParent().GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -576,7 +576,7 @@ func (h *defaultDNS64Handler) Create(ctx *resource.Context) (resource.Resource, 
 func (h *defaultDNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	dns64 := ctx.Resource.(*DefaultDNS64)
 	if err := DBCon.DeleteDefaultDNS64(dns64.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -634,7 +634,7 @@ func (h *DNS64Handler) Create(ctx *resource.Context) (resource.Resource, *gorest
 func (h *DNS64Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	dns64 := ctx.Resource.(*DNS64)
 	if err := DBCon.DeleteDNS64(dns64.GetID(), dns64.GetParent().GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}
@@ -701,7 +701,7 @@ func (h *ipBlackHoleHandler) Create(ctx *resource.Context) (resource.Resource, *
 func (h *ipBlackHoleHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	ipBlackHole := ctx.Resource.(*IPBlackHole)
 	if err := DBCon.DeleteIPBlackHole(ipBlackHole.GetID()); err != nil {
-		return goresterr.NewAPIError(goresterr.NotFound, err.Error())
+		return goresterr.NewAPIError(FormatError, err.Error())
 	} else {
 		return nil
 	}

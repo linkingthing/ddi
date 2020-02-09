@@ -182,7 +182,7 @@ func (controller *DBController) CreateACL(aCL *ACL) (tb.DBACL, error) {
 func (controller *DBController) DeleteACL(id string) error {
 	var err error
 	if id == "1" || id == "2" {
-		fmt.Errorf("It's not allow to delete the default any or none acl!")
+		return fmt.Errorf("It's not allow to delete the default any or none acl!")
 	}
 	one := tb.DBACL{}
 	var index int
@@ -403,6 +403,9 @@ func (controller *DBController) DeleteView(id string) error {
 	view := &View{}
 	if view, err = controller.GetView(id); err != nil {
 		return fmt.Errorf("unknown View with ID %s", id)
+	}
+	if view.Name == "default" {
+		return fmt.Errorf("view default can't not be deleted")
 	}
 	var viewDB tb.DBView
 	var num int
