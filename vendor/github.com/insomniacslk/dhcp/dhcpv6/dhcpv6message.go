@@ -45,6 +45,8 @@ func GetTime() uint32 {
 // NewSolicit creates a new SOLICIT message, using the given hardware address to
 // derive the IAID in the IA_NA option.
 func NewSolicit(hwaddr net.HardwareAddr, modifiers ...Modifier) (*Message, error) {
+
+	fmt.Println(hwaddr)
 	duid := Duid{
 		Type:          DUID_LLT,
 		HwType:        iana.HWTypeEthernet,

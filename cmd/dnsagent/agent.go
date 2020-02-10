@@ -98,6 +98,7 @@ func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
 	for {
 		select {
 		case <-h.Ticker.C:
+			fmt.Println("timer checker")
 			var para1 string
 			var para2 string
 			para1 = "-c" + h.Path + "/rndc.conf"
@@ -105,7 +106,8 @@ func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
 			if _, err = shell.Shell("rndc", para1, para2); err != nil {
 				panic(err)
 			}
-		case <-reqChan:
+		case cmd := <-reqChan:
+			fmt.Println("cmd:", cmd)
 			one := h.CaculateQPS()
 			respChan <- *one
 		}
@@ -124,6 +126,9 @@ func (h *qpsHandler) CaculateQPS() *qps {
 		panic(err)
 	}
 	s := strings.Split(value, "\n")
+	for k, v := range s {
+		fmt.Println(k, v)
+	}
 	var last []byte
 	var curr []byte
 	var diffTime int
@@ -133,11 +138,13 @@ func (h *qpsHandler) CaculateQPS() *qps {
 				curr = append(curr, byte(v))
 			}
 		}
+		fmt.Println("curr:", string(curr))
 		for _, v := range s[len(s)-3] {
 			if v >= '0' && v <= '9' {
 				last = append(last, byte(v))
 			}
 		}
+		fmt.Println("last:", string(last))
 		var numLast int
 		if numLast, err = strconv.Atoi(string(last)); err != nil {
 			panic(err)
@@ -147,6 +154,7 @@ func (h *qpsHandler) CaculateQPS() *qps {
 			panic(err)
 		}
 		diffTime = numCurr - numLast
+		fmt.Println("diffTime", diffTime)
 	}
 	//get the num of query
 	var diffQuery int
@@ -157,18 +165,24 @@ func (h *qpsHandler) CaculateQPS() *qps {
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
 		panic(err)
 	}
+	fmt.Println("return:", value)
 	querys := strings.Split(value, "\n")
+	for k, v := range querys {
+		fmt.Println(k, v)
+	}
 	if len(querys) > 2 {
 		for _, v := range querys[len(querys)-2] {
 			if v >= '0' && v <= '9' {
 				currQuery = append(currQuery, byte(v))
 			}
 		}
+		fmt.Println("currQuery:", string(currQuery))
 		for _, v := range querys[len(querys)-3] {
 			if v >= '0' && v <= '9' {
 				lastQuery = append(lastQuery, byte(v))
 			}
 		}
+		fmt.Println("lastQuery:", string(lastQuery))
 		var numLast int
 		if numLast, err = strconv.Atoi(string(lastQuery)); err != nil {
 			panic(err)
@@ -178,9 +192,11 @@ func (h *qpsHandler) CaculateQPS() *qps {
 			panic(err)
 		}
 		diffQuery = numCurr - numLast
+		fmt.Println("diffQuery", diffQuery)
 	}
 	if len(s) > 2 && len(querys) > 2 {
 		qps := float32(diffQuery) / float32(diffTime)
+		fmt.Println("last time,current time,qps:", string(last), string(curr), qps)
 		qpsData.BeginTime = string(last)
 		qpsData.EndTime = string(curr)
 		qpsData.QPS = qps
@@ -192,6 +208,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	one := qps{}
 	reqChan <- one
 	response := <-respChan
+	fmt.Println(response)
 	fmt.Fprintln(w, response)
 }
 
