@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package pb;
-
+import "util.proto";
 service Dhcpv4Manager {
 
     rpc StartDHCPv4(startDHCPv4Req) returns (OperResult){}
@@ -23,11 +23,6 @@ service Dhcpv4Manager {
 service Dhcpv6Manager {
     rpc StartDHCPv6(startDHCPv6Req) returns (OperResult){}
     rpc StopDHCPv6(stopDHCPv6Req)   returns (OperResult){}
-}
-
-message OperResult {
-    int32   ret_code    = 1; //operation result:0 stands for success, 1 stands for fail.
-    string  ret_msg     = 2;
 }
 
 message Option{

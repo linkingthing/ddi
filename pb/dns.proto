@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package pb;
-
+import "util.proto";
 service AgentManager{
 rpc StartDNS(DNSStartReq) returns (OperResult){}
 rpc StopDNS(DNSStopReq) returns (OperResult){}
@@ -35,10 +35,6 @@ rpc DeleteIPBlackHole(DeleteIPBlackHoleReq) returns (OperResult){}
 rpc UpdateRecursiveConcurrent(UpdateRecurConcuReq) returns (OperResult){}
 }
 
-message OperResult {
-    int32 ret_code = 1; //operation result:0 stands for success, 1 stands for fail.
-    string ret_msg = 2; 
-}
 message DNSStartReq{
 	string config = 1;
 }
