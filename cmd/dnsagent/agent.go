@@ -2,11 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -43,14 +49,41 @@ const (
 )
 
 var (
-	kafkaServer = "localhost:9092"
-	dhcpTopic   = "test"
-	kafkaWriter *kg.Writer
-	kafkaReader *kg.Reader
-	address     = "localhost:8888"
+	kafkaServer      = "localhost:9092"
+	dhcpTopic        = "test"
+	kafkaWriter      *kg.Writer
+	kafkaReader      *kg.Reader
+	address          = "localhost:8888"
+	qpsServerAddress = ":8001"
+	reqChan          chan qps
+	respChan         chan qps
 )
 
+type qps struct {
+	BeginTime string
+	EndTime   string
+	QPS       float32
+}
+type qpsHandler struct {
+	Path          string
+	Ticker        *time.Ticker
+	Records       []qps
+	HistoryLength int
+	Period        int
+}
+
+func NewQPSHandler(path string, length int, period int) *qpsHandler {
+	instance := qpsHandler{Path: path, HistoryLength: length, Period: period}
+	instance.Ticker = time.NewTicker(10 * time.Second)
+	return &instance
+}
+
 func main() {
+	handler := NewQPSHandler("/root/bindtest/", 10, 60)
+	reqChan = make(chan qps)
+	respChan = make(chan qps)
+	go handler.qpsStatic(reqChan, respChan)
+	go qpsHttpService()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
@@ -58,6 +91,113 @@ func main() {
 	go dnsClient()
 	s.Start()
 	defer s.Stop()
+}
+
+func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
+	var err error
+	for {
+		select {
+		case <-h.Ticker.C:
+			var para1 string
+			var para2 string
+			para1 = "-c" + h.Path + "/rndc.conf"
+			para2 = "stats"
+			if _, err = shell.Shell("rndc", para1, para2); err != nil {
+				panic(err)
+			}
+		case <-reqChan:
+			one := h.CaculateQPS()
+			respChan <- *one
+		}
+	}
+}
+
+func (h *qpsHandler) CaculateQPS() *qps {
+	var para1 string
+	para1 = "Dump ---"
+	var para2 string
+	para2 = h.Path + "/named.stats"
+	var value string
+	var err error
+	qpsData := qps{}
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		panic(err)
+	}
+	s := strings.Split(value, "\n")
+	var last []byte
+	var curr []byte
+	var diffTime int
+	if len(s) > 2 {
+		for _, v := range s[len(s)-2] {
+			if v >= '0' && v <= '9' {
+				curr = append(curr, byte(v))
+			}
+		}
+		for _, v := range s[len(s)-3] {
+			if v >= '0' && v <= '9' {
+				last = append(last, byte(v))
+			}
+		}
+		var numLast int
+		if numLast, err = strconv.Atoi(string(last)); err != nil {
+			panic(err)
+		}
+		var numCurr int
+		if numCurr, err = strconv.Atoi(string(curr)); err != nil {
+			panic(err)
+		}
+		diffTime = numCurr - numLast
+	}
+	//get the num of query
+	var diffQuery int
+	var lastQuery []byte
+	var currQuery []byte
+	para1 = "QUERY"
+	para2 = h.Path + "/named.stats"
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		panic(err)
+	}
+	querys := strings.Split(value, "\n")
+	if len(querys) > 2 {
+		for _, v := range querys[len(querys)-2] {
+			if v >= '0' && v <= '9' {
+				currQuery = append(currQuery, byte(v))
+			}
+		}
+		for _, v := range querys[len(querys)-3] {
+			if v >= '0' && v <= '9' {
+				lastQuery = append(lastQuery, byte(v))
+			}
+		}
+		var numLast int
+		if numLast, err = strconv.Atoi(string(lastQuery)); err != nil {
+			panic(err)
+		}
+		var numCurr int
+		if numCurr, err = strconv.Atoi(string(currQuery)); err != nil {
+			panic(err)
+		}
+		diffQuery = numCurr - numLast
+	}
+	if len(s) > 2 && len(querys) > 2 {
+		qps := float32(diffQuery) / float32(diffTime)
+		qpsData.BeginTime = string(last)
+		qpsData.EndTime = string(curr)
+		qpsData.QPS = qps
+	}
+	return &qpsData
+}
+
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
+	one := qps{}
+	reqChan <- one
+	response := <-respChan
+	fmt.Fprintln(w, response)
+}
+
+func qpsHttpService() {
+	http.HandleFunc("/", IndexHandler)
+	http.ListenAndServe(qpsServerAddress, nil)
 }
 
 func dnsClient() {
