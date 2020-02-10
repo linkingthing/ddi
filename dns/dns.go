@@ -342,11 +342,14 @@ func (handler *BindHandler) UpdateACL(req pb.UpdateACLReq) error {
 		return err
 	}
 	reqTmp := pb.CreateACLReq{Name: req.Name, ID: req.ID, IPs: req.NewIPs}
+	if err := handler.CreateACL(reqTmp); err != nil {
+		return err
+	}
 	//update bind
 	if err := handler.rndcReconfig(); err != nil {
 		return err
 	}
-	return handler.CreateACL(reqTmp)
+	return nil
 }
 
 func (handler *BindHandler) DeleteACL(req pb.DeleteACLReq) error {
