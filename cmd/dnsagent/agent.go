@@ -108,7 +108,7 @@ func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
 			para1 = "-c" + h.Path + "/rndc.conf"
 			para2 = "stats"
 			if _, err = shell.Shell("rndc", para1, para2); err != nil {
-				panic(err)
+				fmt.Println(err)
 			}
 		case <-reqChan:
 			one := h.CaculateQPS()
