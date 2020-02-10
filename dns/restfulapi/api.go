@@ -103,7 +103,7 @@ type Redirection struct {
 	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	DataType              string `json:"datatype" rest:"required=true,options=A|AAAA|CNAME"`
-	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpc|redirect"`
+	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpz|redirect"`
 	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=39"`
 }
 

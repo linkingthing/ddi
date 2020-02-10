@@ -601,7 +601,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	}
 	view.ZoneSize = len(zones)
 	var redirections []tb.Redirection
-	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "rpc").Find(&redirections).Error; err != nil {
+	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "rpz").Find(&redirections).Error; err != nil {
 		return nil, err
 	}
 	view.RPZSize = len(redirections)
