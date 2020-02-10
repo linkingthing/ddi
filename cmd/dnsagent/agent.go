@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -84,6 +88,7 @@ func main() {
 	respChan = make(chan qps)
 	go handler.qpsStatic(reqChan, respChan)
 	go qpsHttpService()
+	go registerDNS()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
@@ -98,7 +103,6 @@ func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
 	for {
 		select {
 		case <-h.Ticker.C:
-			fmt.Println("timer checker")
 			var para1 string
 			var para2 string
 			para1 = "-c" + h.Path + "/rndc.conf"
@@ -106,8 +110,7 @@ func (h *qpsHandler) qpsStatic(reqChan chan qps, respChan chan qps) error {
 			if _, err = shell.Shell("rndc", para1, para2); err != nil {
 				panic(err)
 			}
-		case cmd := <-reqChan:
-			fmt.Println("cmd:", cmd)
+		case <-reqChan:
 			one := h.CaculateQPS()
 			respChan <- *one
 		}
@@ -126,9 +129,6 @@ func (h *qpsHandler) CaculateQPS() *qps {
 		panic(err)
 	}
 	s := strings.Split(value, "\n")
-	for k, v := range s {
-		fmt.Println(k, v)
-	}
 	var last []byte
 	var curr []byte
 	var diffTime int
@@ -138,13 +138,11 @@ func (h *qpsHandler) CaculateQPS() *qps {
 				curr = append(curr, byte(v))
 			}
 		}
-		fmt.Println("curr:", string(curr))
 		for _, v := range s[len(s)-3] {
 			if v >= '0' && v <= '9' {
 				last = append(last, byte(v))
 			}
 		}
-		fmt.Println("last:", string(last))
 		var numLast int
 		if numLast, err = strconv.Atoi(string(last)); err != nil {
 			panic(err)
@@ -154,7 +152,6 @@ func (h *qpsHandler) CaculateQPS() *qps {
 			panic(err)
 		}
 		diffTime = numCurr - numLast
-		fmt.Println("diffTime", diffTime)
 	}
 	//get the num of query
 	var diffQuery int
@@ -165,24 +162,18 @@ func (h *qpsHandler) CaculateQPS() *qps {
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
 		panic(err)
 	}
-	fmt.Println("return:", value)
 	querys := strings.Split(value, "\n")
-	for k, v := range querys {
-		fmt.Println(k, v)
-	}
 	if len(querys) > 2 {
 		for _, v := range querys[len(querys)-2] {
 			if v >= '0' && v <= '9' {
 				currQuery = append(currQuery, byte(v))
 			}
 		}
-		fmt.Println("currQuery:", string(currQuery))
 		for _, v := range querys[len(querys)-3] {
 			if v >= '0' && v <= '9' {
 				lastQuery = append(lastQuery, byte(v))
 			}
 		}
-		fmt.Println("lastQuery:", string(lastQuery))
 		var numLast int
 		if numLast, err = strconv.Atoi(string(lastQuery)); err != nil {
 			panic(err)
@@ -192,11 +183,9 @@ func (h *qpsHandler) CaculateQPS() *qps {
 			panic(err)
 		}
 		diffQuery = numCurr - numLast
-		fmt.Println("diffQuery", diffQuery)
 	}
 	if len(s) > 2 && len(querys) > 2 {
 		qps := float32(diffQuery) / float32(diffTime)
-		fmt.Println("last time,current time,qps:", string(last), string(curr), qps)
 		qpsData.BeginTime = string(last)
 		qpsData.EndTime = string(curr)
 		qpsData.QPS = qps
@@ -208,7 +197,6 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	one := qps{}
 	reqChan <- one
 	response := <-respChan
-	fmt.Println(response)
 	fmt.Fprintln(w, response)
 }
 
@@ -388,6 +376,87 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.UpdateRecursiveConcurrent(context.Background(), &target)
+		}
+	}
+}
+
+func registerDNS() {
+	var regTicker *time.Ticker
+	var err error
+	var hostName string
+	var hostIP string
+	regTicker = time.NewTicker(10 * time.Second)
+	var PromInfo = utils.PromRole{
+		PromHost: utils.KafkaServerProm,
+		PromPort: utils.PromMetricsPort,
+		Role:     utils.RoleController,
+		State:    1,
+		OnTime:   time.Now().Unix(),
+	}
+	netInterfaces, err := net.Interfaces()
+	if err != nil {
+		fmt.Println("net.Interfaces failed, err:", err.Error())
+	}
+
+	for i := 0; i < len(netInterfaces); i++ {
+		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
+			addrs, _ := netInterfaces[i].Addrs()
+
+			for _, address := range addrs {
+				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						PromInfo.IP = ipnet.IP.String()
+						hostIP = PromInfo.IP
+						break
+					}
+				}
+			}
+		}
+	}
+	PromInfo.Hostname, err = os.Hostname()
+	hostName = PromInfo.Hostname
+	if err != nil {
+		return
+	}
+	PromJson, err := json.Marshal(PromInfo)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	key := "prom"
+	value := PromJson
+	msg := kg.Message{
+		Topic: utils.KafkaTopicProm,
+		Key:   []byte(key),
+		Value: []byte(value),
+	}
+	utils.ProduceProm(msg)
+
+	for {
+		select {
+		case <-regTicker.C:
+			var PromInfo = utils.PromRole{
+				Hostname: hostName,
+				PromHost: utils.KafkaServerProm,
+				PromPort: utils.PromMetricsPort,
+				IP:       hostIP,
+				Role:     utils.RoleController,
+				State:    1,
+				OnTime:   time.Now().Unix(),
+			}
+			PromJson, err := json.Marshal(PromInfo)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			key := "prom"
+			value := PromJson
+			msg := kg.Message{
+				Topic: utils.KafkaTopicProm,
+				Key:   []byte(key),
+				Value: []byte(value),
+			}
+			utils.ProduceProm(msg)
 		}
 	}
 }
