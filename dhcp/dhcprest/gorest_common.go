@@ -113,6 +113,19 @@ func NewReservationHandler(s *Subnetv4s) *ReservationHandler {
 	}
 }
 
+type PoolHandler struct {
+	subnetv4s *Subnetv4s
+	db        *gorm.DB
+	lock      sync.Mutex
+}
+
+func NewPoolHandler(s *Subnetv4s) *PoolHandler {
+	return &PoolHandler{
+		subnetv4s: s,
+		db:        s.db,
+	}
+}
+
 //tools func
 func ConvertReservationsFromOrmToRest(rs []*dhcporm.Reservation) []*RestReservation {
 
@@ -128,6 +141,22 @@ func ConvertReservationsFromOrmToRest(rs []*dhcporm.Reservation) []*RestReservat
 	}
 
 	return restRs
+}
+
+//tools func
+func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
+	log.Println("into ConvertPoolsFromOrmToRest")
+
+	var restPs []*RestPool
+	for _, v := range ps {
+		restP := RestPool{
+			Pool: v.Pool,
+		}
+		restP.ID = strconv.Itoa(int(v.ID))
+		restPs = append(restPs, &restP)
+	}
+
+	return restPs
 }
 
 func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *Subnetv4 {

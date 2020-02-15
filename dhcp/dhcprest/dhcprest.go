@@ -274,3 +274,22 @@ func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
 
 	return nil
 }
+
+func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
+	list := PGDBConn.OrmPoolList(r.db, subnetId)
+	pool := ConvertPoolsFromOrmToRest(list)
+
+	return pool
+}
+
+func (r *PoolHandler) DeletePool(rsv *RestPool) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err := PGDBConn.OrmDeleteReservation(r.db, rsv.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -62,7 +62,7 @@ type Option struct {
 }
 type Pool struct {
 	gorm.Model
-	OptionData  []Option `json:"option-data"`
-	Pool        string   `json:"pool"`
-	SubnetRefer uint
+	OptionData []Option `json:"option-data"`
+	Pool       string   `json:"pool"`
+	Subnetv4ID uint     `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }

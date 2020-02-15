@@ -214,3 +214,84 @@ func (handler *PGDB) OrmDeleteReservation(db *gorm.DB, id string) error {
 
 	return nil
 }
+
+func (handler *PGDB) OrmPoolList(db *gorm.DB, subnetId string) []*dhcporm.Pool {
+	log.Println("in dhcprest, OrmPoolList, subnetId: ", subnetId)
+	var pools []*dhcporm.Pool
+	var ps []dhcporm.Pool
+
+	subnetIdUint := ConvertStringToUint(subnetId)
+	if err := db.Where("subnetv4_id = ?", subnetIdUint).Find(&ps).Error; err != nil {
+		return nil
+	}
+
+	for _, p := range ps {
+		p2 := p
+		p2.ID = p.ID
+		p2.Subnetv4ID = subnetIdUint
+
+		pools = append(pools, &p2)
+	}
+
+	return pools
+}
+
+func (handler *PGDB) OrmGetPool(db *gorm.DB, subnetId string, rsv_id string) *dhcporm.Pool {
+	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "rsv_id: ", rsv_id)
+	dbRsvId := ConvertStringToUint(rsv_id)
+
+	rsv := dhcporm.Pool{}
+	if err := db.First(&rsv, int(dbRsvId)).Error; err != nil {
+		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
+		return nil
+	}
+
+	return &rsv
+}
+
+func (handler *PGDB) OrmCreatePool(db *gorm.DB, subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
+	log.Println("into OrmCreatePool")
+	var rsv = dhcporm.Pool{
+		Pool: r.Pool,
+		//DhcpVer:       Dhcpv4Ver,
+	}
+
+	query := db.Create(&rsv)
+	if query.Error != nil {
+		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, pool: " + r.Pool)
+	}
+
+	return rsv, nil
+}
+
+func (handler *PGDB) OrmUpdatePool(db *gorm.DB, subnetv4_id string, r *RestPool) error {
+
+	log.Println("into dhcporm, OrmUpdatePool, id: ", r.GetID())
+
+	//search subnet, if not exist, return error
+	//subnet := handler.OrmGetReservation(db, subnetv4_id, r.GetID())
+	//if subnet == nil {
+	//	return fmt.Errorf(name + " not exists, return")
+	//}
+
+	ormRsv := dhcporm.Pool{}
+	ormRsv.ID = ConvertStringToUint(r.GetID())
+	ormRsv.Pool = r.Pool
+
+	db.Model(&ormRsv).Updates(ormRsv)
+
+	return nil
+}
+
+func (handler *PGDB) OrmDeletePool(db *gorm.DB, id string) error {
+	log.Println("into dhcprest OrmDeletePool, id ", id)
+	dbId := ConvertStringToUint(id)
+
+	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Pool{})
+
+	if query.Error != nil {
+		return fmt.Errorf("delete subnet Pool error, Reservation id: " + id)
+	}
+
+	return nil
+}
