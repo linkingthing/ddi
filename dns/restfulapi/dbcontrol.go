@@ -1,4 +1,4 @@
-package dnscontroller
+package restfulapi
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	tb "github.com/linkingthing/ddi/dns/cockroachtables"
 	"github.com/linkingthing/ddi/pb"
+	myaes "github.com/linkingthing/ddi/utils/aes"
 	"strconv"
 )
 
@@ -45,7 +46,8 @@ const (
 var DBCon *DBController
 
 type DBController struct {
-	db *gorm.DB
+	db     *gorm.DB
+	aesKey []byte
 }
 
 func NewDBController() *DBController {
@@ -96,6 +98,25 @@ func NewDBController() *DBController {
 	}
 	if err := tx.AutoMigrate(&tb.RecursiveConcurrent{}).Error; err != nil {
 		panic(err)
+	}
+	if err := tx.AutoMigrate(&tb.DDIUserPWD{}).Error; err != nil {
+		panic(err)
+	}
+	one.aesKey = []byte("linkingthing.com")
+	//if the user "admin"is not exists create one
+	var userPWD tb.DDIUserPWD
+	if err := tx.Where("name = ?", "admin").Find(&userPWD).Error; err != nil {
+		newOne := tb.DDIUserPWD{}
+		newOne.Name = "admin"
+		encryptText, err := myaes.Encrypt(one.aesKey, "admin")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(encryptText)
+		newOne.PWD = encryptText
+		if err := tx.Create(&newOne).Error; err != nil {
+			panic(err)
+		}
 	}
 	any := tb.DBACL{}
 	any.ID = 1
@@ -1817,4 +1838,38 @@ func (controller *DBController) UpdateRecursiveConcurrent(max *RecursiveConcurre
 	}
 	tx.Commit()
 	return nil
+}
+
+func (controller *DBController) UpdatePWD(user string, pwd string) error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	encryptText, err := myaes.Encrypt(controller.aesKey, pwd)
+	if err != nil {
+		return err
+	}
+	one := tb.DDIUserPWD{Name: user}
+	if err := tx.Find(&one).Error; err != nil {
+		return err
+	}
+	if err := tx.Model(&one).UpdateColumn("pwd", encryptText).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetUserPWD(user string) (*string, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	one := tb.DDIUserPWD{Name: user}
+	if err := tx.Find(&one).Error; err != nil {
+		return nil, err
+	}
+	//rawText, err := myaes.Decrypt(controller.aesKey, one.PWD)
+	fmt.Println("get user pwd", one.PWD)
+	rawText, err := myaes.Decrypt([]byte("linkingthing.com"), one.PWD)
+	if err != nil {
+		return nil, err
+	}
+	return &rawText, nil
 }
