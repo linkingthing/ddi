@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"github.com/zdnscloud/vanguard/config"
 	"log"
 )
 
@@ -26,13 +25,22 @@ var (
 	configFile string
 )
 
+func LoadConfig(path string) (*VanguardConf, error) {
+	var conf VanguardConf
+	conf.Path = path
+	if err := conf.Reload(); err != nil {
+		return nil, err
+	}
+
+	return &conf, nil
+}
 func init() {
 	flag.Parse()
 	flag.StringVar(&configFile, "c", "/etc/vanguard/vanguard.conf", "configure file path")
 }
 
 func main() {
-	conf, err := config.LoadConfig(configFile)
+	conf, err := LoadConfig(configFile)
 	if err != nil {
 		panic("load configure file failed:" + err.Error())
 	}
