@@ -20,10 +20,33 @@ func ReloadConfig(o interface{}, conf *VanguardConf) {
 	}
 }
 
-type VanguardConf struct {
-	Path string `yaml:"-"`
+/*
+configfile example:
+$ cat /etc/vanguard/vanguard.conf
+server
+    kafka: 10.0.0.1:9202
+    agent: 10.0.0.2:9202
+    db: 10.0.0.3:9202
+localhost
+    role: controller
+    ip: 10.0.0.15
+*/
+
+type LocalConf struct {
 	Role string `yaml:"role"`
 	IP   string `yaml:"ip"`
+}
+
+type ServerConf struct {
+	Kafka string `yaml:"kafka"`
+	Agent string `yaml:"agent"`
+	Db    string `yaml:"db"`
+}
+
+type VanguardConf struct {
+	Path      string     `yaml:"-"`
+	Localhost LocalConf  `yaml:"localhost"`
+	Server    ServerConf `yaml:"server"`
 }
 
 var (
