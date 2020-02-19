@@ -16,6 +16,7 @@ import (
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/server"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils/config"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 )
@@ -179,6 +180,10 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 
 func main() {
 	go dhcpClient()
+	var conf *config.VanguardConf
+	conf = config.GetConfig()
+	log.Println("in agent.go, localhost ip: ", conf.Localhost.IP)
+
 	//ver string, ConfPath string, addr string
 	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
 	if err != nil {

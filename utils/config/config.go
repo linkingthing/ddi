@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -136,10 +136,11 @@ func init() {
 	flag.StringVar(&configFile, "c", "/etc/vanguard/vanguard.conf", "configure file path")
 }
 
-func main() {
+func GetConfig() *VanguardConf {
 	conf, err := LoadConfig(configFile)
 	if err != nil {
 		panic("load configure file failed:" + err.Error())
 	}
-	log.Println("conf: ", conf)
+	log.Println("this host ip: ", conf.Localhost.IP)
+	return conf
 }
