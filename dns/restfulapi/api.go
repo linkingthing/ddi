@@ -1,4 +1,4 @@
-package dnscontroller
+package restfulapi
 
 import (
 	//"fmt"

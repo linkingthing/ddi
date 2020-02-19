@@ -9,7 +9,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/lifei6671/gocaptcha"
-	api "github.com/linkingthing/ddi/dns/restfulapi"
+	myapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"html/template"
 	"log"
 	"net/http"
@@ -66,25 +66,25 @@ type User struct {
 }
 
 func main() {
-	api.DBCon = api.NewDBController()
-	defer api.DBCon.Close()
+	myapi.DBCon = myapi.NewDBController()
+	defer myapi.DBCon.Close()
 	schemas := schema.NewSchemaManager()
-	aCLsState := api.NewACLsState()
-	forwardState := api.NewForwardState()
-	dnsState := api.NewDefaultDNS64State()
-	blackHoleState := api.NewIPBlackHoleState()
-	conState := api.NewRecursiveConcurrentState()
-	schemas.Import(&version, api.ACL{}, api.NewACLHandler(aCLsState))
-	schemas.Import(&version, api.Forward{}, api.NewForwardHandler(forwardState))
-	schemas.Import(&version, api.DefaultDNS64{}, api.NewDefaultDNS64Handler(dnsState))
-	schemas.Import(&version, api.IPBlackHole{}, api.NewIPBlackHoleHandler(blackHoleState))
-	schemas.Import(&version, api.RecursiveConcurrent{}, api.NewRecursiveConcurrentHandler(conState))
-	state := api.NewViewsState()
-	schemas.Import(&version, api.View{}, api.NewViewHandler(state))
-	schemas.Import(&version, api.Zone{}, api.NewZoneHandler(state))
-	schemas.Import(&version, api.RR{}, api.NewRRHandler(state))
-	schemas.Import(&version, api.Redirection{}, api.NewRedirectionHandler(state))
-	schemas.Import(&version, api.DNS64{}, api.NewDNS64Handler(state))
+	aCLsState := myapi.NewACLsState()
+	forwardState := myapi.NewForwardState()
+	dnsState := myapi.NewDefaultDNS64State()
+	blackHoleState := myapi.NewIPBlackHoleState()
+	conState := myapi.NewRecursiveConcurrentState()
+	schemas.Import(&version, myapi.ACL{}, myapi.NewACLHandler(aCLsState))
+	schemas.Import(&version, myapi.Forward{}, myapi.NewForwardHandler(forwardState))
+	schemas.Import(&version, myapi.DefaultDNS64{}, myapi.NewDefaultDNS64Handler(dnsState))
+	schemas.Import(&version, myapi.IPBlackHole{}, myapi.NewIPBlackHoleHandler(blackHoleState))
+	schemas.Import(&version, myapi.RecursiveConcurrent{}, myapi.NewRecursiveConcurrentHandler(conState))
+	state := myapi.NewViewsState()
+	schemas.Import(&version, myapi.View{}, myapi.NewViewHandler(state))
+	schemas.Import(&version, myapi.Zone{}, myapi.NewZoneHandler(state))
+	schemas.Import(&version, myapi.RR{}, myapi.NewRRHandler(state))
+	schemas.Import(&version, myapi.Redirection{}, myapi.NewRedirectionHandler(state))
+	schemas.Import(&version, myapi.DNS64{}, myapi.NewDNS64Handler(state))
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",
@@ -128,9 +128,11 @@ func main() {
 				return "", jwt.ErrMissingLoginValues
 			}
 			userID := loginVals.Username
-			password := loginVals.Password
-
-			if (userID == "admin" && password == "admin") || (userID == "test" && password == "test") {
+			pwd, err := myapi.DBCon.GetUserPWD(userID)
+			if err != nil {
+				return nil, err
+			}
+			if loginVals.Password == *pwd {
 				return &User{
 					UserName:  userID,
 					LastName:  "Bo-Yi",
@@ -163,13 +165,14 @@ func main() {
 	}
 
 	router.POST("/apis/linkingthing.com/example/v1/login", authMiddleware.LoginHandler)
-	router.POST("/apis/linkingthing.com/example/v1/logout", authMiddleware.LogoutHandler)
 
 	router.GET("/apis/linkingthing.com/example/v1/checkvalue", CheckValue)
 	auth := router.Group("/")
 	auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		adaptor.RegisterHandler(auth, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
+		auth.POST("/apis/linkingthing.com/example/v1/changepwd", ChangePWD)
+		auth.POST("/apis/linkingthing.com/example/v1/logout", authMiddleware.LogoutHandler)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()
@@ -273,4 +276,18 @@ func CheckValue(c *gin.Context) {
 		c.String(200, "check value fail!")
 	}
 	checkValueLock.Unlock()
+}
+
+func ChangePWD(c *gin.Context) {
+	var loginVals login
+	if err := c.ShouldBind(&loginVals); err != nil {
+		c.String(200, "username or password value format is not correct!")
+		return
+	}
+	if err := myapi.DBCon.UpdatePWD(loginVals.Username, loginVals.Password); err != nil {
+		c.String(200, "change password value fail!")
+		return
+	}
+	c.String(200, "change password success!")
+	return
 }

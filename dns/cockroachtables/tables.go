@@ -102,3 +102,9 @@ type RecursiveConcurrent struct {
 	RecursiveClients uint
 	FetchesPerZone   uint
 }
+
+type DDIUserPWD struct {
+	gorm.Model
+	Name string
+	PWD  string
+}
