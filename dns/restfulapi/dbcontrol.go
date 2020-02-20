@@ -60,19 +60,19 @@ func NewDBController() *DBController {
 	}
 	tx := one.db.Begin()
 	defer tx.Rollback()
-	if err := tx.AutoMigrate(&tb.DBView{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.View{}).Error; err != nil {
 		panic(err)
 	}
-	if err := tx.AutoMigrate(&tb.DBZone{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.Zone{}).Error; err != nil {
 		panic(err)
 	}
-	if err := tx.AutoMigrate(&tb.DBRR{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.RR{}).Error; err != nil {
 		panic(err)
 	}
-	if err := tx.AutoMigrate(&tb.DBACL{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.ACL{}).Error; err != nil {
 		panic(err)
 	}
-	if err := tx.AutoMigrate(&tb.DBIP{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.IP{}).Error; err != nil {
 		panic(err)
 	}
 	if err := tx.AutoMigrate(&tb.Forwarder{}).Error; err != nil {
@@ -118,7 +118,7 @@ func NewDBController() *DBController {
 			panic(err)
 		}
 	}
-	any := tb.DBACL{}
+	any := tb.ACL{}
 	any.ID = 1
 	if err := tx.Find(&any).Error; err != nil {
 		any.Name = "any"
@@ -127,7 +127,7 @@ func NewDBController() *DBController {
 			panic(err)
 		}
 	}
-	none := tb.DBACL{}
+	none := tb.ACL{}
 	none.ID = 2
 	if err := tx.Find(&none).Error; err != nil {
 		none.Name = "none"
@@ -136,9 +136,9 @@ func NewDBController() *DBController {
 			panic(err)
 		}
 	}
-	viewDefault := tb.DBView{}
+	viewDefault := tb.View{}
 	viewDefault.ID = 1000000
-	var many []tb.DBView
+	var many []tb.View
 	if err := tx.Find(&many).Error; err != nil {
 		panic(err)
 	}
@@ -162,27 +162,27 @@ func (controller *DBController) Close() {
 	DBCon = NewDBController()
 }*/
 
-func (controller *DBController) CreateACL(aCL *ACL) (tb.DBACL, error) {
+func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
 	//create new data in the database
-	var one tb.DBACL
+	var one tb.ACL
 	one.Name = aCL.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var dbACLs []tb.DBACL
+	var dbACLs []tb.ACL
 	if err := tx.Where("name = ?", aCL.Name).Find(&dbACLs).Error; err != nil {
-		return tb.DBACL{}, err
+		return tb.ACL{}, err
 	}
 	if len(dbACLs) > 0 {
-		return tb.DBACL{}, fmt.Errorf("the name %s of acl exists", aCL.Name)
+		return tb.ACL{}, fmt.Errorf("the name %s of acl exists", aCL.Name)
 	}
 	for _, iP := range aCL.IPs {
-		ip := tb.DBIP{IP: iP}
+		ip := tb.IP{IP: iP}
 		one.IPs = append(one.IPs, ip)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.DBACL{}, err
+		return tb.ACL{}, err
 	}
-	var last tb.DBACL
+	var last tb.ACL
 	tx.Last(&last)
 	var iPs []string
 	for _, iP := range aCL.IPs {
@@ -205,18 +205,21 @@ func (controller *DBController) DeleteACL(id string) error {
 	if id == "1" || id == "2" {
 		return fmt.Errorf("It's not allow to delete the default any or none acl!")
 	}
-	one := tb.DBACL{}
-	var index int
-	if index, err = strconv.Atoi(id); err != nil {
-		return err
-	}
+	one := tb.ACL{}
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.First(&one, index).Error; err != nil {
+	if err := tx.First(&one, id).Error; err != nil {
 		return fmt.Errorf("unknown ACL with ID %s, %w", id, err)
 	}
+	var views []tb.View
+	if err := tx.Model(&one).Related(&views, "Views").Error; err != nil {
+		return err
+	}
+	if len(views) > 0 {
+		return fmt.Errorf("the ACL with ID %s is used by view or views, can not be deleted!", id)
+	}
 	//delete the ips and acl from the database
-	var aCLDB tb.DBACL
+	var aCLDB tb.ACL
 	var num int
 	if num, err = strconv.Atoi(id); err != nil {
 		return err
@@ -240,7 +243,7 @@ func (controller *DBController) DeleteACL(id string) error {
 func (controller *DBController) GetACL(id string) (*ACL, error) {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var a tb.DBACL
+	var a tb.ACL
 	var index int
 	var err error
 	if index, err = strconv.Atoi(id); err != nil {
@@ -252,7 +255,7 @@ func (controller *DBController) GetACL(id string) (*ACL, error) {
 	aCL := ACL{}
 	aCL.SetID(id)
 	aCL.Name = a.Name
-	var iPs []tb.DBIP
+	var iPs []tb.IP
 	if err := tx.Where("acl_id = ?", id).Find(&iPs).Error; err != nil {
 		return nil, err
 	}
@@ -265,7 +268,7 @@ func (controller *DBController) GetACL(id string) (*ACL, error) {
 }
 
 func (controller *DBController) UpdateACL(aCL *ACL) error {
-	var one tb.DBACL
+	var one tb.ACL
 	var num int
 	var err error
 	if aCL.ID == "1" || aCL.ID == "2" {
@@ -279,12 +282,12 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//check the name of the acl is not exists except itself.
-	tmp := tb.DBACL{}
+	tmp := tb.ACL{}
 	if err := tx.First(&tmp, one.ID).Error; err != nil {
 		return err
 	}
 	if tmp.Name != aCL.Name {
-		acls := []tb.DBACL{}
+		acls := []tb.ACL{}
 		if err := tx.Where("name = ?", aCL.Name).Find(&acls).Error; err != nil {
 			return err
 		}
@@ -293,12 +296,12 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 		}
 	}
 	//delete the old ips data.
-	if err := tx.Where("acl_id = ?", aCL.GetID()).Delete(&tb.DBIP{}).Error; err != nil {
+	if err := tx.Where("acl_id = ?", aCL.GetID()).Delete(&tb.IP{}).Error; err != nil {
 		return err
 	}
 	//add new ips to the acl
 	for _, iP := range aCL.IPs {
-		ip := tb.DBIP{IP: iP}
+		ip := tb.IP{IP: iP}
 		one.IPs = append(one.IPs, ip)
 	}
 	if err := tx.Save(&one).Error; err != nil {
@@ -323,7 +326,7 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 
 func (controller *DBController) GetACLs() []*ACL {
 	var aCLs []*ACL
-	var aCLDBs []tb.DBACL
+	var aCLDBs []tb.ACL
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Find(&aCLDBs).Error; err != nil {
@@ -334,7 +337,7 @@ func (controller *DBController) GetACLs() []*ACL {
 		aCL.SetID(strconv.Itoa(int(aCLDB.ID)))
 		aCL.Name = aCLDB.Name
 		aCL.SetCreationTimestamp(aCLDB.CreatedAt)
-		var iPDBs []tb.DBIP
+		var iPDBs []tb.IP
 		if err := tx.Where("acl_id = ?", aCLDB.ID).Find(&iPDBs).Error; err == nil {
 			for _, iP := range iPDBs {
 				aCL.IPs = append(aCL.IPs, iP.IP)
@@ -345,16 +348,16 @@ func (controller *DBController) GetACLs() []*ACL {
 	return aCLs
 }
 
-func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
+func (controller *DBController) CreateView(view *View) (tb.View, error) {
 	//create new data in the database
-	var one tb.DBView
+	var one tb.View
 	one.Name = view.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//adjust the priority
-	var allView []tb.DBView
+	var allView []tb.View
 	if err := tx.Find(&allView).Error; err != nil {
-		return tb.DBView{}, err
+		return tb.View{}, err
 	}
 	one.Priority = view.Priority
 	one.IsUsed = view.IsUsed
@@ -363,7 +366,7 @@ func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
 	} else if view.Priority < 0 {
 		one.Priority = 1
 	}
-	var tmpView []tb.DBView
+	var tmpView []tb.View
 	for i, viewDB := range allView {
 		if viewDB.Priority >= one.Priority {
 			allView[i].Priority++
@@ -372,48 +375,48 @@ func (controller *DBController) CreateView(view *View) (tb.DBView, error) {
 	}
 	for _, viewDB := range tmpView {
 		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
-			return tb.DBView{}, err
+			return tb.View{}, err
 		}
 	}
-	var dbViews []tb.DBView
+	var dbViews []tb.View
 	//check wether the view is exists.
 	if err := tx.Where("name = ?", view.Name).Find(&dbViews).Error; err != nil {
-		return tb.DBView{}, err
+		return tb.View{}, err
 	}
 	if len(dbViews) > 0 {
-		return tb.DBView{}, fmt.Errorf("the name %s of view has exists!", view.Name)
+		return tb.View{}, fmt.Errorf("the name %s of view has exists!", view.Name)
 	}
 	//add the acls to the view
 	var err error
 	var aclids []string
 	for _, id := range view.ACLIDs {
 		aclids = append(aclids, id)
-		tmp := tb.DBACL{}
+		tmp := tb.ACL{}
 		var index int
 		if index, err = strconv.Atoi(id); err != nil {
-			return tb.DBView{}, err
+			return tb.View{}, err
 		}
 		tmp.ID = uint(index)
 		//check wether the acl is valid
-		var tmpACL tb.DBACL
+		var tmpACL tb.ACL
 		if err := tx.First(&tmpACL, id).Error; err != nil {
-			return tb.DBView{}, fmt.Errorf("id %s of acl not exists, %w", id, err)
+			return tb.View{}, fmt.Errorf("id %s of acl not exists, %w", id, err)
 		}
 		tmp.Name = tmpACL.Name
 		one.ACLs = append(one.ACLs, tmp)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.DBView{}, err
+		return tb.View{}, err
 	}
-	var last tb.DBView
+	var last tb.View
 	tx.Last(&last)
 	req := pb.CreateViewReq{ViewName: view.Name, ViewID: strconv.Itoa(int(last.ID)), Priority: int32(view.Priority), ACLIDs: aclids}
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return tb.DBView{}, err
+		return tb.View{}, err
 	}
 	if err := SendCmd(data, CREATEVIEW); err != nil {
-		return tb.DBView{}, err
+		return tb.View{}, err
 	}
 	tx.Commit()
 	return last, nil
@@ -428,7 +431,7 @@ func (controller *DBController) DeleteView(id string) error {
 	if view.Name == "default" {
 		return fmt.Errorf("view default can't not be deleted")
 	}
-	var viewDB tb.DBView
+	var viewDB tb.View
 	var num int
 	if num, err = strconv.Atoi(id); err != nil {
 		return err
@@ -445,7 +448,7 @@ func (controller *DBController) DeleteView(id string) error {
 	if err := tx.Unscoped().Delete(&viewDB).Error; err != nil {
 		return err
 	}
-	var allView []tb.DBView
+	var allView []tb.View
 	if err := tx.Find(&allView).Error; err != nil {
 		return err
 	}
@@ -472,7 +475,7 @@ func (controller *DBController) DeleteView(id string) error {
 }
 
 func (controller *DBController) UpdateView(view *View) error {
-	var one tb.DBView
+	var one tb.View
 	var num int
 	var err error
 	if num, err = strconv.Atoi(view.ID); err != nil {
@@ -483,13 +486,13 @@ func (controller *DBController) UpdateView(view *View) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//check wether the view is exists
-	var dbView tb.DBView
+	var dbView tb.View
 	if err := tx.First(&dbView, view.GetID()).Error; err != nil {
 		return fmt.Errorf("the id %s of the view is not exists!%w", view.GetID(), err)
 	}
 	//adjust view priority
-	var allDBView []tb.DBView
-	var newDBViews []tb.DBView
+	var allDBView []tb.View
+	var newDBViews []tb.View
 	if err := tx.Find(&allDBView).Error; err != nil {
 		return err
 	}
@@ -529,7 +532,7 @@ func (controller *DBController) UpdateView(view *View) error {
 	var delete_aclids []string
 	var add_aclids []string
 	add_aclids = view.ACLIDs
-	var delete_acls []tb.DBACL
+	var delete_acls []tb.ACL
 	if err := tx.Model(&one).Related(&delete_acls, "ACLs").Error; err != nil {
 		return err
 	}
@@ -537,9 +540,9 @@ func (controller *DBController) UpdateView(view *View) error {
 		return err
 	}
 	// add the relationship between view and acl
-	var dbACLs []tb.DBACL
+	var dbACLs []tb.ACL
 	for _, id := range view.ACLIDs {
-		var tmp tb.DBACL
+		var tmp tb.ACL
 		var index int
 		if index, err = strconv.Atoi(id); err != nil {
 			return err
@@ -580,7 +583,7 @@ func (controller *DBController) UpdateView(view *View) error {
 func (controller *DBController) GetView(id string) (*View, error) {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var a tb.DBView
+	var a tb.View
 	var index int
 	var err error
 	if index, err = strconv.Atoi(id); err != nil {
@@ -596,7 +599,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	view.IsUsed = a.IsUsed
 	view.Type = "view"
 	view.SetCreationTimestamp(a.CreatedAt)
-	var acls []tb.DBACL
+	var acls []tb.ACL
 	if err := tx.Model(&a).Related(&acls, "ACLs").Error; err != nil {
 		return nil, err
 	}
@@ -609,7 +612,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 		view.ACLs = append(view.ACLs, &tmp)
 	}
 	view.ACLIDs = ids
-	var zones []tb.DBZone
+	var zones []tb.Zone
 	if err := tx.Where("view_id = ?", id).Find(&zones).Error; err != nil {
 		return nil, err
 	}
@@ -640,7 +643,7 @@ func (controller *DBController) GetView(id string) (*View, error) {
 
 func (controller *DBController) GetViews() []*View {
 	var views []*View
-	var viewDBs []tb.DBView
+	var viewDBs []tb.View
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Find(&viewDBs).Error; err != nil {
@@ -659,35 +662,35 @@ func (controller *DBController) GetViews() []*View {
 
 //////////////
 
-func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.DBZone, error) {
+func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.Zone, error) {
 	//create new data in the database
-	var one tb.DBZone
+	var one tb.Zone
 	one.Name = zone.Name
 	var num int
 	var err error
 	if num, err = strconv.Atoi(viewID); err != nil {
-		return tb.DBZone{}, err
+		return tb.Zone{}, err
 	}
 	one.ViewID = uint(num)
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//set zone file name
-	var dbview tb.DBView
+	var dbview tb.View
 	if err := tx.First(&dbview, num).Error; err != nil {
-		return tb.DBZone{}, err
+		return tb.Zone{}, err
 	}
 	one.ZoneFile = zone.Name + dbview.Name + ".zone"
-	var dbZones []tb.DBZone
+	var dbZones []tb.Zone
 	if err := tx.Where("name = ?", zone.Name).Find(&dbZones).Error; err != nil {
-		return tb.DBZone{}, err
+		return tb.Zone{}, err
 	}
 	if len(dbZones) > 0 {
-		return tb.DBZone{}, fmt.Errorf("the name %s of zone has exists!", zone.Name)
+		return tb.Zone{}, fmt.Errorf("the name %s of zone has exists!", zone.Name)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.DBZone{}, err
+		return tb.Zone{}, err
 	}
-	var last tb.DBZone
+	var last tb.Zone
 	tx.Last(&last)
 	req := pb.CreateZoneReq{ViewID: viewID, ZoneName: zone.Name, ZoneID: strconv.Itoa(int(last.ID)), ZoneFileName: one.ZoneFile}
 	data, err := proto.Marshal(&req)
@@ -707,7 +710,7 @@ func (controller *DBController) DeleteZone(id string, viewID string) error {
 		return fmt.Errorf("unknown Zone with ID %s", id)
 	}
 	//delete the zone and rrs from the database
-	var zoneDB tb.DBZone
+	var zoneDB tb.Zone
 	var num int
 	if num, err = strconv.Atoi(id); err != nil {
 		return err
@@ -733,7 +736,7 @@ func (controller *DBController) DeleteZone(id string, viewID string) error {
 func (controller *DBController) GetZone(viewID string, id string) (*Zone, error) {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var a tb.DBZone
+	var a tb.Zone
 	var index int
 	var err error
 	if index, err = strconv.Atoi(id); err != nil {
@@ -745,7 +748,7 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 	zone := Zone{}
 	zone.SetID(id)
 	zone.Name = a.Name
-	var rrs []tb.DBRR
+	var rrs []tb.RR
 	if err := tx.Where("zone_id = ?", id).Find(&rrs).Error; err != nil {
 		return nil, err
 	}
@@ -769,7 +772,7 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 }
 
 /*func (controller *DBController) UpdateZone(zone *Zone) error {
-	var one tb.DBZone
+	var one tb.Zone
 	var num int
 	var err error
 	if num, err = strconv.Atoi(zone.ID); err != nil {
@@ -779,13 +782,13 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 	one.Name = zone.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Where("acl_id = ?", zone.GetID()).Delete(&tb.DBIP{}).Error; err != nil {
+	if err := tx.Where("acl_id = ?", zone.GetID()).Delete(&tb.IP{}).Error; err != nil {
 		return err
 	}
 	if err := tx.Save(&one).Error; err != nil {
 		return err
 	}
-	var iPDB tb.DBIP
+	var iPDB tb.IP
 	for _, ip := range zone.IPs {
 		iPDB.IP = ip
 		iPDB.ZoneID = zone.GetID()
@@ -799,7 +802,7 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 
 func (controller *DBController) GetZones(viewID string) []*Zone {
 	var zones []*Zone
-	var zoneDBs []tb.DBZone
+	var zoneDBs []tb.Zone
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Where("view_id = ?", viewID).Find(&zoneDBs).Error; err != nil {
@@ -816,13 +819,13 @@ func (controller *DBController) GetZones(viewID string) []*Zone {
 	return zones
 }
 
-func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (tb.DBRR, error) {
+func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (tb.RR, error) {
 	//create new data in the database
-	var one tb.DBRR
+	var one tb.RR
 	var num int
 	var err error
 	if num, err = strconv.Atoi(zoneID); err != nil {
-		return tb.DBRR{}, err
+		return tb.RR{}, err
 	}
 	one.ZoneID = uint(num)
 	one.Name = rr.Name
@@ -833,9 +836,9 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.DBRR{}, err
+		return tb.RR{}, err
 	}
-	var last tb.DBRR
+	var last tb.RR
 	tx.Last(&last)
 	req := pb.CreateRRReq{ViewID: viewID, ZoneID: zoneID, RRID: strconv.Itoa(int(last.ID)), Name: rr.Name, Type: rr.DataType, TTL: strconv.Itoa(int(rr.TTL)), Value: rr.Value}
 	data, err := proto.Marshal(&req)
@@ -852,7 +855,7 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 func (controller *DBController) DeleteRR(id string, zoneID string, viewID string) error {
 	var err error
 	//delete the rr and rrs from the database
-	var rrDB tb.DBRR
+	var rrDB tb.RR
 	var num int
 	if num, err = strconv.Atoi(id); err != nil {
 		return err
@@ -862,7 +865,7 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 	defer tx.Rollback()
 	//check the relationship between rr,zone and view
 	var tmpID int
-	var v tb.DBView
+	var v tb.View
 	if tmpID, err = strconv.Atoi(viewID); err != nil {
 		return err
 	}
@@ -872,11 +875,11 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 	if tmpID, err = strconv.Atoi(zoneID); err != nil {
 		return err
 	}
-	var z tb.DBZone
+	var z tb.Zone
 	if err := tx.Where("view_id = ?", viewID).First(&z, tmpID).Error; err != nil {
 		return err
 	}
-	var rr tb.DBRR
+	var rr tb.RR
 	if err := tx.Where("zone_id = ?", zoneID).First(&rr, num).Error; err != nil {
 		return err
 	}
@@ -903,18 +906,18 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 	if index, err = strconv.Atoi(viewID); err != nil {
 		return nil, err
 	}
-	var v tb.DBView
+	var v tb.View
 	if err := tx.First(&v, index).Error; err != nil {
 		return nil, err
 	}
-	var z tb.DBZone
+	var z tb.Zone
 	if index, err = strconv.Atoi(zoneID); err != nil {
 		return nil, err
 	}
 	if err := tx.Where("view_id = ?", viewID).First(&z, index).Error; err != nil {
 		return nil, err
 	}
-	var dbRR tb.DBRR
+	var dbRR tb.RR
 	if index, err = strconv.Atoi(id); err != nil {
 		return nil, err
 	}
@@ -934,7 +937,7 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 }
 
 func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) error {
-	var one tb.DBRR
+	var one tb.RR
 	var num int
 	var err error
 	if num, err = strconv.Atoi(rr.ID); err != nil {
@@ -976,11 +979,11 @@ func (controller *DBController) GetRRs(zoneID string, viewID string) ([]*RR, err
 	if index, err = strconv.Atoi(viewID); err != nil {
 		return nil, err
 	}
-	var v tb.DBView
+	var v tb.View
 	if err := tx.First(&v, index).Error; err != nil {
 		return nil, err
 	}
-	var z tb.DBZone
+	var z tb.Zone
 	if index, err = strconv.Atoi(zoneID); err != nil {
 		return nil, err
 	}
@@ -988,7 +991,7 @@ func (controller *DBController) GetRRs(zoneID string, viewID string) ([]*RR, err
 		return nil, err
 	}
 	//get all RR
-	var dbRRs []tb.DBRR
+	var dbRRs []tb.RR
 	if err := tx.Where("zone_id = ?", zoneID).Find(&dbRRs).Error; err != nil {
 		return nil, err
 	}
@@ -1154,7 +1157,7 @@ func (controller *DBController) GetForward(id string) (*ForwardData, error) {
 	if num, err = strconv.Atoi(id); err != nil {
 		return nil, err
 	}
-	var zone tb.DBZone
+	var zone tb.Zone
 	zone.ID = uint(num)
 	if err := tx.First(&zone).Error; err != nil {
 		return nil, err
@@ -1180,7 +1183,7 @@ func (controller *DBController) GetForward(id string) (*ForwardData, error) {
 func (controller *DBController) UpdateForward(forward *ForwardData, zoneID string, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var zone tb.DBZone
+	var zone tb.Zone
 	var num int
 	var err error
 	if num, err = strconv.Atoi(zoneID); err != nil {
@@ -1224,7 +1227,7 @@ func (controller *DBController) DeleteForward(id string) error {
 	if err := tx.Unscoped().Where("zone_id = ?", id).Delete(&tb.Forwarder{}).Error; err != nil {
 		return err
 	}
-	zone := tb.DBZone{}
+	zone := tb.Zone{}
 	var num int
 	var err error
 	if num, err = strconv.Atoi(id); err != nil {
@@ -1248,7 +1251,7 @@ func (controller *DBController) DeleteForward(id string) error {
 
 ////////////////
 func (controller *DBController) CreateRedirection(rd *Redirection, viewID string) (*tb.Redirection, error) {
-	var view tb.DBView
+	var view tb.View
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var num int
@@ -1311,7 +1314,7 @@ func (controller *DBController) DeleteRedirection(id string, viewID string) erro
 func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string) error {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	var view tb.DBView
+	var view tb.View
 	var num int
 	var err error
 	if num, err = strconv.Atoi(viewID); err != nil {
@@ -1403,8 +1406,16 @@ func (controller *DBController) CreateDefaultDNS64(dns64 *DefaultDNS64) (*tb.Def
 	defer tx.Rollback()
 	tbdns64 := tb.DefaultDNS64{}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientACL = dns64.ClientACL
-	tbdns64.AAddress = dns64.AAddress
+	var num int
+	var err error
+	if num, err = strconv.Atoi(dns64.ClientACL); err != nil {
+		return nil, err
+	}
+	tbdns64.ClientACL = uint(num)
+	if num, err = strconv.Atoi(dns64.AAddress); err != nil {
+		return nil, err
+	}
+	tbdns64.AAddress = uint(num)
 	if err := tx.Create(&tbdns64).Error; err != nil {
 		return nil, err
 	}
@@ -1462,8 +1473,14 @@ func (controller *DBController) UpdateDefaultDNS64(dns64 *DefaultDNS64) error {
 		return err
 	}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientACL = dns64.ClientACL
-	tbdns64.AAddress = dns64.AAddress
+	if num, err = strconv.Atoi(dns64.ClientACL); err != nil {
+		return err
+	}
+	tbdns64.ClientACL = uint(num)
+	if num, err = strconv.Atoi(dns64.AAddress); err != nil {
+		return err
+	}
+	tbdns64.AAddress = uint(num)
 	if err := tx.Save(&tbdns64).Error; err != nil {
 		return err
 	}
@@ -1480,7 +1497,7 @@ func (controller *DBController) UpdateDefaultDNS64(dns64 *DefaultDNS64) error {
 }
 
 func (controller *DBController) CheckACL(id string) error {
-	if err := controller.db.First(&tb.DBACL{}, id).Error; err != nil {
+	if err := controller.db.First(&tb.ACL{}, id).Error; err != nil {
 		return fmt.Errorf("id %s of acl not exists, %w", id, err)
 	}
 	return nil
@@ -1496,14 +1513,14 @@ func (controller *DBController) GetDefaultDNS64(id string) (*DefaultDNS64, error
 	one := DefaultDNS64{}
 	one.ID = id
 	one.Prefix = dns64.Prefix
-	one.ClientACL = dns64.ClientACL
-	var acl tb.DBACL
+	one.ClientACL = strconv.Itoa(int(dns64.ClientACL))
+	var acl tb.ACL
 	if err := tx.First(&acl, dns64.ClientACL).Error; err != nil {
 		return nil, err
 	}
 	one.ClientACLName = acl.Name
 	acl.ID = 0
-	one.AAddress = dns64.AAddress
+	one.AAddress = strconv.Itoa(int(dns64.AAddress))
 	acl.ID = 0
 	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
 		return nil, err
@@ -1534,7 +1551,7 @@ func (controller *DBController) GetDefaultDNS64s() ([]*DefaultDNS64, error) {
 func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DNS64, error) {
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	view := tb.DBView{}
+	view := tb.View{}
 	var num int
 	var err error
 	if num, err = strconv.Atoi(viewID); err != nil {
@@ -1546,8 +1563,14 @@ func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DN
 	}
 	tbdns64 := tb.DNS64{}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientACL = dns64.ClientACL
-	tbdns64.AAddress = dns64.AAddress
+	if num, err = strconv.Atoi(dns64.ClientACL); err != nil {
+		return nil, err
+	}
+	tbdns64.ClientACL = uint(num)
+	if num, err = strconv.Atoi(dns64.AAddress); err != nil {
+		return nil, err
+	}
+	tbdns64.AAddress = uint(num)
 	view.DNS64s = append(view.DNS64s, tbdns64)
 	if err := tx.Save(&view).Error; err != nil {
 		return nil, err
@@ -1612,8 +1635,14 @@ func (controller *DBController) UpdateDNS64(dns64 *DNS64, viewID string) error {
 		return err
 	}
 	tbdns64.Prefix = dns64.Prefix
-	tbdns64.ClientACL = dns64.ClientACL
-	tbdns64.AAddress = dns64.AAddress
+	if num, err = strconv.Atoi(dns64.ClientACL); err != nil {
+		return err
+	}
+	tbdns64.ClientACL = uint(num)
+	if num, err = strconv.Atoi(dns64.AAddress); err != nil {
+		return err
+	}
+	tbdns64.AAddress = uint(num)
 	if err := tx.Save(&tbdns64).Error; err != nil {
 		return err
 	}
@@ -1639,14 +1668,14 @@ func (controller *DBController) GetDNS64(id string) (*DNS64, error) {
 	one := DNS64{}
 	one.ID = id
 	one.Prefix = dns64.Prefix
-	one.ClientACL = dns64.ClientACL
-	var acl tb.DBACL
+	one.ClientACL = strconv.Itoa(int(dns64.ClientACL))
+	var acl tb.ACL
 	if err := tx.First(&acl, dns64.ClientACL).Error; err != nil {
 		return nil, err
 	}
 	one.ClientACLName = acl.Name
 	acl.ID = 0
-	one.AAddress = dns64.AAddress
+	one.AAddress = strconv.Itoa(int(dns64.AAddress))
 	acl.ID = 0
 	if err := tx.First(&acl, dns64.AAddress).Error; err != nil {
 		return nil, err
@@ -1763,7 +1792,7 @@ func (controller *DBController) GetIPBlackHole(id string) (*IPBlackHole, error) 
 		return nil, err
 	}
 	one := IPBlackHole{}
-	var acl tb.DBACL
+	var acl tb.ACL
 	if err := tx.First(&acl, blackHole.ACLID).Error; err != nil {
 		return nil, fmt.Errorf("the id %d of acl is not exists!", blackHole.ACLID)
 	}

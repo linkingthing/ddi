@@ -4,55 +4,56 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type DBACL struct {
+type ACL struct {
 	gorm.Model
 	Name   string
 	IsUsed int
-	IPs    []DBIP `gorm:"foreignkey:ACLID"`
+	Views  []View `gorm:"many2many:view_acls;"`
+	IPs    []IP   `gorm:"foreignkey:ACLID"`
 }
 
-type DBIP struct {
+type IP struct {
 	IP    string
-	ACLID uint `sql:"type:integer REFERENCES dbacls(id) on update cascade on delete cascade"`
+	ACLID uint `sql:"type:integer REFERENCES acls(id) on update cascade on delete cascade"`
 }
 
-type DBView struct {
+type View struct {
 	gorm.Model
 	Name         string
 	Priority     int
 	IsUsed       int
-	ACLs         []DBACL       `gorm:"many2many:view_acls;"`
-	Zones        []DBZone      `gorm:"foreignkey:ViewID"`
+	ACLs         []ACL         `gorm:"many2many:view_acls;"`
+	Zones        []Zone        `gorm:"foreignkey:ViewID"`
 	Redirections []Redirection `gorm:"foreignkey:ViewID"`
 	DNS64s       []DNS64       `gorm:"foreignkey:ViewID"`
 }
 
-type DBZone struct {
+type Zone struct {
 	gorm.Model
 	Name        string
 	ZoneFile    string
-	ViewID      uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	ViewID      uint `sql:"type:integer REFERENCES views(id) on update cascade on delete cascade"`
 	IsUsed      int
 	IsForward   int
 	ForwardType string
-	RRs         []DBRR      `gorm:"foreignkey:ZoneID"`
+	RRs         []RR        `gorm:"foreignkey:ZoneID"`
 	Forwarders  []Forwarder `gorm:"foreignkey:ZoneID"`
 }
 
-type DBRR struct {
+type RR struct {
 	gorm.Model
 	Name     string
 	DataType string
 	TTL      uint
 	Value    string
 	IsUsed   int
-	ZoneID   uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
+	ZoneID   uint `sql:"type:integer REFERENCES zones(id) on update cascade on delete cascade"`
 }
 
 type Forwarder struct {
 	gorm.Model
 	IP     string
-	ZoneID uint `sql:"type:integer REFERENCES db_zones(id) on update cascade on delete cascade"`
+	ZoneID uint `sql:"type:integer REFERENCES zones(id) on update cascade on delete cascade"`
 }
 
 type DefaultForward struct {
@@ -74,27 +75,27 @@ type Redirection struct {
 	DataType     string
 	RedirectType string
 	Value        string
-	ViewID       uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	ViewID       uint `sql:"type:integer REFERENCES views(id) on update cascade on delete cascade"`
 }
 
 type DNS64 struct {
 	gorm.Model
 	Prefix    string
-	ClientACL string
-	AAddress  string
-	ViewID    uint `sql:"type:integer REFERENCES db_views(id) on update cascade on delete cascade"`
+	ClientACL uint `sql:"type:integer REFERENCES acls(id)"`
+	AAddress  uint `sql:"type:integer REFERENCES acls(id)"`
+	ViewID    uint `sql:"type:integer REFERENCES views(id) on update cascade on delete cascade"`
 }
 
 type DefaultDNS64 struct {
 	gorm.Model
 	Prefix    string
-	ClientACL string
-	AAddress  string
+	ClientACL uint `sql:"type:integer REFERENCES acls(id)"`
+	AAddress  uint `sql:"type:integer REFERENCES acls(id)"`
 }
 
 type IPBlackHole struct {
 	gorm.Model
-	ACLID uint `sql:"type:integer REFERENCES dbacls(id) on update cascade on delete cascade"`
+	ACLID uint `sql:"type:integer REFERENCES acls(id)"`
 }
 
 type RecursiveConcurrent struct {
