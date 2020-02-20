@@ -143,7 +143,7 @@ func (d DNS64) GetParents() []resource.ResourceKind {
 
 func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
-	var one tb.DBACL
+	var one tb.ACL
 	var err error
 	if one, err = DBCon.CreateACL(aCL); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -206,7 +206,7 @@ func NewViewHandler(s *ViewsState) *viewHandler {
 
 func (h *viewHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	view := ctx.Resource.(*View)
-	var one tb.DBView
+	var one tb.View
 	var err error
 	if one, err = DBCon.CreateView(view); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -267,7 +267,7 @@ func NewZoneHandler(s *ViewsState) *zoneHandler {
 func (h *zoneHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	zone := ctx.Resource.(*Zone)
 	var err error
-	var dbZone tb.DBZone
+	var dbZone tb.Zone
 	if dbZone, err = DBCon.CreateZone(zone, zone.GetParent().GetID()); err != nil {
 		return zone, goresterr.NewAPIError(FormatError, err.Error())
 	}
@@ -352,7 +352,7 @@ func NewRRHandler(s *ViewsState) *rrHandler {
 func (h *rrHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	rr := ctx.Resource.(*RR)
 	var err error
-	var dbRR tb.DBRR
+	var dbRR tb.RR
 	if dbRR, err = DBCon.CreateRR(rr, rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
 		return rr, goresterr.NewAPIError(FormatError, err.Error())
 	}
