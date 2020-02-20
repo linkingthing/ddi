@@ -33,8 +33,13 @@ localhost:
 */
 
 type LocalConf struct {
-	Role string `yaml:"role"`
-	IP   string `yaml:"ip"`
+	Role     string `yaml:"role"` // 3 roles: Controller, Db, Kafka
+	IP       string `yaml:"ip"`
+	Hostname string `yaml:"hostname"`
+	//PromHost string `yaml:"prom_host"`
+	//PromPort string `yaml:"prom_port"`
+	//State  uint  `yaml:"state"`   // 1 online 0 offline
+	//OnTime int64 `yaml:"on_time"` // timestamp of the nearest online time
 }
 
 type ServerConf struct {
