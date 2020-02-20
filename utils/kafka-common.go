@@ -31,7 +31,7 @@ type PromRole struct {
 	PromHost string `json:"promHost"`
 	PromPort string `json:"promPort"`
 	IP       string `json:"ip"`
-	Role     uint   `json:"role"`   // 3 roles: Controller, Db, Kafka
+	Role     string `json:"role"`   // 3 roles: Controller, Db, Kafka
 	State    uint   `json:"state"`  // 1 online 0 offline
 	OnTime   int64  `json:"onTime"` //timestamp of the nearest online time
 }

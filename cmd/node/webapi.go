@@ -17,13 +17,18 @@ func main() {
 	conf = config.GetConfig()
 	log.Println("in agent.go, localhost ip: ", conf.Localhost.IP)
 
+	hostname := conf.Localhost.Hostname
+	hostIP := conf.Localhost.IP
+	hostRole := conf.Localhost.Role
+	promHostIP := conf.Server.Prometheus.IP
+	promHostPort := conf.Server.Prometheus.Port
 	//send kafka msg to topic prom
 	var PromInfo = utils.PromRole{
-		Hostname: utils.Hostname,
-		PromHost: utils.KafkaServerProm,
-		PromPort: utils.PromMetricsPort,
-		IP:       utils.HostIP,
-		Role:     utils.RoleController,
+		Hostname: hostname,
+		PromHost: promHostIP,
+		PromPort: promHostPort,
+		IP:       hostIP,
+		Role:     hostRole,
 		State:    1, // 1 online 0 offline
 		OnTime:   time.Now().Unix(),
 	}

@@ -32,6 +32,16 @@ localhost:
     ip: 10.0.0.15
 */
 
+type KafkaConf struct {
+	Host      string `yaml:"host"`
+	Port      string `yaml:"port"`
+	TopicNode string `yaml:"topic_node"`
+}
+type PrometheusConf struct {
+	IP   string `yaml:"ip"`
+	Port string `yaml:"port"`
+}
+
 type LocalConf struct {
 	Role     string `yaml:"role"` // 3 roles: Controller, Db, Kafka
 	IP       string `yaml:"ip"`
@@ -43,9 +53,10 @@ type LocalConf struct {
 }
 
 type ServerConf struct {
-	Kafka string `yaml:"kafka"`
-	Agent string `yaml:"agent"`
-	Db    string `yaml:"db"`
+	Kafka      KafkaConf      `yaml:"kafka"`
+	Prometheus PrometheusConf `yaml:"prometheus"`
+	Agent      string         `yaml:"agent"`
+	Db         string         `yaml:"db"`
 }
 
 type VanguardConf struct {
