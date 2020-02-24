@@ -21,9 +21,9 @@ var (
 )
 
 const (
-	RoleController = iota
-	RoleDB
-	RoleKafka
+	RoleController = "controller"
+	RoleDB         = "db"
+	RoleKafka      = "kafka"
 )
 
 type PromRole struct {
