@@ -94,11 +94,21 @@ type BaseJsonRange struct {
 	Message string `json:"message"`
 }
 
+// node management module, list servers
+type BaseJsonServer struct {
+	Status  string           `json:"status"`
+	Message string           `json:"message"`
+	Data    []utils.PromRole `json:"data"`
+}
+
 func NewBaseJsonBean() *BaseJsonBean {
 	return &BaseJsonBean{}
 }
 func NewBaseJsonRange() *BaseJsonRange {
 	return &BaseJsonRange{}
+}
+func NewBaseJsonServer() *BaseJsonServer {
+	return &BaseJsonServer{}
 }
 
 func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -379,4 +389,28 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
 	return str, nil
 
+}
+
+func list_server(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	fmt.Println("in list_server(), Form: ", r.Form)
+
+	//get servers maintained by kafka server
+	result := NewBaseJsonServer()
+
+	result.Status = "success"
+	result.Message = "ok"
+	for _, s := range utils.OnlinePromHosts {
+		result.Data = append(result.Data, s)
+	}
+
+	log.Println("+++ result")
+	log.Println(result)
+	log.Println("--- result")
+	bytes, _ := json.Marshal(result)
+	//fmt.Fprint(w, string(bytes))
+	w.Write([]byte(bytes))
+
+	return
 }
