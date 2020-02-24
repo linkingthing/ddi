@@ -23,15 +23,13 @@ const (
 func SocketServer(port int) {
 
 	listen, err := net.Listen("tcp4", ":"+strconv.Itoa(port))
-
 	if err != nil {
 		log.Fatalf("Socket listen port %d failed,%s", port, err)
 		os.Exit(1)
 	}
-
 	defer listen.Close()
 
-	log.Printf("Begin listen port: %d", port)
+	log.Printf("SocketServer(), Begin listen port: %d", port)
 	go getKafkaMsg()
 	for host, v := range utils.OnlinePromHosts {
 		log.Println("+++ host")

@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	promServer = "10.0.0.24:9090"
-	host       = "10.0.0.15:9100"
+	//promServer = "10.0.0.24:9090"
+	host = "10.0.0.15:9100"
 )
 
 func cmd(command string) (string, error) {
@@ -157,6 +157,7 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))
 }
+
 func query(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -203,6 +204,14 @@ func query(w http.ResponseWriter, r *http.Request) {
 	cpuResp, err := GetPromItem("cpu", "10.0.0.15:9100")
 	if err != nil {
 		log.Println(err)
+		var hosts Hosts
+		result.Status = "error"
+		result.Message = "cpu error"
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
 		return
 	}
 
@@ -246,10 +255,12 @@ func query(w http.ResponseWriter, r *http.Request) {
 func GetPromItem(promType string, host string) (string, error) {
 	var command string
 	var rsp Response
+	var promWebHost = utils.PromServer + ":" + utils.PromPort
 	if promType == "cpu" {
-		command = "curl -H \"Content-Type: application/json\"  " +
-			"http://10.0.0.24:9090/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
+		command = "curl -H \"Content-Type: application/json\" http://" + promWebHost +
+			"/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
 	}
+	log.Println("in GetPromItem(), command: ", command)
 	out, err := cmd(command)
 	if err != nil {
 		return "", err
