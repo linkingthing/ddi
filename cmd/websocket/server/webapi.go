@@ -172,13 +172,7 @@ func query(w http.ResponseWriter, r *http.Request) {
 	//}
 	host, _ := r.Form["node"]
 	promType, _ := r.Form["type"]
-	//if !(flagHost && flagType) {
-	//
-	//	// todo no host or promType, means front wants all info
-	//	//fmt.Fprint(w, "host and promType error")
-	//
-	//	//return
-	//}
+
 	log.Println("host: ", host)
 	log.Println("promType: ", promType)
 
@@ -188,25 +182,7 @@ func query(w http.ResponseWriter, r *http.Request) {
 	result.Message = "ok"
 	result.Data.Nodes = utils.OnlinePromHosts
 
-	//if postHost != "" {
-	//	for k, v := range utils.OnlinePromHosts {
-	//		log.Println("+++ k")
-	//		log.Println(k)
-	//		log.Println("--- k")
-	//
-	//		if k != postHost {
-	//			log.Println("k != hostname, continue")
-	//			continue
-	//		}
-	//
-	//		log.Println("+++ v")
-	//		log.Println(v)
-	//		log.Println("--- v")
-	//	}
-	//
-	//}
-
-	cpuResp, err := GetPromItem("cpu", "10.0.0.15:9100")
+	cpuResp, err := GetPromItem("cpu", utils.PromLocalInstance)
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
@@ -224,12 +200,12 @@ func query(w http.ResponseWriter, r *http.Request) {
 	cpuResp = fmt.Sprintf("%.2f", cpuUsage)
 	log.Println("cpuResp: ", cpuResp)
 
-	memResp, err := GetPromItem("mem", "10.0.0.15:9100")
+	memResp, err := GetPromItem("mem", utils.PromLocalInstance)
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
 		result.Status = "error"
-		result.Message = "读取内存消息错误"
+		result.Message = "读取内存利用率错误"
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -241,12 +217,12 @@ func query(w http.ResponseWriter, r *http.Request) {
 	memUsage, err := strconv.ParseFloat(memResp, 64)
 	memResp = fmt.Sprintf("%.2f", memUsage)
 
-	diskResp, err := GetPromItem("disk", "10.0.0.15:9100")
+	diskResp, err := GetPromItem("disk", utils.PromLocalInstance)
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
 		result.Status = "error"
-		result.Message = "读取内存消息错误"
+		result.Message = "读取磁盘利用率错误"
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -274,8 +250,12 @@ func query(w http.ResponseWriter, r *http.Request) {
 
 		HostUsage[postHost] = Usage
 	} else {
-		HostUsage["10.0.0.15"] = Usage
-		HostUsage["10.0.0.24"] = Usage
+		result.Status = "error"
+		result.Message = "请加主机名参数"
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
 	}
 	log.Println("hostUsage: ", HostUsage)
 	result.Data.Usage = HostUsage

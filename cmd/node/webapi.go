@@ -31,6 +31,7 @@ func main() {
 		Role:     hostRole,
 		State:    1, // 1 online 0 offline
 		OnTime:   time.Now().Unix(),
+		ParentIP: conf.Localhost.ParentIP,
 	}
 	PromJson, err := json.Marshal(PromInfo)
 	if err != nil {
