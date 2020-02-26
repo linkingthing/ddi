@@ -278,24 +278,16 @@ func GetPromItem(promType string, host string) (string, error) {
 	var command string
 	var rsp Response
 	var promWebHost = utils.PromServer + ":" + utils.PromPort
+	var url = "http://" + promWebHost + "/api/v1/query?query="
 	if promType == "cpu" {
 		command = "curl -H \"Content-Type: application/json\" http://" + promWebHost +
 			"/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
 	} else if promType == "disk" {
-		url := "http://10.0.0.24:9090/api/v1/query_range?query="
-
 		promStr := "100%20-%20(node_filesystem_free_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20/%20node_filesystem_size_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20*%20100)"
-		command = "curl -g '" + url + promStr +
-			" 2>/dev/null"
-		out, err := cmd(command)
-		log.Println("+++ in GetPromItem(), out")
-		log.Println(out)
-		log.Println("--- out")
-		if err != nil {
-			log.Println("curl error: ", err)
-			return "", err
-		}
-
+		command = "curl -g '" + url + promStr + "' 2>/dev/null"
+	} else if promType == "mem" {
+		promStr := "(node_memory_MemFree_bytes%2Bnode_memory_Cached_bytes%2Bnode_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
+		command = "curl -g '" + url + promStr + "' 2>/dev/null"
 	}
 	log.Println("in GetPromItem(), command: ", command)
 
