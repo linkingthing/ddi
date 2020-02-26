@@ -14,11 +14,6 @@ import (
 	"strings"
 )
 
-var (
-	//promServer = "10.0.0.24:9090"
-	host = "10.0.0.15:9100"
-)
-
 func cmd(command string) (string, error) {
 	cmd := exec.Command("bash", "-c", command)
 	out, err := cmd.CombinedOutput()
@@ -216,7 +211,7 @@ func query(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		var hosts Hosts
 		result.Status = "error"
-		result.Message = "cpu error"
+		result.Message = "读取内存消息错误"
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -227,7 +222,24 @@ func query(w http.ResponseWriter, r *http.Request) {
 
 	cpuUsage, err := strconv.ParseFloat(cpuResp, 64)
 	cpuResp = fmt.Sprintf("%.2f", cpuUsage)
-	//log.Println("cpuResp: ", cpuResp)
+	log.Println("cpuResp: ", cpuResp)
+
+	memResp, err := GetPromItem("mem", "10.0.0.15:9100")
+	if err != nil {
+		log.Println(err)
+		var hosts Hosts
+		result.Status = "error"
+		result.Message = "读取内存消息错误"
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
+	}
+	log.Println("memResp: ", memResp)
+	memUsage, err := strconv.ParseFloat(memResp, 64)
+	memResp = fmt.Sprintf("%.2f", memUsage)
 
 	var HostUsage = make(map[string]Usage)
 	var Usage = Usage{}
@@ -269,8 +281,24 @@ func GetPromItem(promType string, host string) (string, error) {
 	if promType == "cpu" {
 		command = "curl -H \"Content-Type: application/json\" http://" + promWebHost +
 			"/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
+	} else if promType == "disk" {
+		url := "http://10.0.0.24:9090/api/v1/query_range?query="
+
+		promStr := "100%20-%20(node_filesystem_free_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20/%20node_filesystem_size_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20*%20100)"
+		command = "curl -g '" + url + promStr +
+			" 2>/dev/null"
+		out, err := cmd(command)
+		log.Println("+++ in GetPromItem(), out")
+		log.Println(out)
+		log.Println("--- out")
+		if err != nil {
+			log.Println("curl error: ", err)
+			return "", err
+		}
+
 	}
 	log.Println("in GetPromItem(), command: ", command)
+
 	out, err := cmd(command)
 	if err != nil {
 		return "", err

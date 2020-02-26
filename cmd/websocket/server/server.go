@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"github.com/linkingthing/ddi/utils"
 	"io"
 	"log"
 	"net"
@@ -31,15 +30,15 @@ func SocketServer(port int) {
 
 	log.Printf("SocketServer(), Begin listen port: %d", port)
 	go getKafkaMsg()
-	for host, v := range utils.OnlinePromHosts {
-		log.Println("+++ host")
-		log.Println(host)
-		log.Println("--- host")
-
-		log.Println("+++ v")
-		log.Println(v)
-		log.Println("--- v")
-	}
+	//for host, v := range utils.OnlinePromHosts {
+	//	log.Println("+++ host")
+	//	log.Println(host)
+	//	log.Println("--- host")
+	//
+	//	log.Println("+++ v")
+	//	log.Println(v)
+	//	log.Println("--- v")
+	//}
 
 	for {
 		conn, err := listen.Accept()
