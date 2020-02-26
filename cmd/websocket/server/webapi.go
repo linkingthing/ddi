@@ -241,11 +241,28 @@ func query(w http.ResponseWriter, r *http.Request) {
 	memUsage, err := strconv.ParseFloat(memResp, 64)
 	memResp = fmt.Sprintf("%.2f", memUsage)
 
+	diskResp, err := GetPromItem("disk", "10.0.0.15:9100")
+	if err != nil {
+		log.Println(err)
+		var hosts Hosts
+		result.Status = "error"
+		result.Message = "读取内存消息错误"
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
+	}
+	log.Println("diskResp: ", diskResp)
+	diskUsage, err := strconv.ParseFloat(diskResp, 64)
+	diskResp = fmt.Sprintf("%.2f", diskUsage)
+
 	var HostUsage = make(map[string]Usage)
 	var Usage = Usage{}
 	Usage.Cpu = cpuResp
-	Usage.Mem = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
-	Usage.Disk = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
+	Usage.Mem = memResp
+	Usage.Disk = diskResp
 	Usage.Qps = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
 	postHost := ""
 	if host != nil {
