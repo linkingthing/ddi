@@ -7,4 +7,6 @@ var (
 	PromLocalhost     = "localhost" //prometheus localhost ip, server is localhost, node is ip
 	PromLocalPort     = "9100"      //prometheus localhost ip
 	PromLocalInstance = PromLocalhost + ":" + PromLocalPort
+	YAML_CONFIG_FILE  = "/etc/vanguard/vanguard.conf"
+	WebSocket_Port    = 3333 //ping pong check port
 )

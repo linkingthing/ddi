@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/linkingthing/ddi/utils"
 	"log"
 	"net"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 const (
-	message       = "Ping"
+	message       = "IP_"
 	StopCharacter = "\r\n\r\n"
 )
 
@@ -24,11 +25,11 @@ func SocketClient(ip string, port int) {
 
 	defer conn.Close()
 
-	conn.Write([]byte(message))
+	conn.Write([]byte(message + ip))
 	conn.Write([]byte(StopCharacter))
 	log.Printf("Send: %s", message)
 
-	buff := make([]byte, 1024)
+	buff := make([]byte, 128)
 	n, _ := conn.Read(buff)
 	log.Printf("Receive: %s", buff[:n])
 
@@ -36,10 +37,9 @@ func SocketClient(ip string, port int) {
 
 func main() {
 
-	var (
-		ip   = "127.0.0.1"
-		port = 3333
-	)
+	//get promServer from yaml config file
+	ip := utils.GetLocalIP()
+	port := utils.WebSocket_Port
 
 	SocketClient(ip, port)
 

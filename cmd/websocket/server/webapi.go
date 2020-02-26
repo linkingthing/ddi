@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"math/rand"
 	"net/http"
@@ -178,16 +179,16 @@ func query(w http.ResponseWriter, r *http.Request) {
 
 	result := NewBaseJsonBean()
 
-	result.Status = "success"
-	result.Message = "ok"
+	result.Status = config.STATUS_SUCCCESS
+	result.Message = config.MSG_OK
 	result.Data.Nodes = utils.OnlinePromHosts
 
 	cpuResp, err := GetPromItem("cpu", utils.PromLocalInstance)
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
-		result.Status = "error"
-		result.Message = "读取内存消息错误"
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_CPU
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -204,8 +205,8 @@ func query(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
-		result.Status = "error"
-		result.Message = "读取内存利用率错误"
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_MEM
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -221,8 +222,8 @@ func query(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		var hosts Hosts
-		result.Status = "error"
-		result.Message = "读取磁盘利用率错误"
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_DISK
 		result.Data = hosts
 
 		bytes, _ := json.Marshal(result)
@@ -250,8 +251,8 @@ func query(w http.ResponseWriter, r *http.Request) {
 
 		HostUsage[postHost] = Usage
 	} else {
-		result.Status = "error"
-		result.Message = "请加主机名参数"
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PARAM_HOST
 		bytes, _ := json.Marshal(result)
 		//fmt.Fprint(w, string(bytes))
 		w.Write([]byte(bytes))
@@ -301,7 +302,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if rsp.Status != "success" {
+	if rsp.Status != config.STATUS_SUCCCESS {
 		return "", err
 	}
 
@@ -382,7 +383,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	d.UseNumber()
 	err = d.Decode(&rsp)
 
-	if rsp.Status != "success" {
+	if rsp.Status != config.STATUS_SUCCCESS {
 		return "", err
 	}
 	for _, v := range rsp.Data.Result {
@@ -403,7 +404,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	}
 
 	log.Println("return error")
-	str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
+	str := `[[1579167980.752,"0.01"],[1579168008.752,"0.01"]]`
 	return str, nil
 
 }
@@ -416,8 +417,8 @@ func list_server(w http.ResponseWriter, r *http.Request) {
 	//get servers maintained by kafka server
 	result := NewBaseJsonServer()
 
-	result.Status = "success"
-	result.Message = "ok"
+	result.Status = config.STATUS_SUCCCESS
+	result.Message = config.MSG_OK
 	for _, s := range utils.OnlinePromHosts {
 		result.Data = append(result.Data, s)
 	}

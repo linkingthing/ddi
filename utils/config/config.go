@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"github.com/linkingthing/ddi/utils"
 	"github.com/zdnscloud/cement/configure"
 	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -150,13 +151,13 @@ func LoadConfig(path string) (*VanguardConf, error) {
 }
 func init() {
 	flag.Parse()
-	flag.StringVar(&configFile, "c", "/etc/vanguard/vanguard.conf", "configure file path")
+	flag.StringVar(&configFile, "c", utils.YAML_CONFIG_FILE, "configure file path")
 }
 
 func GetConfig() *VanguardConf {
 	conf, err := LoadConfig(configFile)
 	if err != nil {
-		panic("load configure file failed:" + err.Error())
+		panic(PANIC_CONFIG_FILE + err.Error())
 	}
 	log.Println("this host ip: ", conf.Localhost.IP)
 	return conf
