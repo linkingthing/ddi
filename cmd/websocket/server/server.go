@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -95,15 +95,15 @@ func isTransportOver(data string) (over bool) {
 	return
 }
 
-func main() {
+func test() {
 
 	port := 3333
 	go SocketServer(port)
 
 	mux := http.NewServeMux()
 	mux.Handle("/", &myHandler{})
-	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", query)
-	mux.HandleFunc("/apis/linkingthing/node/v1/hists", query_range) //history
+	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", Query)
+	mux.HandleFunc("/apis/linkingthing/node/v1/hists", Query_range) //history
 
 	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1210", mux))

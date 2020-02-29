@@ -9,6 +9,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/lifei6671/gocaptcha"
+	metric "github.com/linkingthing/ddi/cmd/websocket/server"
 	myapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"html/template"
 	"log"
@@ -173,6 +174,8 @@ func main() {
 		adaptor.RegisterHandler(auth, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
 		auth.POST("/apis/linkingthing.com/example/v1/changepwd", ChangePWD)
 		auth.POST("/apis/linkingthing.com/example/v1/logout", authMiddleware.LogoutHandler)
+		auth.GET("/apis/linkingthing.com/example/v1/nodes", nodeQuery)
+		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()
@@ -291,3 +294,34 @@ func ChangePWD(c *gin.Context) {
 	c.String(200, "change password success!")
 	return
 }
+func nodeQuery(c *gin.Context) {
+	metric.Query(c.Writer, c.Request)
+}
+func nodeQueryRange(c *gin.Context) {
+	metric.Query_range(c.Writer, c.Request)
+}
+
+/*func metricHandler(c *gin.Context) {
+	client := &http.Client{}
+	//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
+	query := c.Query("query")
+	fmt.Println(query)
+	query = query[:len(query)-1]
+	fmt.Println(query)
+	tmp := ",instance=\"10.0.0.19:8001\""
+	//query = append(query, tmp...)
+	fmt.Println(query)
+	var queryValue url.Values
+	queryValue["query"] = query
+	url := "http://10.0.0.24:9090/api/v1/query_range?" + c.Request.URL.RawQuery
+	reqest, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	response, _ := client.Do(reqest)
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(c.Writer, string(body))
+}*/
