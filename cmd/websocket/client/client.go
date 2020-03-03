@@ -25,7 +25,7 @@ func SocketClient(ip string, port int) {
 
 	defer conn.Close()
 
-	conn.Write([]byte(message + ip))
+	conn.Write([]byte(ip))
 	conn.Write([]byte(StopCharacter))
 	log.Printf("Send: %s", message)
 

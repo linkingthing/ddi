@@ -53,12 +53,13 @@ func SocketServer(port int) {
 
 }
 
+//handle ping pong heartbeat msg
 func handler(conn net.Conn) {
 
 	defer conn.Close()
 
 	var (
-		buf = make([]byte, 1024)
+		buf = make([]byte, 128)
 		r   = bufio.NewReader(conn)
 		w   = bufio.NewWriter(conn)
 	)
@@ -75,6 +76,14 @@ ILOOP:
 			log.Println("Receive:", data)
 			if isTransportOver(data) {
 				break ILOOP
+			}
+			for ip, host := range utils.OnlinePromHosts {
+				log.Println("-- ip: ", ip, ", -- data: ", data)
+				if ip == data {
+					now := time.Now().Unix()
+					log.Println("+++ hbtime: ", host.HbTime, " +++ now: ", now)
+					host.HbTime = time.Now().Unix()
+				}
 			}
 
 		default:
@@ -105,7 +114,7 @@ func main() {
 		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
 	}
 
-	port := 3333
+	port := utils.WebSocket_Port
 	go SocketServer(port)
 
 	mux := http.NewServeMux()
