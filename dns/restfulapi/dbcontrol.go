@@ -891,7 +891,7 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEZONE); err != nil {
+	if err := SendCmd(data, DELETERR); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -964,7 +964,7 @@ func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) e
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEZONE); err != nil {
+	if err := SendCmd(data, UPDATERR); err != nil {
 		return err
 	}
 	tx.Commit()
