@@ -162,3 +162,11 @@ func GetConfig() *VanguardConf {
 	log.Println("this host ip: ", conf.Localhost.IP)
 	return conf
 }
+
+func GetLocalIP() string {
+
+	ip := GetConfig().Localhost.IP
+	log.Println("in GetLocalIP(), localhost ip: ")
+
+	return ip
+}

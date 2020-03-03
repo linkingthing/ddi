@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"net"
 	"os"
@@ -38,7 +39,7 @@ func SocketClient(ip string, port int) {
 func main() {
 
 	//get promServer from yaml config file
-	ip := utils.GetLocalIP()
+	ip := config.GetLocalIP()
 	port := utils.WebSocket_Port
 
 	SocketClient(ip, port)

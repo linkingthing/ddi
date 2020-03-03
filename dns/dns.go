@@ -57,7 +57,7 @@ const (
 type BindHandler struct {
 	tpl         *template.Template
 	db          kv.DB
-	dnsConfPath string `aa`
+	dnsConfPath string
 	dBPath      string
 	tplPath     string
 	ticker      *time.Ticker
@@ -305,7 +305,7 @@ func (handler *BindHandler) StopDNS() error {
 		return nil
 	}
 	var err error
-	if _, err = shell.Shell("rndc", "halt"); err != nil {
+	if _, err = shell.Shell("rndc", "stop"); err != nil {
 		return err
 	}
 	handler.quit <- 1
@@ -330,6 +330,9 @@ func (handler *BindHandler) CreateACL(req pb.CreateACLReq) error {
 		return err
 	}
 	if err := ioutil.WriteFile(handler.dnsConfPath+req.Name+".conf", buffer.Bytes(), 0644); err != nil {
+		return err
+	}
+	if err := handler.rewriteNamedFile(); err != nil {
 		return err
 	}
 
@@ -1405,9 +1408,8 @@ func (handler *BindHandler) keepDNSAlive() {
 			if _, err := os.Stat("/root/bindtest/" + "named.pid"); err == nil {
 				continue
 			}
-			var param string = "-c" + "/root/bindtest/" + "named.conf"
-			shell.Shell("named", param)
-
+			req := pb.DNSStartReq{}
+			handler.StartDNS(req)
 		case <-handler.quit:
 			return
 		}

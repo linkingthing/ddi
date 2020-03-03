@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bufio"
@@ -77,6 +77,7 @@ ILOOP:
 			if isTransportOver(data) {
 				break ILOOP
 			}
+
 			for ip, host := range utils.OnlinePromHosts {
 				log.Println("-- ip: ", ip, ", -- data: ", data)
 				if ip == data {
@@ -103,7 +104,7 @@ func isTransportOver(data string) (over bool) {
 	return
 }
 
-func main() {
+func test() {
 
 	//get yaml config file, update global variable PromServer and localhost
 	var conf *config.VanguardConf
@@ -119,12 +120,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/", &myHandler{})
+
 	mux.HandleFunc("/apis/linkingthing/node/v1/servers", list_server)
-	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", query)
-	mux.HandleFunc("/apis/linkingthing/node/v1/hists", query_range) //history
+	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", Query)
+	mux.HandleFunc("/apis/linkingthing/node/v1/hists", Query_range) //history
 
 	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1210", mux))
-
 	log.Println("end of main, should not come here")
 }

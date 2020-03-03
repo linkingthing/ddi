@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -111,7 +112,7 @@ func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("welcome"))
 }
 
-func query_range(w http.ResponseWriter, r *http.Request) {
+func Query_range(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fmt.Println("in query_range() Form: ", r.Form)
 	result := NewBaseJsonRange()
@@ -150,7 +151,7 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var histData []interface{}
-	err = json.Unmarshal([]byte(cpuResp), &histData)
+	err = json.Unmarshal([]byte(*cpuResp), &histData)
 	if err != nil {
 		log.Println("cpuResp unmarshal error ", err)
 	}
@@ -164,7 +165,7 @@ func query_range(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(bytes))
 }
 
-func query(w http.ResponseWriter, r *http.Request) {
+func Query(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	fmt.Println("Form: ", r.Form)
@@ -321,7 +322,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	return "", nil
 }
 
-func GetPromRange(promType string, host string, start int, end int, step int) (string, error) {
+func GetPromRange(promType string, host string, start int, end int, step int) (*string, error) {
 	var command string
 	var rsp Response
 	var out string
@@ -341,7 +342,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 		log.Println("--- out")
 		if err != nil {
 			log.Println("curl error: ", err)
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -357,7 +358,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 		log.Println("--- out")
 		if err != nil {
 			log.Println("curl error: ", err)
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -374,7 +375,34 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 		//log.Println(out)
 		//log.Println("--- out")
 		if err != nil {
-			return "", err
+			return nil, err
+		}
+
+	}
+	if promType == "qps" || promType == "querys" {
+		//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
+		client := &http.Client{}
+		var url string
+		if promType == "qps" {
+			url = "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
+		} else if promType == "querys" {
+			url = "http://10.0.0.24:9090/api/v1/query_range?query=dns_counter%7Bdata_type%3D%22querys%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
+		}
+		reqest, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		response, _ := client.Do(reqest)
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+		out = string(body)
+		//log.Println("+++ in GetPromRange(), out")
+		//log.Println(out)
+		//log.Println("--- out")
+		if err != nil {
+			return nil, err
 		}
 
 	}
@@ -384,7 +412,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 	err = d.Decode(&rsp)
 
 	if rsp.Status != config.STATUS_SUCCCESS {
-		return "", err
+		return nil, err
 	}
 	for _, v := range rsp.Data.Result {
 
@@ -398,15 +426,16 @@ func GetPromRange(promType string, host string, start int, end int, step int) (s
 				log.Println("json marshal err: ", err)
 			}
 			log.Println("string retJson: ", string(retJson))
+			tmp := string(retJson)
 
-			return string(retJson), nil
+			return &tmp, nil
 		}
 	}
 
 	log.Println("return error")
-	str := `[[1579167980.752,"0.01"],[1579168008.752,"0.01"]]`
-	return str, nil
 
+	str := ""
+	return &str, nil
 }
 
 func list_server(w http.ResponseWriter, r *http.Request) {
