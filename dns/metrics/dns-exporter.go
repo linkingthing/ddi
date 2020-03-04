@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -56,6 +57,8 @@ func (h *MetricsHandler) Statics() error {
 				}
 			}
 			h.QueryStatics()
+			h.RecurQueryStatics()
+			h.MemHitStatics()
 			//remove the named.stats
 			if err := os.Remove(h.URLPath + "/named.stats"); err != nil {
 				return err
@@ -102,6 +105,102 @@ func (h *MetricsHandler) QueryStatics() error {
 	}
 	fmt.Println("into db:", string(curr), string(currQuery))
 	h.SaveToDB(string(curr), currQuery, ct.QuerysPath)
+	return nil
+}
+
+func (h *MetricsHandler) MemHitStatics() error {
+	//get the timestamp
+	var para1 string
+	para1 = "Dump ---"
+	var para2 string
+	para2 = h.URLPath + "/named.stats"
+	var value string
+	var err error
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		return err
+	}
+	s := strings.Split(value, "\n")
+	var curr []byte
+	if len(s) > 1 {
+		for _, v := range s[len(s)-2] {
+			if v >= '0' && v <= '9' {
+				curr = append(curr, byte(v))
+			}
+		}
+	}
+	//get the num of recursive query
+	para1 = "cache hits (from query)"
+	para2 = h.URLPath + "/named.stats"
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		return err
+	}
+	querys := strings.Split(value, "\n")
+	var total int
+	for _, v := range querys {
+		var stringNum []byte
+		for _, vv := range v {
+			if vv >= '0' && vv <= '9' {
+				stringNum = append(stringNum, byte(vv))
+			}
+		}
+		var err error
+		var num int
+		if num, err = strconv.Atoi(string(stringNum)); err != nil {
+			break
+		}
+		fmt.Println("cache hit's part of tatal:num", num)
+		total += num
+	}
+	fmt.Println("cache hit into db:", string(curr), total)
+	h.SaveToDB(string(curr), []byte(strconv.Itoa(total)), ct.MemHitPath)
+	return nil
+}
+
+func (h *MetricsHandler) RecurQueryStatics() error {
+	//get the timestamp
+	var para1 string
+	para1 = "Dump ---"
+	var para2 string
+	para2 = h.URLPath + "/named.stats"
+	var value string
+	var err error
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		return err
+	}
+	s := strings.Split(value, "\n")
+	var curr []byte
+	if len(s) > 1 {
+		for _, v := range s[len(s)-2] {
+			if v >= '0' && v <= '9' {
+				curr = append(curr, byte(v))
+			}
+		}
+	}
+	//get the num of recursive query
+	para1 = "queries sent"
+	para2 = h.URLPath + "/named.stats"
+	if value, err = shell.Shell("grep", para1, para2); err != nil {
+		return err
+	}
+	querys := strings.Split(value, "\n")
+	var total int
+	for _, v := range querys {
+		var stringNum []byte
+		for _, vv := range v {
+			if vv >= '0' && vv <= '9' {
+				stringNum = append(stringNum, byte(vv))
+			}
+		}
+		var err error
+		var num int
+		if num, err = strconv.Atoi(string(stringNum)); err != nil {
+			break
+		}
+		fmt.Println("recursive query's part of tatal:num", num)
+		total += num
+	}
+	fmt.Println("recursive query into db:", string(curr), total)
+	h.SaveToDB(string(curr), []byte(strconv.Itoa(total)), ct.RecurQuerysPath)
 	return nil
 }
 

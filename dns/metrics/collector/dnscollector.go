@@ -20,7 +20,9 @@ import (
 )
 
 const (
-	QuerysPath = "querys"
+	QuerysPath      = "querys"
+	RecurQuerysPath = "recurquerys"
+	MemHitPath      = "memhit"
 )
 
 // 指标结构体
@@ -77,6 +79,8 @@ func (c *Metrics) Collect(ch chan<- prometheus.Metric) {
 	defer c.mutex.Unlock()
 	c.GenerateQPS()
 	c.GenerateQuery()
+	c.GenerateRecurQuery()
+	c.GenerateMemHit()
 	for host, currentValue := range c.counterMetricData {
 		ch <- prometheus.MustNewConstMetric(c.metrics["counter"], prometheus.CounterValue, float64(currentValue), host)
 	}
@@ -151,6 +155,48 @@ func (c *Metrics) GenerateQuery() error {
 		}
 		fmt.Println("querys read from db:", query)
 		c.counterMetricData["querys"] = float64(query)
+	}
+	return nil
+}
+
+func (c *Metrics) GenerateRecurQuery() error {
+	kvs, err := c.dbHandler.TableKVs(RecurQuerysPath)
+	if err != nil {
+		return err
+	}
+	var timeStamps []string
+	for k, _ := range kvs {
+		timeStamps = append(timeStamps, k)
+	}
+	sort.Strings(timeStamps)
+	if len(kvs) > 1 {
+		var query int
+		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
+			return err
+		}
+		fmt.Println("recursive querys read from db:", query)
+		c.counterMetricData["recurquerys"] = float64(query)
+	}
+	return nil
+}
+
+func (c *Metrics) GenerateMemHit() error {
+	kvs, err := c.dbHandler.TableKVs(MemHitPath)
+	if err != nil {
+		return err
+	}
+	var timeStamps []string
+	for k, _ := range kvs {
+		timeStamps = append(timeStamps, k)
+	}
+	sort.Strings(timeStamps)
+	if len(kvs) > 1 {
+		var query int
+		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
+			return err
+		}
+		fmt.Println("cache hit read from db:", query)
+		c.counterMetricData["memhit"] = float64(query)
 	}
 	return nil
 }

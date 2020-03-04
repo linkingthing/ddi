@@ -10,6 +10,7 @@ type ACL struct {
 	IsUsed int
 	Views  []View `gorm:"many2many:view_acls;"`
 	IPs    []IP   `gorm:"foreignkey:ACLID"`
+	//SortLists []SortList `gorm:"many2many:sortlist_acls;"`
 }
 
 type IP struct {
@@ -108,4 +109,10 @@ type DDIUserPWD struct {
 	gorm.Model
 	Name string
 	PWD  string
+}
+type SortListElement struct {
+	gorm.Model
+	ACLID     uint `sql:"type:integer REFERENCES acls(id)"`
+	NextACLID string
+	PrevACLID string
 }
