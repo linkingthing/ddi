@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -13,11 +14,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-)
-
-var (
-	promServer = "10.0.0.24:9090"
-	host       = "10.0.0.15:9100"
 )
 
 func cmd(command string) (string, error) {
@@ -95,11 +91,21 @@ type BaseJsonRange struct {
 	Message string `json:"message"`
 }
 
+// node management module, list servers
+type BaseJsonServer struct {
+	Status  string           `json:"status"`
+	Message string           `json:"message"`
+	Data    []utils.PromRole `json:"data"`
+}
+
 func NewBaseJsonBean() *BaseJsonBean {
 	return &BaseJsonBean{}
 }
 func NewBaseJsonRange() *BaseJsonRange {
 	return &BaseJsonRange{}
+}
+func NewBaseJsonServer() *BaseJsonServer {
+	return &BaseJsonServer{}
 }
 
 func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +164,7 @@ func Query_range(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))
 }
+
 func Query(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -167,55 +174,73 @@ func Query(w http.ResponseWriter, r *http.Request) {
 	//}
 	host, _ := r.Form["node"]
 	promType, _ := r.Form["type"]
-	//if !(flagHost && flagType) {
-	//
-	//	// todo no host or promType, means front wants all info
-	//	//fmt.Fprint(w, "host and promType error")
-	//
-	//	//return
-	//}
+
 	log.Println("host: ", host)
 	log.Println("promType: ", promType)
 
 	result := NewBaseJsonBean()
 
-	result.Status = "success"
-	result.Message = "ok"
+	result.Status = config.STATUS_SUCCCESS
+	result.Message = config.MSG_OK
 	result.Data.Nodes = utils.OnlinePromHosts
 
-	//if postHost != "" {
-	//	for k, v := range utils.OnlinePromHosts {
-	//		log.Println("+++ k")
-	//		log.Println(k)
-	//		log.Println("--- k")
-	//
-	//		if k != postHost {
-	//			log.Println("k != hostname, continue")
-	//			continue
-	//		}
-	//
-	//		log.Println("+++ v")
-	//		log.Println(v)
-	//		log.Println("--- v")
-	//	}
-	//
-	//}
-
-	cpuResp, err := GetPromItem("cpu", "10.0.0.15:9100")
+	cpuResp, err := GetPromItem("cpu", utils.PromLocalInstance)
 	if err != nil {
 		log.Println(err)
+		var hosts Hosts
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_CPU
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
 		return
 	}
 
 	cpuUsage, err := strconv.ParseFloat(cpuResp, 64)
 	cpuResp = fmt.Sprintf("%.2f", cpuUsage)
-	//log.Println("cpuResp: ", cpuResp)
+	log.Println("cpuResp: ", cpuResp)
+
+	memResp, err := GetPromItem("mem", utils.PromLocalInstance)
+	if err != nil {
+		log.Println(err)
+		var hosts Hosts
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_MEM
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
+	}
+	log.Println("memResp: ", memResp)
+	memUsage, err := strconv.ParseFloat(memResp, 64)
+	memResp = fmt.Sprintf("%.2f", memUsage)
+
+	diskResp, err := GetPromItem("disk", utils.PromLocalInstance)
+	if err != nil {
+		log.Println(err)
+		var hosts Hosts
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PROM_DISK
+		result.Data = hosts
+
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
+	}
+	log.Println("diskResp: ", diskResp)
+	diskUsage, err := strconv.ParseFloat(diskResp, 64)
+	diskResp = fmt.Sprintf("%.2f", diskUsage)
 
 	var HostUsage = make(map[string]Usage)
 	var Usage = Usage{}
 	Usage.Cpu = cpuResp
-	Usage.Mem = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
-	Usage.Disk = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
+	Usage.Mem = memResp
+	Usage.Disk = diskResp
 	Usage.Qps = strconv.Itoa(rand.Intn(99)) + "." + strconv.Itoa(rand.Intn(99))
 	postHost := ""
 	if host != nil {
@@ -227,8 +252,12 @@ func Query(w http.ResponseWriter, r *http.Request) {
 
 		HostUsage[postHost] = Usage
 	} else {
-		HostUsage["10.0.0.15"] = Usage
-		HostUsage["10.0.0.24"] = Usage
+		result.Status = config.STATUS_ERROR
+		result.Message = config.ERROR_PARAM_HOST
+		bytes, _ := json.Marshal(result)
+		//fmt.Fprint(w, string(bytes))
+		w.Write([]byte(bytes))
+		return
 	}
 	log.Println("hostUsage: ", HostUsage)
 	result.Data.Usage = HostUsage
@@ -247,10 +276,20 @@ func Query(w http.ResponseWriter, r *http.Request) {
 func GetPromItem(promType string, host string) (string, error) {
 	var command string
 	var rsp Response
+	var promWebHost = utils.PromServer + ":" + utils.PromPort
+	var url = "http://" + promWebHost + "/api/v1/query?query="
 	if promType == "cpu" {
-		command = "curl -H \"Content-Type: application/json\"  " +
-			"http://10.0.0.24:9090/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
+		command = "curl -H \"Content-Type: application/json\" http://" + promWebHost +
+			"/api/v1/query?query=instance:node_cpu:avg_rate5m 2>/dev/null"
+	} else if promType == "disk" {
+		promStr := "100%20-%20(node_filesystem_free_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20/%20node_filesystem_size_bytes{mountpoint=\"/\",fstype=~\"ext4|xfs\"}%20*%20100)"
+		command = "curl -g '" + url + promStr + "' 2>/dev/null"
+	} else if promType == "mem" {
+		promStr := "(node_memory_MemFree_bytes%2Bnode_memory_Cached_bytes%2Bnode_memory_Buffers_bytes)%20/%20node_memory_MemTotal_bytes%20*%20100"
+		command = "curl -g '" + url + promStr + "' 2>/dev/null"
 	}
+	log.Println("in GetPromItem(), command: ", command)
+
 	out, err := cmd(command)
 	if err != nil {
 		return "", err
@@ -264,7 +303,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if rsp.Status != "success" {
+	if rsp.Status != config.STATUS_SUCCCESS {
 		return "", err
 	}
 
@@ -372,7 +411,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	d.UseNumber()
 	err = d.Decode(&rsp)
 
-	if rsp.Status != "success" {
+	if rsp.Status != config.STATUS_SUCCCESS {
 		return nil, err
 	}
 	for _, v := range rsp.Data.Result {
@@ -394,8 +433,31 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	}
 
 	log.Println("return error")
-	str := ""
-	//str := `[[1579167980.752,"0.8333333341094402"],[1579168008.752,"0.7999999999689607"],[1579168036.752,"0.7999999999689607"],[1579168064.752,"0.8666666666977108"],[1579175176.752,"0.7999999999689607"]]`
-	return &str, nil
 
+	str := ""
+	return &str, nil
+}
+
+func list_server(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	fmt.Println("in list_server(), Form: ", r.Form)
+
+	//get servers maintained by kafka server
+	result := NewBaseJsonServer()
+
+	result.Status = config.STATUS_SUCCCESS
+	result.Message = config.MSG_OK
+	for _, s := range utils.OnlinePromHosts {
+		result.Data = append(result.Data, s)
+	}
+
+	log.Println("+++ result")
+	log.Println(result)
+	log.Println("--- result")
+	bytes, _ := json.Marshal(result)
+	//fmt.Fprint(w, string(bytes))
+	w.Write([]byte(bytes))
+
+	return
 }

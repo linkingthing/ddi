@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"flag"
+	"github.com/linkingthing/ddi/utils"
 	"github.com/zdnscloud/cement/configure"
 	yaml "gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -32,15 +33,32 @@ localhost:
     ip: 10.0.0.15
 */
 
-type LocalConf struct {
-	Role string `yaml:"role"`
+type KafkaConf struct {
+	Host      string `yaml:"host"`
+	Port      string `yaml:"port"`
+	TopicNode string `yaml:"topic_node"`
+}
+type PrometheusConf struct {
 	IP   string `yaml:"ip"`
+	Port string `yaml:"port"`
+}
+
+type LocalConf struct {
+	Role     string `yaml:"role"` // 3 roles: Controller, Db, Kafka
+	IP       string `yaml:"ip"`
+	Hostname string `yaml:"hostname"`
+	ParentIP string `yaml:"parent_ip"`
+	//PromHost string `yaml:"prom_host"`
+	//PromPort string `yaml:"prom_port"`
+	//State  uint  `yaml:"state"`   // 1 online 0 offline
+	//OnTime int64 `yaml:"on_time"` // timestamp of the nearest online time
 }
 
 type ServerConf struct {
-	Kafka string `yaml:"kafka"`
-	Agent string `yaml:"agent"`
-	Db    string `yaml:"db"`
+	Kafka      KafkaConf      `yaml:"kafka"`
+	Prometheus PrometheusConf `yaml:"prometheus"`
+	Agent      string         `yaml:"agent"`
+	Db         string         `yaml:"db"`
 }
 
 type VanguardConf struct {
@@ -133,14 +151,22 @@ func LoadConfig(path string) (*VanguardConf, error) {
 }
 func init() {
 	flag.Parse()
-	flag.StringVar(&configFile, "c", "/etc/vanguard/vanguard.conf", "configure file path")
+	flag.StringVar(&configFile, "c", utils.YAML_CONFIG_FILE, "configure file path")
 }
 
 func GetConfig() *VanguardConf {
 	conf, err := LoadConfig(configFile)
 	if err != nil {
-		panic("load configure file failed:" + err.Error())
+		panic(PANIC_CONFIG_FILE + err.Error())
 	}
 	log.Println("this host ip: ", conf.Localhost.IP)
 	return conf
+}
+
+func GetLocalIP() string {
+
+	ip := GetConfig().Localhost.IP
+	log.Println("in GetLocalIP(), localhost ip: ")
+
+	return ip
 }

@@ -21,9 +21,9 @@ var (
 )
 
 const (
-	RoleController = iota
-	RoleDB
-	RoleKafka
+	RoleController = "controller"
+	RoleDB         = "db"
+	RoleKafka      = "kafka"
 )
 
 type PromRole struct {
@@ -31,9 +31,11 @@ type PromRole struct {
 	PromHost string `json:"promHost"`
 	PromPort string `json:"promPort"`
 	IP       string `json:"ip"`
-	Role     uint   `json:"role"`   // 3 roles: Controller, Db, Kafka
-	State    uint   `json:"state"`  // 1 online 0 offline
-	OnTime   int64  `json:"onTime"` //timestamp of the nearest online time
+	Role     string `json:"role"`     // 3 roles: Controller, Db, Kafka
+	State    uint   `json:"state"`    // 1 online 0 offline
+	HbTime   int64  `json:"hbTime"`   //timestamp of most recent heartbeat time
+	OnTime   int64  `json:"onTime"`   //timestamp of the nearest online time
+	ParentIP string `json:"parentIP"` //parent node ip in node management graph
 }
 
 var OnlinePromHosts = make(map[string]PromRole)
