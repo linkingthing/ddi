@@ -47,7 +47,7 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
         }
     }
 }
-'
+' 2>/dev/null 
 `
 	log.Println("--- curlCmd: ", curlCmd)
 	out, err := cmd(curlCmd)
@@ -58,6 +58,11 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 		log.Println("curl error: ", err)
 		return
 	}
+
+	m := make(map[string]interface{})
+	json.Unmarshal([]byte(out), &m)
+	log.Println("+++ print ips")
+	log.Println(m["aggregations"].(map[string]interface{})["ips"])
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
