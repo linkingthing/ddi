@@ -23,9 +23,9 @@ type CurlRetDash struct {
 	Aggregations map[string]Ips `json:"aggregations"`
 }
 type DashDns struct {
-	Status  string      `json:"status"`
-	Data    CurlRetDash `json:"data"`
-	Message string      `json:"message"`
+	Status  string    `json:"status"`
+	Data    []Buckets `json:"data"`
+	Message string    `json:"message"`
 }
 
 func NewDashDns() *DashDns {
@@ -85,7 +85,9 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 	//bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
 	log.Println("+++ print ips")
 	log.Println(curlRetDash.Aggregations["ips"].Buckets)
-	//log.Println(bytes.([]byte))
+	result.Data = curlRetDash.Aggregations["ips"].Buckets
+
+	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
-	//w.Write(bytes.([]byte))
+	w.Write([]byte(bytes))
 }
