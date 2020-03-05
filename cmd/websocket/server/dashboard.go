@@ -63,7 +63,7 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 
 	bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
 	log.Println("+++ print ips")
-	log.Println()
+	log.Println(bytes)
 	//fmt.Fprint(w, string(bytes))
 	w.Write(bytes.([]byte))
 }
