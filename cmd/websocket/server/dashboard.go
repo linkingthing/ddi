@@ -24,7 +24,6 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 	//默认显示最近1小时的统计数据
 	r.ParseForm()
 	log.Println("in Dash_DNS() Form: ", r.Form)
-	result := NewDashDns()
 
 	EsServer := utils.EsServer + ":" + utils.EsPort + "/" + utils.EsIndex
 	url := "http://" + EsServer + "/_search"
@@ -61,10 +60,10 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 
 	m := make(map[string]interface{})
 	json.Unmarshal([]byte(out), &m)
-	log.Println("+++ print ips")
-	log.Println(m["aggregations"].(map[string]interface{})["ips"])
 
-	bytes, _ := json.Marshal(result)
+	bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
+	log.Println("+++ print ips")
+	log.Println()
 	//fmt.Fprint(w, string(bytes))
-	w.Write([]byte(bytes))
+	w.Write(bytes.([]byte))
 }
