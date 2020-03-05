@@ -7,10 +7,25 @@ import (
 	"net/http"
 )
 
+type Buckets struct {
+	Key      string `json:"key"`
+	DocCount int    `json:"doc_count"`
+}
+type Ips struct {
+	DocCount int `json:"doc_count_error_upper_bound"`
+	SumOther int `json:"sum_other_doc_count"`
+	Buckets  []Buckets
+}
+type CurlRetDash struct {
+	Took         int            `json:"took"`
+	TimedOut     bool           `json:"timed_out"`
+	Hits         interface{}    `json:"hits"`
+	Aggregations map[string]Ips `json:"aggregations"`
+}
 type DashDns struct {
-	Status  string `json:"status"`
-	Data    Nodes  `json:"data"`
-	Message string `json:"message"`
+	Status  string      `json:"status"`
+	Data    CurlRetDash `json:"data"`
+	Message string      `json:"message"`
 }
 
 func NewDashDns() *DashDns {
@@ -58,12 +73,19 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := make(map[string]interface{})
-	json.Unmarshal([]byte(out), &m)
+	var result DashDns
+	result.Status = "200"
+	result.Message = "成功"
 
-	bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
+	var curlRetDash CurlRetDash
+
+	//m := make(map[string]interface{})
+	json.Unmarshal([]byte(out), &curlRetDash)
+
+	//bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
 	log.Println("+++ print ips")
-	log.Println(bytes)
+	log.Println(curlRetDash.Aggregations["ips"].Buckets)
+	//log.Println(bytes.([]byte))
 	//fmt.Fprint(w, string(bytes))
-	w.Write(bytes.([]byte))
+	//w.Write(bytes.([]byte))
 }
