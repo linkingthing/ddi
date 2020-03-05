@@ -102,6 +102,9 @@ func NewDBController() *DBController {
 	if err := tx.AutoMigrate(&tb.DDIUserPWD{}).Error; err != nil {
 		panic(err)
 	}
+	if err := tx.AutoMigrate(&tb.SortListElement{}).Error; err != nil {
+		panic(err)
+	}
 	one.aesKey = []byte("linkingthing.com")
 	//if the user "admin"is not exists create one
 	var userPWD tb.DDIUserPWD
@@ -217,6 +220,13 @@ func (controller *DBController) DeleteACL(id string) error {
 	}
 	if len(views) > 0 {
 		return fmt.Errorf("the ACL with ID %s is used by view or views, can not be deleted!", id)
+	}
+	var sortLists []tb.SortListElement
+	if err := tx.Model(&one).Related(&sortLists, "SortListElements").Error; err != nil {
+		return err
+	}
+	if len(sortLists) > 0 {
+		return fmt.Errorf("the ACL with ID %s is used by sortList, can not be deleted!", id)
 	}
 	//delete the ips and acl from the database
 	var aCLDB tb.ACL
@@ -1901,4 +1911,111 @@ func (controller *DBController) GetUserPWD(user string) (*string, error) {
 		return nil, err
 	}
 	return &rawText, nil
+}
+
+func (controller *DBController) CreateSortList(sorts *SortList) (*tb.SortListElement, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	one := tb.SortListElement{}
+	//add the acls to the sortlist
+	for k, id := range sorts.ACLIDs {
+		//check wether the acl is valid
+		var tmp tb.ACL
+		if err := tx.First(&tmp, id).Error; err != nil {
+			return nil, fmt.Errorf("id %s of acl not exists, %w", id, err)
+		}
+		one.ACLID = tmp.ID
+		if k == 0 {
+			one.PrevACLID = "0"
+		} else {
+			one.PrevACLID = sorts.ACLIDs[k-1]
+		}
+		if k < len(sorts.ACLIDs)-1 {
+			one.NextACLID = sorts.ACLIDs[k+1]
+		} else {
+			one.NextACLID = "0"
+		}
+		var num int
+		var err error
+		if num, err = strconv.Atoi(id); err != nil {
+			return nil, err
+		}
+		one.ACLID = uint(num)
+		one.ID = 0
+		if err := tx.Create(&one).Error; err != nil {
+			return nil, err
+		}
+	}
+	tx.Commit()
+	return &one, nil
+}
+
+func (controller *DBController) DeleteSortList() error {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	//delete all the sortlistelement
+	var tmp []tb.SortListElement
+	if err := tx.Unscoped().Delete(&tmp).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (controller *DBController) GetSortList() (*SortList, error) {
+	tx := controller.db.Begin()
+	defer tx.Rollback()
+	var one tb.SortListElement
+	if err := tx.Where("prev_acl_id=?", 0).Find(&one).Error; err != nil {
+		return nil, err
+	}
+	var sortList SortList
+	var err error
+	var num int
+	if num, err = strconv.Atoi(one.NextACLID); err != nil {
+		return nil, err
+	}
+	currentid := uint(num)
+	//query the acl info
+	var acl tb.ACL
+	if err := tx.First(&acl, one.ACLID).Error; err != nil {
+		return nil, err
+	}
+	sortList.ACLIDs = append(sortList.ACLIDs, strconv.Itoa(int(one.ACLID)))
+	var acltmp ACL
+	acltmp.ID = strconv.Itoa(int(acl.ID))
+	acltmp.Name = acl.Name
+	sortList.ACLs = append(sortList.ACLs, &acltmp)
+	for currentid != 0 {
+		var one tb.SortListElement
+		if err := tx.Where("acl_id = ?", currentid).Find(&one).Error; err != nil {
+			return nil, err
+		}
+		sortList.ACLIDs = append(sortList.ACLIDs, strconv.Itoa(int(currentid)))
+		var acl tb.ACL
+		if err := tx.First(&acl, one.ACLID).Error; err != nil {
+			return nil, err
+		}
+		var acltmp ACL
+		acltmp.ID = strconv.Itoa(int(acl.ID))
+		acltmp.Name = acl.Name
+		sortList.ACLs = append(sortList.ACLs, &acltmp)
+		var num int
+		if num, err = strconv.Atoi(one.NextACLID); err != nil {
+			return nil, err
+		}
+		currentid = uint(num)
+	}
+	sortList.SetID("1")
+	return &sortList, nil
+}
+
+func (controller *DBController) UpdateSortList(sortList *SortList) error {
+	if err := controller.DeleteSortList(); err != nil {
+		return err
+	}
+	if _, err := controller.CreateSortList(sortList); err != nil {
+		return err
+	}
+	return nil
 }

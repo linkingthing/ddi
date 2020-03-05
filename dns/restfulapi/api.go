@@ -27,6 +27,7 @@ var (
 	dNS64Kind        = resource.DefaultKindName(DNS64{})
 	ipBlackHoleKind  = resource.DefaultKindName(IPBlackHole{})
 	recursiveConKind = resource.DefaultKindName(RecursiveConcurrent{})
+	sortListKind     = resource.DefaultKindName(SortList{})
 	db               *gorm.DB
 	FormatError      = goresterr.ErrorCode{"Unauthorized", 400}
 )
@@ -59,9 +60,8 @@ type Zone struct {
 
 type ACL struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	//IsUsed                int      `json:"isused" rest:"required=true,min=0,max=2"`
-	IPs []string `json:"IP" rest:"required=true"`
+	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	IPs                   []string `json:"IP" rest:"required=true"`
 }
 
 type RR struct {
@@ -135,6 +135,12 @@ type RecursiveConcurrent struct {
 	resource.ResourceBase `json:",inline"`
 	RecursiveClients      int `json:"recursiveClients" rest:"required=true"`
 	FetchesPerZone        int `json:"fetchesPerZone" rest:"required=true"`
+}
+
+type SortList struct {
+	resource.ResourceBase `json:",inline"`
+	ACLIDs                []string `json:"aclids" rest:"required=true"`
+	ACLs                  []*ACL   `json:"acls"`
 }
 
 func (d DNS64) GetParents() []resource.ResourceKind {
@@ -768,4 +774,58 @@ func (h *recursiveConcurrentHandler) List(ctx *resource.Context) interface{} {
 		return nil
 	}
 	return many
+}
+
+type SortListsState struct {
+	SortLists []*SortList
+}
+
+func NewSortListsState() *SortListsState {
+	return &SortListsState{}
+}
+
+type sortListHandler struct {
+	sortLists *SortListsState
+}
+
+func NewSortListHandler(s *SortListsState) *sortListHandler {
+	return &sortListHandler{
+		sortLists: s,
+	}
+}
+
+func (h *sortListHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	sortList := ctx.Resource.(*SortList)
+	var one *tb.SortListElement
+	var err error
+	if one, err = DBCon.CreateSortList(sortList); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	sortList.SetID("1")
+	sortList.SetCreationTimestamp(one.CreatedAt)
+	return sortList, nil
+}
+
+func (h *sortListHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	if err := DBCon.DeleteSortList(); err != nil {
+		return goresterr.NewAPIError(FormatError, err.Error())
+	} else {
+		return nil
+	}
+}
+func (h *sortListHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	sortList := ctx.Resource.(*SortList)
+	if err := DBCon.UpdateSortList(sortList); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return sortList, nil
+}
+
+func (h *sortListHandler) Get(ctx *resource.Context) resource.Resource {
+	var err error
+	var sortList *SortList
+	if sortList, err = DBCon.GetSortList(); err != nil {
+		return nil
+	}
+	return sortList
 }
