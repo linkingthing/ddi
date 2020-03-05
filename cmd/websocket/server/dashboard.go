@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"github.com/linkingthing/ddi/utils"
 	"log"
 	"net/http"
 )
@@ -24,6 +25,39 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	log.Println("in Dash_DNS() Form: ", r.Form)
 	result := NewDashDns()
+
+	EsServer := utils.EsServer + ":" + utils.EsPort + "/" + utils.EsIndex
+	url := "http://" + EsServer + "/_search"
+	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
+		`
+{
+    "size" : 0,
+    "query" :{
+    	"range": {
+       	    "@timestamp" : 	{
+       	    	"from": "now-5d"	
+    	    }
+    	}
+    },
+    "aggs" : {
+        "ips" : { 
+            "terms" : { 
+              "field" : "ip"
+            }
+        }
+    }
+}
+'
+`
+	log.Println("--- curlCmd: ", curlCmd)
+	out, err := cmd(curlCmd)
+	log.Println("+++ GetDashDns(), out")
+	log.Println(out)
+	log.Println("--- GetDashDns(), out")
+	if err != nil {
+		log.Println("curl error: ", err)
+		return
+	}
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
