@@ -35,7 +35,7 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
     "query" :{
     	"range": {
        	    "@timestamp" : 	{
-       	    	"from": "now-5d"	
+       	    	"from": "now-37d"	
     	    }
     	}
     },
