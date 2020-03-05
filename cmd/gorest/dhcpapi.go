@@ -7,6 +7,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
+	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"time"
 )
@@ -36,6 +37,7 @@ func main() {
 	schemas.Import(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
 
 	router := gin.Default()
+
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",
 			param.TimeStamp.Format(time.RFC3339),
@@ -49,6 +51,13 @@ func main() {
 		)
 	}))
 	adaptor.RegisterHandler(router, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
+
+	router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
+
 	router.Run("0.0.0.0:1234")
 
+}
+
+func nodeGetDashDns(c *gin.Context) {
+	server.GetDashDns(c.Writer, c.Request)
 }
