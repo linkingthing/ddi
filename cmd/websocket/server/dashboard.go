@@ -22,26 +22,21 @@ type CurlRetDash struct {
 	Hits         interface{}    `json:"hits"`
 	Aggregations map[string]Ips `json:"aggregations"`
 }
+type DashDnsRet struct {
+	Ips     []Buckets `json:"ips"`
+	Domains []Buckets `json:"domains"`
+}
 type DashDns struct {
-	Status  string    `json:"status"`
-	Data    []Buckets `json:"data"`
-	Message string    `json:"message"`
+	Status  string     `json:"status"`
+	Data    DashDnsRet `json:"data"`
+	Message string     `json:"message"`
 }
 
 func NewDashDns() *DashDns {
 	return &DashDns{}
 }
 
-//get statistics data from es
-func GetDashDns(w http.ResponseWriter, r *http.Request) {
-
-	//get node statistics data from es
-	//默认显示最近1小时的统计数据
-	r.ParseForm()
-	log.Println("in Dash_DNS() Form: ", r.Form)
-
-	EsServer := utils.EsServer + ":" + utils.EsPort + "/" + utils.EsIndex
-	url := "http://" + EsServer + "/_search"
+func GetDashDnsIps(url string) (string, error) {
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`
 {
@@ -65,13 +60,62 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 `
 	log.Println("--- curlCmd: ", curlCmd)
 	out, err := cmd(curlCmd)
-	log.Println("+++ GetDashDns(), out")
-	log.Println(out)
-	log.Println("--- GetDashDns(), out")
+
 	if err != nil {
 		log.Println("curl error: ", err)
-		return
+		return "", err
 	}
+	log.Println("+++ GetDashDnsIps(), out")
+	log.Println(out)
+	log.Println("--- GetDashDnsIps(), out")
+
+	return out, nil
+}
+
+func GetDashDnsDomains(url string) (string, error) {
+	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
+		`
+{
+    "size" : 0,
+    "query" :{
+    	"range": {
+       	    "@timestamp" : 	{
+       	    	"from": "now-37d"	
+    	    }
+    	}
+    },
+    "aggs" : {
+        "domains" : { 
+            "terms" : { 
+              "field" : "domain"
+            }
+        }
+    }
+}
+' 2>/dev/null 
+`
+	log.Println("--- GetDashDnsDomains curlCmd: ", curlCmd)
+	out, err := cmd(curlCmd)
+
+	if err != nil {
+		log.Println("curl error: ", err)
+		return "", err
+	}
+	log.Println("+++ GetDashDnsDomains(), out")
+	log.Println(out)
+	log.Println("--- GetDashDnsDomains(), out")
+
+	return out, nil
+}
+
+//get statistics data from es
+func GetDashDns(w http.ResponseWriter, r *http.Request) {
+
+	//get node statistics data from es
+	log.Println("in Dash_DNS() Form: ", r.Form)
+
+	EsServer := utils.EsServer + ":" + utils.EsPort + "/" + utils.EsIndex
+	url := "http://" + EsServer + "/_search"
 
 	var result DashDns
 	result.Status = "200"
@@ -79,13 +123,27 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 
 	var curlRetDash CurlRetDash
 
-	//m := make(map[string]interface{})
-	json.Unmarshal([]byte(out), &curlRetDash)
-
-	//bytes := m["aggregations"].(map[string]interface{})["ips"].(map[string]interface{})["buckets"]
+	//get ip aggregations
+	ips, err := GetDashDnsIps(url)
+	if err != nil {
+		log.Println("请求IP统计数据错误")
+		return
+	}
+	json.Unmarshal([]byte(ips), &curlRetDash)
 	log.Println("+++ print ips")
 	log.Println(curlRetDash.Aggregations["ips"].Buckets)
-	result.Data = curlRetDash.Aggregations["ips"].Buckets
+	result.Data.Ips = curlRetDash.Aggregations["ips"].Buckets
+
+	//get domain aggregations
+	domains, err := GetDashDnsDomains(url)
+	if err != nil {
+		log.Println("域名统计数据错误")
+		return
+	}
+	json.Unmarshal([]byte(domains), &curlRetDash)
+	log.Println("+++ print domains")
+	log.Println(curlRetDash.Aggregations["domains"].Buckets)
+	result.Data.Domains = curlRetDash.Aggregations["domains"].Buckets
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
