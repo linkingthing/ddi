@@ -25,9 +25,9 @@ func ReloadConfig(o interface{}, conf *VanguardConf) {
 configfile example:
 $ cat /etc/vanguard/vanguard.conf
 server:
-    kafka: 10.0.0.1:9202
-    agent: 10.0.0.2:9202
-    db: 10.0.0.3:9202
+    kafka: 10.0.0.55:9202
+    agent: 10.0.0.55:9202
+    db: 10.0.0.559202
 localhost:
     role: controller
     ip: 10.0.0.55
