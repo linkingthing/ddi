@@ -30,7 +30,7 @@ server:
     db: 10.0.0.3:9202
 localhost:
     role: controller
-    ip: 10.0.0.15
+    ip: 10.0.0.55
 */
 
 type KafkaConf struct {

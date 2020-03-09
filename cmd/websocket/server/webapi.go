@@ -144,7 +144,7 @@ func Query_range(w http.ResponseWriter, r *http.Request) {
 	result.Data.Metric.Node = host
 
 	//
-	//cpuResp, err := GetPromRange("cpu", "10.0.0.15", 1579150980, 1579154580, 323)
+	//cpuResp, err := GetPromRange("cpu", "10.0.0.55", 1579150980, 1579154580, 323)
 	cpuResp, err := GetPromRange(t, host, start, end, step)
 	if err != nil {
 		log.Println(err)

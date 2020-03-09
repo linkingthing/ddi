@@ -15,8 +15,8 @@ var (
 	KafkaPort       = "9092"
 	KafkaTopicProm  = "prom"
 	//checkDuration   = 24 * time.Hour
-	Hostname        = "ip-15"
-	HostIP          = "10.0.0.15"
+	Hostname        = "ip-55"
+	HostIP          = "10.0.0.55"
 	PromMetricsPort = "9100"
 )
 
