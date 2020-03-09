@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
-	"github.com/linkingthing/ddi/utils"
+	"net/http"
 	"time"
 )
 
@@ -54,11 +54,18 @@ func main() {
 	adaptor.RegisterHandler(router, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
 
 	// web socket server, consume kafka topic prom and check ping/pong msg
-	port := utils.WebSocket_Port
-	go server.SocketServer(port)
-	router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
+	mux := http.NewServeMux()
+	mux.Handle("/", &server.MyHandler{})
+	mux.HandleFunc("/apis/linkingthing/node/v1/servers", server.List_server)
+	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
+	mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)       //history
+	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns) //dns log info
 
-	router.Run("0.0.0.0:1234")
+	//port := utils.WebSocket_Port
+	//go server.SocketServer(port)
+	//router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
+	//
+	//router.Run("0.0.0.0:1234")
 
 }
 

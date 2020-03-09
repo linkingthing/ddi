@@ -49,7 +49,7 @@ type Response struct {
 }
 
 // v2
-type myHandler struct{}
+type MyHandler struct{}
 
 type Usage struct {
 	Cpu  string `json:"cpu"`
@@ -108,7 +108,7 @@ func NewBaseJsonServer() *BaseJsonServer {
 	return &BaseJsonServer{}
 }
 
-func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (*MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("welcome"))
 }
 
@@ -438,7 +438,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	return &str, nil
 }
 
-func list_server(w http.ResponseWriter, r *http.Request) {
+func List_server(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	fmt.Println("in list_server(), Form: ", r.Form)
