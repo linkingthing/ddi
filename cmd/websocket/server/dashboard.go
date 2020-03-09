@@ -87,7 +87,7 @@ func GetDashDnsDomains(url string) (string, error) {
     "aggs" : {
         "domains" : { 
             "terms" : { 
-              "field" : "domain"
+              "field" : "domain.keyword"
             }
         }
     }
