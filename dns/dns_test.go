@@ -109,7 +109,7 @@ func TestUpdateDefaultForward(t *testing.T) {
 }
 
 func TestUpdateForward(t *testing.T) {
-	ips := []string{"10.0.0.15", "10.0.0.16", "10.0.0.17"}
+	ips := []string{"10.0.0.55", "10.0.0.56", "10.0.0.57"}
 	updateForward := pb.UpdateForwardReq{ViewID: "viewID001", ZoneID: "zoneID001", Type: "first", IPs: ips}
 	err := handler.UpdateForward(updateForward)
 	ut.Assert(t, err == nil, "Update Forward Success!:%v", err)

@@ -49,7 +49,7 @@ type Response struct {
 }
 
 // v2
-type myHandler struct{}
+type MyHandler struct{}
 
 type Usage struct {
 	Cpu  string `json:"cpu"`
@@ -108,7 +108,7 @@ func NewBaseJsonServer() *BaseJsonServer {
 	return &BaseJsonServer{}
 }
 
-func (*myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (*MyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("welcome"))
 }
 
@@ -144,7 +144,7 @@ func Query_range(w http.ResponseWriter, r *http.Request) {
 	result.Data.Metric.Node = host
 
 	//
-	//cpuResp, err := GetPromRange("cpu", "10.0.0.15", 1579150980, 1579154580, 323)
+	//cpuResp, err := GetPromRange("cpu", "10.0.0.55", 1579150980, 1579154580, 323)
 	cpuResp, err := GetPromRange(t, host, start, end, step)
 	if err != nil {
 		log.Println(err)

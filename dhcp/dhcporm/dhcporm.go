@@ -66,3 +66,8 @@ type Pool struct {
 	Pool       string   `json:"pool"`
 	Subnetv4ID uint     `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }
+
+type OrmUser struct {
+	Username string
+	Password string
+}

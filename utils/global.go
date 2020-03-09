@@ -9,4 +9,8 @@ var (
 	PromLocalInstance = PromLocalhost + ":" + PromLocalPort
 	YAML_CONFIG_FILE  = "/etc/vanguard/vanguard.conf"
 	WebSocket_Port    = 3333 //ping pong check port
+
+	EsServer = "10.0.0.69" //elasticsearch server
+	EsPort   = "9200"      //elasticsearch port
+	EsIndex  = "dns_log"   //elasticsearch index name
 )

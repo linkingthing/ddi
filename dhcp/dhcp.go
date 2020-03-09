@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DhcpHost        = "10.0.0.15"
+	DhcpHost        = "10.0.0.55"
 	DhcpPort        = "8081"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
@@ -25,8 +25,8 @@ const (
 	KeaDhcp4PidFile = "kea-dhcp4.kea-dhcp4.pid"
 	KeaDhcp6PidFile = "kea-dhcp6.kea-dhcp6.pid"
 
-	Dhcpv4AgentAddr = "localhost:8888"
-	Dhcpv6AgentAddr = "localhost:8889"
+	Dhcpv4AgentAddr = "10.0.0.55:8888"
+	Dhcpv6AgentAddr = "10.0.0.55:8889"
 
 	IntfStartDHCPv4 = 1 + iota
 	IntfStopDHCPv4

@@ -119,12 +119,12 @@ func test() {
 	go SocketServer(port)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", &myHandler{})
+	mux.Handle("/", &MyHandler{})
 
 	mux.HandleFunc("/apis/linkingthing/node/v1/servers", List_server)
 	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", Query)
-	mux.HandleFunc("/apis/linkingthing/node/v1/hists", Query_range)   //history
-	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dns", GetDashDns) //dns log info
+	mux.HandleFunc("/apis/linkingthing/node/v1/hists", Query_range)       //history
+	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", GetDashDns) //dns log info
 
 	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1210", mux))
