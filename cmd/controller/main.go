@@ -194,6 +194,7 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/nodes", nodeQuery)
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
+		auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDns)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()
@@ -320,6 +321,9 @@ func nodeQueryRange(c *gin.Context) {
 }
 func nodeServers(c *gin.Context) {
 	metric.List_server(c.Writer, c.Request)
+}
+func nodeDashDns(c *gin.Context) {
+	metric.GetDashDns(c.Writer, c.Request)
 }
 
 func getKafkaMsg() {
