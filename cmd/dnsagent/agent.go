@@ -88,7 +88,7 @@ func dnsClient() {
 	cli := pb.NewAgentManagerClient(conn)
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{kafkaServer},
+		Brokers: []string{utils.KafkaServerProm},
 		Topic:   dhcpTopic,
 	})
 	var message kg.Message
