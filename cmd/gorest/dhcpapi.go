@@ -10,7 +10,7 @@ import (
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"github.com/linkingthing/ddi/utils"
-	"github.com/prometheus/common/log"
+	"log"
 	"net/http"
 	"time"
 )
@@ -65,7 +65,11 @@ func main() {
 	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
 	mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)       //history
 	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns) //dns log info
+
+	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1234", mux))
+	log.Println("end of main, should not come here")
+
 	//router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
 	//
 	//router.Run("0.0.0.0:1234")
