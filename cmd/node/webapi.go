@@ -1,5 +1,5 @@
 // test for node registeration on boot time
-package main
+package node
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func main() {
+func RegisterNode() {
 	//v1
 	var conf *config.VanguardConf
 	conf = config.GetConfig()

@@ -2,18 +2,16 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/linkingthing/ddi/cmd/node"
 	"github.com/linkingthing/ddi/dns/metrics"
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
-	"net"
-	"os"
-	"time"
 )
 
 const (
@@ -59,10 +57,19 @@ var (
 )
 
 func main() {
+	//get yaml config file, update global variable PromServer and localhost
+	var conf *config.VanguardConf
+	conf = config.GetConfig()
+	fmt.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
+	utils.PromServer = conf.Server.Prometheus.IP
+	if conf.Localhost.IP != utils.PromServer {
+		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
+	}
+	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
 	handler := metrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
 	go handler.Statics()
 	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
-	go registerDNS()
+	go node.RegisterNode()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
@@ -244,87 +251,6 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.UpdateRecursiveConcurrent(context.Background(), &target)
-		}
-	}
-}
-
-func registerDNS() {
-	var regTicker *time.Ticker
-	var err error
-	var hostName string
-	var hostIP string
-	regTicker = time.NewTicker(10 * time.Second)
-	var PromInfo = utils.PromRole{
-		PromHost: utils.KafkaServerProm,
-		PromPort: utils.PromMetricsPort,
-		Role:     utils.RoleController,
-		State:    1,
-		OnTime:   time.Now().Unix(),
-	}
-	netInterfaces, err := net.Interfaces()
-	if err != nil {
-		fmt.Println("net.Interfaces failed, err:", err.Error())
-	}
-
-	for i := 0; i < len(netInterfaces); i++ {
-		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
-			addrs, _ := netInterfaces[i].Addrs()
-
-			for _, address := range addrs {
-				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-					if ipnet.IP.To4() != nil {
-						PromInfo.IP = ipnet.IP.String()
-						hostIP = PromInfo.IP
-						break
-					}
-				}
-			}
-		}
-	}
-	PromInfo.Hostname, err = os.Hostname()
-	hostName = PromInfo.Hostname
-	if err != nil {
-		return
-	}
-	PromJson, err := json.Marshal(PromInfo)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	key := "prom"
-	value := PromJson
-	msg := kg.Message{
-		Topic: utils.KafkaTopicProm,
-		Key:   []byte(key),
-		Value: []byte(value),
-	}
-	utils.ProduceProm(msg)
-
-	for {
-		select {
-		case <-regTicker.C:
-			var PromInfo = utils.PromRole{
-				Hostname: hostName,
-				PromHost: utils.KafkaServerProm,
-				PromPort: utils.PromMetricsPort,
-				IP:       hostIP,
-				Role:     utils.RoleController,
-				State:    1,
-				OnTime:   time.Now().Unix(),
-			}
-			PromJson, err := json.Marshal(PromInfo)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			key := "prom"
-			value := PromJson
-			msg := kg.Message{
-				Topic: utils.KafkaTopicProm,
-				Key:   []byte(key),
-				Value: []byte(value),
-			}
-			utils.ProduceProm(msg)
 		}
 	}
 }

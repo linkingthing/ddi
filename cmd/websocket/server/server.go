@@ -121,7 +121,7 @@ func test() {
 	mux := http.NewServeMux()
 	mux.Handle("/", &myHandler{})
 
-	mux.HandleFunc("/apis/linkingthing/node/v1/servers", list_server)
+	mux.HandleFunc("/apis/linkingthing/node/v1/servers", List_server)
 	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", Query)
 	mux.HandleFunc("/apis/linkingthing/node/v1/hists", Query_range)   //history
 	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dns", GetDashDns) //dns log info

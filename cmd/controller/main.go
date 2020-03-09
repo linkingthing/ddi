@@ -9,8 +9,11 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/lifei6671/gocaptcha"
+	"github.com/linkingthing/ddi/cmd/node"
 	metric "github.com/linkingthing/ddi/cmd/websocket/server"
 	myapi "github.com/linkingthing/ddi/dns/restfulapi"
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"html/template"
 	"log"
 	"net/http"
@@ -35,6 +38,7 @@ const (
 	delay           = 120000
 	checkValueToken = "CheckValueToken"
 	checkValue      = "CheckValue"
+	checkDuration   = 24 * time.Second
 )
 
 type data struct {
@@ -67,6 +71,17 @@ type User struct {
 }
 
 func main() {
+	//get yaml config file, update global variable PromServer and localhost
+	var conf *config.VanguardConf
+	conf = config.GetConfig()
+	fmt.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
+	utils.PromServer = conf.Server.Prometheus.IP
+	if conf.Localhost.IP != utils.PromServer {
+		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
+	}
+	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+	go getKafkaMsg()
+	go node.RegisterNode()
 	myapi.DBCon = myapi.NewDBController()
 	defer myapi.DBCon.Close()
 	schemas := schema.NewSchemaManager()
@@ -178,6 +193,7 @@ func main() {
 		auth.POST("/apis/linkingthing.com/example/v1/logout", authMiddleware.LogoutHandler)
 		auth.GET("/apis/linkingthing.com/example/v1/nodes", nodeQuery)
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
+		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()
@@ -302,28 +318,19 @@ func nodeQuery(c *gin.Context) {
 func nodeQueryRange(c *gin.Context) {
 	metric.Query_range(c.Writer, c.Request)
 }
+func nodeServers(c *gin.Context) {
+	metric.List_server(c.Writer, c.Request)
+}
 
-/*func metricHandler(c *gin.Context) {
-	client := &http.Client{}
-	//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
-	query := c.Query("query")
-	fmt.Println(query)
-	query = query[:len(query)-1]
-	fmt.Println(query)
-	tmp := ",instance=\"10.0.0.19:8001\""
-	//query = append(query, tmp...)
-	fmt.Println(query)
-	var queryValue url.Values
-	queryValue["query"] = query
-	url := "http://10.0.0.24:9090/api/v1/query_range?" + c.Request.URL.RawQuery
-	reqest, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return
+func getKafkaMsg() {
+	log.Println("into getKafkaMsg")
+	for {
+
+		log.Println("in loop" + strconv.FormatInt(time.Now().Unix(), 10))
+
+		utils.ConsumerProm()
+
+		time.Sleep(checkDuration)
+		//time.Sleep(20 * time.Second)
 	}
-	response, _ := client.Do(reqest)
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return
-	}
-	fmt.Fprintln(c.Writer, string(body))
-}*/
+}

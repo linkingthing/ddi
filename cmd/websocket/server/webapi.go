@@ -438,7 +438,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	return &str, nil
 }
 
-func list_server(w http.ResponseWriter, r *http.Request) {
+func List_server(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	fmt.Println("in list_server(), Form: ", r.Form)

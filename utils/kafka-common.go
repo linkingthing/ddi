@@ -15,8 +15,8 @@ var (
 	KafkaPort       = "9092"
 	KafkaTopicProm  = "prom"
 	//checkDuration   = 24 * time.Hour
-	Hostname        = "ip-15"
-	HostIP          = "10.0.0.15"
+	Hostname        = "ip-19"
+	HostIP          = "10.0.0.19"
 	PromMetricsPort = "9100"
 )
 
@@ -77,6 +77,7 @@ func ConsumerProm() {
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
+			log.Println("ConsumerProm:", err)
 			break
 		}
 		log.Printf(", message at offset %d: key: %s, value: %s\n", m.Offset, string(m.Key),
