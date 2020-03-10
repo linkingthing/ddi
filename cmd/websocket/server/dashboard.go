@@ -25,6 +25,7 @@ type CurlRetDash struct {
 type DashDnsRet struct {
 	Ips     []Buckets `json:"ips"`
 	Domains []Buckets `json:"domains"`
+	Types   []Buckets `json:"types"`
 }
 type DashDns struct {
 	Status  string     `json:"status"`
@@ -108,6 +109,43 @@ func GetDashDnsDomains(url string) (string, error) {
 	return out, nil
 }
 
+// dns resolve types
+func GetDashDnsResolveType(url string) (string, error) {
+	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
+		`
+{
+    "size" : 0,
+    "query" :{
+    	"range": {
+       	    "@timestamp" : 	{
+       	    	"from": "now-37d"	
+    	    }
+    	}
+    },
+    "aggs" : {
+        "types" : { 
+            "terms" : { 
+              "field" : "type.keyword"
+            }
+        }
+    }
+}
+' 2>/dev/null 
+`
+	log.Println("--- GetDashDnsResolveType curlCmd: ", curlCmd)
+	out, err := cmd(curlCmd)
+
+	if err != nil {
+		log.Println("curl error: ", err)
+		return "", err
+	}
+	log.Println("+++ GetDashDnsResolveType(), out")
+	log.Println(out)
+	log.Println("--- GetDashDnsResolveType(), out")
+
+	return out, nil
+}
+
 //get statistics data from es
 func GetDashDns(w http.ResponseWriter, r *http.Request) {
 
@@ -144,6 +182,17 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 	log.Println("+++ print domains")
 	log.Println(curlRetDash.Aggregations["domains"].Buckets)
 	result.Data.Domains = curlRetDash.Aggregations["domains"].Buckets
+
+	//get resolve type aggregations
+	types, err := GetDashDnsResolveType(url)
+	if err != nil {
+		log.Println("解析类型统计数据错误")
+		return
+	}
+	json.Unmarshal([]byte(types), &curlRetDash)
+	log.Println("+++ print resolve types")
+	log.Println(curlRetDash.Aggregations["types"].Buckets)
+	result.Data.Types = curlRetDash.Aggregations["types"].Buckets
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
