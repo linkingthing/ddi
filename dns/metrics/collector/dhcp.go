@@ -45,18 +45,9 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	log.Println("--- GenerateDhcpPacketStatistics(), out")
 
 	var curlRet CurlKeaStats
-	json.Unmarshal([]byte(out), &curlRet)
+	json.Unmarshal([]byte(out[1:-1]), &curlRet)
 	maps := curlRet.Arguments.Pkt4Received
-	var count int
-	for k, _ := range maps {
-		log.Println("k: ", k)
-		count++
-	}
-	log.Println("+++ count: ", count)
-	log.Println("+++ print dhcppacket")
-	log.Println(maps)
-
-	c.gaugeMetricData["dhcppacket"] = float64(count)
+	c.gaugeMetricData["dhcppacket"] = float64(len(maps))
 
 	return nil
 }
