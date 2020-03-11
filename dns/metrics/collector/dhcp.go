@@ -17,18 +17,6 @@ type CurlKeaStats struct {
 	Result    string           `json:"result"`
 }
 
-// prepare data for rest apis
-type DashDhcpPacket struct {
-	Ips     []Buckets `json:"ips"`
-	Domains []Buckets `json:"domains"`
-	Types   []Buckets `json:"types"`
-}
-type DashDhcp struct {
-	Status  string         `json:"status"`
-	Data    DashDhcpPacket `json:"data"`
-	Message string         `json:"message"`
-}
-
 // dashboard -- dhcp -- packet statistics
 func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	log.Println("+++ into GenerateDhcpPacketStatistics()")
