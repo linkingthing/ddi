@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	//physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
+	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
-	"github.com/linkingthing/ddi/dns/metrics"
+	businessMetrics "github.com/linkingthing/ddi/dns/metrics"
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
@@ -67,11 +67,11 @@ func main() {
 		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
 	}
 	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
-	handler := metrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
+	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
 	go handler.Statics()
 	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
 	go node.RegisterNode()
-	//go physicalMetrics.NodeExporter()
+	go physicalMetrics.NodeExporter()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return
