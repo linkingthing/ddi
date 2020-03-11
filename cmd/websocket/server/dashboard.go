@@ -59,16 +59,12 @@ func GetDashDnsIps(url string) (string, error) {
 }
 ' 2>/dev/null 
 `
-	log.Println("--- curlCmd: ", curlCmd)
-	out, err := cmd(curlCmd)
 
+	out, err := utils.Cmd(curlCmd)
 	if err != nil {
 		log.Println("curl error: ", err)
 		return "", err
 	}
-	log.Println("+++ GetDashDnsIps(), out")
-	log.Println(out)
-	log.Println("--- GetDashDnsIps(), out")
 
 	return out, nil
 }
@@ -95,16 +91,13 @@ func GetDashDnsDomains(url string) (string, error) {
 }
 ' 2>/dev/null 
 `
-	log.Println("--- GetDashDnsDomains curlCmd: ", curlCmd)
-	out, err := cmd(curlCmd)
+
+	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {
 		log.Println("curl error: ", err)
 		return "", err
 	}
-	log.Println("+++ GetDashDnsDomains(), out")
-	log.Println(out)
-	log.Println("--- GetDashDnsDomains(), out")
 
 	return out, nil
 }
@@ -132,16 +125,13 @@ func GetDashDnsResolveType(url string) (string, error) {
 }
 ' 2>/dev/null 
 `
-	log.Println("--- GetDashDnsResolveType curlCmd: ", curlCmd)
-	out, err := cmd(curlCmd)
+
+	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {
 		log.Println("curl error: ", err)
 		return "", err
 	}
-	log.Println("+++ GetDashDnsResolveType(), out")
-	log.Println(out)
-	log.Println("--- GetDashDnsResolveType(), out")
 
 	return out, nil
 }

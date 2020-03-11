@@ -3,9 +3,31 @@
 package collector
 
 import (
+	"encoding/json"
 	"github.com/linkingthing/ddi/utils"
 	"log"
 )
+
+// unmarshall data from kea statistics commands
+type CurlKeaArguments struct {
+	Pkt4Received []interface{} `json:"pkt4-received"`
+}
+type CurlKeaStats struct {
+	Arguments CurlKeaArguments `json:"arguments"`
+	Result    string           `json:"result"`
+}
+
+// prepare data for rest apis
+type DashDhcpPacket struct {
+	Ips     []Buckets `json:"ips"`
+	Domains []Buckets `json:"domains"`
+	Types   []Buckets `json:"types"`
+}
+type DashDhcp struct {
+	Status  string         `json:"status"`
+	Data    DashDhcpPacket `json:"data"`
+	Message string         `json:"message"`
+}
 
 // dashboard -- dhcp -- packet statistics
 func (c *Metrics) GenerateDhcpPacketStatistics() error {
@@ -34,7 +56,19 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	log.Println(out)
 	log.Println("--- GenerateDhcpPacketStatistics(), out")
 
-	c.gaugeMetricData["dhcppacket"] = float64(2.33)
+	var curlRet CurlKeaStats
+	json.Unmarshal([]byte(out), &curlRet)
+	maps := curlRet.Arguments.Pkt4Received
+	var count int
+	for k, _ := range maps {
+		log.Println("k: ", k)
+		count++
+	}
+	log.Println("+++ count: ", count)
+	log.Println("+++ print dhcppacket")
+	log.Println(maps)
+
+	c.gaugeMetricData["dhcppacket"] = float64(count)
 
 	return nil
 }
