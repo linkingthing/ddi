@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	//physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
 	"github.com/linkingthing/ddi/dns/metrics"
 	"github.com/linkingthing/ddi/dns/server"
@@ -70,6 +71,7 @@ func main() {
 	go handler.Statics()
 	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
 	go node.RegisterNode()
+	//go physicalMetrics.NodeExporter()
 	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
 	if err != nil {
 		return

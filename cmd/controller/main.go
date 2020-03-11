@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/appleboy/gin-jwt"
+	"github.com/appleboy/gin-jwt/v2"
 	"github.com/ben-han-cn/gorest"
 	"github.com/ben-han-cn/gorest/adaptor"
 	"github.com/ben-han-cn/gorest/resource"

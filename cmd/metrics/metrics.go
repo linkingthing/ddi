@@ -144,7 +144,7 @@ func NodeExporter() {
 		metricsPath = kingpin.Flag(
 			"web.telemetry-path",
 			"Path under which to expose metrics.",
-		).Default("/physicalmetrics").String()
+		).Default("/metrics").String()
 		disableExporterMetrics = kingpin.Flag(
 			"web.disable-exporter-metrics",
 			"Exclude metrics about the exporter itself (promhttp_*, process_*, go_*).",
