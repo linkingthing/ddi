@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package metrics
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ import (
 
 // handler wraps an unfiltered http.Handler but uses a filtered handler,
 // created on the fly, if filtering is requested. Create instances with
-// newHandler.
+// NewHandler.
 type handler struct {
 	unfilteredHandler http.Handler
 	// exporterMetricsRegistry is a separate registry for the metrics about
@@ -45,7 +45,7 @@ type handler struct {
 	logger                  log.Logger
 }
 
-func newHandler(includeExporterMetrics bool, maxRequests int, logger log.Logger) *handler {
+func NewHandler(includeExporterMetrics bool, maxRequests int, logger log.Logger) *handler {
 	h := &handler{
 		exporterMetricsRegistry: prometheus.NewRegistry(),
 		includeExporterMetrics:  includeExporterMetrics,
@@ -135,7 +135,7 @@ func (h *handler) innerHandler(filters ...string) (http.Handler, error) {
 	return handler, nil
 }
 
-func main() {
+func NodeExporter() {
 	var (
 		listenAddress = kingpin.Flag(
 			"web.listen-address",
@@ -144,7 +144,7 @@ func main() {
 		metricsPath = kingpin.Flag(
 			"web.telemetry-path",
 			"Path under which to expose metrics.",
-		).Default("/metrics").String()
+		).Default("/physicalmetrics").String()
 		disableExporterMetrics = kingpin.Flag(
 			"web.disable-exporter-metrics",
 			"Exclude metrics about the exporter itself (promhttp_*, process_*, go_*).",
@@ -169,7 +169,7 @@ func main() {
 	level.Info(logger).Log("msg", "Starting node_exporter", "version", version.Info())
 	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
 
-	http.Handle(*metricsPath, newHandler(!*disableExporterMetrics, *maxRequests, logger))
+	http.Handle(*metricsPath, NewHandler(!*disableExporterMetrics, *maxRequests, logger))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 			<head><title>Node Exporter</title></head>
