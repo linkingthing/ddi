@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package metrics
 
 import (
 	"fmt"
@@ -135,7 +135,7 @@ func (h *handler) innerHandler(filters ...string) (http.Handler, error) {
 	return handler, nil
 }
 
-func main() {
+func NodeExporter() {
 	var (
 		listenAddress = kingpin.Flag(
 			"web.listen-address",
