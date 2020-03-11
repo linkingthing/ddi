@@ -13,4 +13,8 @@ var (
 	EsServer = "10.0.0.69" //elasticsearch server
 	EsPort   = "9200"      //elasticsearch port
 	EsIndex  = "dns_log"   //elasticsearch index name
+
+	KeaServer = "10.0.0.31" //host ip on which kea is running
+	KeaPort   = 8000        //host port on which kea is running
+
 )
