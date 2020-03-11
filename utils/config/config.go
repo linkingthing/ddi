@@ -67,6 +67,7 @@ type VanguardConf struct {
 }
 
 var (
+	YAML_CONFIG_FILE              = "/etc/vanguard/vanguard.conf"
 	configFile                    string
 	ErrConfigureObjectIsNotStruct = errors.New("configure object isn't struct")
 	ErrRequiredFieldIsEmpty       = errors.New("required filed hasn't been set")
@@ -150,7 +151,7 @@ func LoadConfig(path string) (*VanguardConf, error) {
 }
 func init() {
 	flag.Parse()
-	//flag.StringVar(&configFile, "c", utils.YAML_CONFIG_FILE, "configure file path")
+	flag.StringVar(&configFile, "c", YAML_CONFIG_FILE, "configure file path")
 }
 
 func GetConfig() *VanguardConf {
