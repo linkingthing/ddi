@@ -401,9 +401,9 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			return nil, err
 		}
 		out = string(body)
-		//log.Println("+++ in GetPromRange(), out")
-		//log.Println(out)
-		//log.Println("--- out")
+		log.Println("+++ in GetPromRange(), out, ")
+		log.Println(out)
+		log.Println("--- out")
 		if err != nil {
 			return nil, err
 		}
