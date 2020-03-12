@@ -13,7 +13,6 @@ import (
 	metric "github.com/linkingthing/ddi/cmd/websocket/server"
 	myapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"html/template"
 	"log"
 	"net/http"
@@ -71,15 +70,8 @@ type User struct {
 }
 
 func main() {
-	//get yaml config file, update global variable PromServer and localhost
-	var conf *config.VanguardConf
-	conf = config.GetConfig()
-	fmt.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
-	utils.PromServer = conf.Server.Prometheus.IP
-	if conf.Localhost.IP != utils.PromServer {
-		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
-	}
-	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+	utils.SetHostIPs() //set global vars from yaml conf
+
 	go getKafkaMsg()
 	go node.RegisterNode()
 	myapi.DBCon = myapi.NewDBController()

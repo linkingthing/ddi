@@ -22,8 +22,8 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	log.Println("+++ into GenerateDhcpPacketStatistics()")
 
 	//get packet statistics data, export it to prometheus
+	//todo move ip:port into conf
 	url := "http://10.0.0.31:8000"
-	//    curl -X POST "http://10.0.0.31:8000" -H 'Content-Type: application/json' -d '
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`   {
 	            "command": "statistic-get",
@@ -33,7 +33,7 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	            }
 	        }
 	        ' 2>/dev/null`
-	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {

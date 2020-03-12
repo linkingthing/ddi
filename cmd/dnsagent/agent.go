@@ -10,7 +10,6 @@ import (
 	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 )
@@ -58,15 +57,8 @@ var (
 )
 
 func main() {
-	//get yaml config file, update global variable PromServer and localhost
-	var conf *config.VanguardConf
-	conf = config.GetConfig()
-	fmt.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
-	utils.PromServer = conf.Server.Prometheus.IP
-	if conf.Localhost.IP != utils.PromServer {
-		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
-	}
-	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+	utils.SetHostIPs() //set global vars from yaml conf
+
 	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
 	go handler.Statics()
 	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")

@@ -11,9 +11,15 @@ func SetHostIPs() {
 	var conf *config.VanguardConf
 	conf = config.GetConfig()
 
-	log.Println("in agent.go, cur utils.promServer ip: ", PromServer)
 	PromServer = conf.Server.Prometheus.IP
-	log.Println("in agent.go, utils.promServer ip: ", PromServer)
+	if conf.Localhost.IP != PromServer {
+		PromLocalInstance = conf.Localhost.IP + ":" + PromLocalPort
+	}
+	KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+	log.Println("in common.go, utils.promServer ip: ", PromServer)
+	log.Println("in common.go, utils.KafkaServerProm ip: ", KafkaServerProm)
+	log.Println("in common.go, utils.PromLocalInstance ip: ", PromLocalInstance)
+
 }
 
 func Cmd(command string) (string, error) {
