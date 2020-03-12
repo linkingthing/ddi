@@ -94,9 +94,9 @@ func ConsumerProm() {
 			Role.OnTime = time.Now().Unix()
 			OnlinePromHosts[Role.IP] = Role
 
-			log.Println("+++ OnlinePromHosts")
-			log.Println(OnlinePromHosts)
-			log.Println("--- OnlinePromHosts")
+			//log.Println("+++ OnlinePromHosts")
+			//log.Println(OnlinePromHosts)
+			//log.Println("--- OnlinePromHosts")
 		}
 
 		//store curOffset into KafkaOffsetFile
