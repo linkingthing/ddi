@@ -40,12 +40,12 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 		log.Println("curl error: ", err)
 		return err
 	}
-	log.Println("+++ GenerateDhcpPacketStatistics(), out")
-	log.Println(out)
-	log.Println("--- GenerateDhcpPacketStatistics(), out")
+	//log.Println("+++ GenerateDhcpPacketStatistics(), out")
+	//log.Println(out)
+	//log.Println("--- GenerateDhcpPacketStatistics(), out")
 
 	var curlRet CurlKeaStats
-	json.Unmarshal([]byte(out[1:-1]), &curlRet)
+	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
 	maps := curlRet.Arguments.Pkt4Received
 	c.gaugeMetricData["dhcppacket"] = float64(len(maps))
 
