@@ -330,9 +330,6 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err = utils.Cmd(command)
-		log.Println("+++ in GetPromRange(), out")
-		log.Println(out)
-		log.Println("--- out")
 		if err != nil {
 			log.Println("curl error: ", err)
 			return nil, err
@@ -346,9 +343,6 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err = utils.Cmd(command)
-		log.Println("+++ in GetPromRange(), out")
-		log.Println(out)
-		log.Println("--- out")
 		if err != nil {
 			log.Println("curl error: ", err)
 			return nil, err
@@ -392,13 +386,6 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			return nil, err
 		}
 		out = string(body)
-		if promType == "dhcppacket" {
-
-			log.Println("+++ in GetPromRange(), out")
-			log.Println(out)
-			log.Println("--- out")
-
-		}
 		if err != nil {
 			return nil, err
 		}
@@ -415,7 +402,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	for _, v := range rsp.Data.Result {
 
 		idx := strings.Index(v.Metric.Instance, ":")
-		log.Println("idx: ", idx)
+		//log.Println("idx: ", idx)
 		newInstance := v.Metric.Instance[:idx]
 		if newInstance == host {
 
@@ -423,7 +410,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			if err != nil {
 				log.Println("json marshal err: ", err)
 			}
-			log.Println("string retJson: ", string(retJson))
+			//log.Println("string retJson: ", string(retJson))
 			tmp := string(retJson)
 
 			return &tmp, nil
