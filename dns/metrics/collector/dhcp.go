@@ -51,3 +51,35 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 
 	return nil
 }
+
+// dashboard -- dhcp -- packet statistics
+func (c *Metrics) GenerateDhcpLeasesStatistics() error {
+	//log.Println("+++ into GenerateDhcpPacketStatistics()")
+
+	//get packet statistics data, export it to prometheus
+	//todo move ip:port into conf
+	url := "http://10.0.0.31:8000"
+	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
+		`   {
+                "command": "statistic-get-all",
+                "service": ["dhcp4"],
+                "arguments": { }
+	        }
+	        ' 2>/dev/null`
+	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	out, err := utils.Cmd(curlCmd)
+	if err != nil {
+		log.Println("curl error: ", err)
+		return err
+	}
+	log.Println("+++ GenerateDhcpLeasesStatistics(), out")
+	log.Println(out)
+	log.Println("--- GenerateDhcpLeasesStatistics(), out")
+
+	var curlRet CurlKeaStats
+	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
+	maps := curlRet.Arguments.Pkt4Received
+	c.gaugeMetricData["dhcppacket"] = float64(len(maps))
+
+	return nil
+}

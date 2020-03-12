@@ -84,6 +84,7 @@ func (c *Metrics) Collect(ch chan<- prometheus.Metric) {
 
 	// add dhcp statistics here
 	c.GenerateDhcpPacketStatistics()
+	c.GenerateDhcpLeasesStatistics()
 
 	for host, currentValue := range c.counterMetricData {
 		ch <- prometheus.MustNewConstMetric(c.metrics["counter"], prometheus.CounterValue, float64(currentValue), host)
