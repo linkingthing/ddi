@@ -19,7 +19,7 @@ type CurlKeaStats struct {
 
 // dashboard -- dhcp -- packet statistics
 func (c *Metrics) GenerateDhcpPacketStatistics() error {
-	log.Println("+++ into GenerateDhcpPacketStatistics()")
+	//log.Println("+++ into GenerateDhcpPacketStatistics()")
 
 	//get packet statistics data, export it to prometheus
 	//todo move ip:port into conf
