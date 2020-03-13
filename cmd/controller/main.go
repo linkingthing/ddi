@@ -9,14 +9,17 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/lifei6671/gocaptcha"
+	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
 	metric "github.com/linkingthing/ddi/cmd/websocket/server"
 	myapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
+	//"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -76,12 +79,14 @@ func main() {
 	conf = config.GetConfig()
 	fmt.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
 	utils.PromServer = conf.Server.Prometheus.IP
+	utils.PromPort = conf.Server.Prometheus.Port
 	if conf.Localhost.IP != utils.PromServer {
 		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
 	}
 	utils.KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
 	go getKafkaMsg()
 	go node.RegisterNode()
+	phyMetrics()
 	myapi.DBCon = myapi.NewDBController()
 	defer myapi.DBCon.Close()
 	schemas := schema.NewSchemaManager()
@@ -195,6 +200,8 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
 		auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDns)
+		auth.GET("/apis/linkingthing.com/example/v1/retcode", retCodeHandler)
+		auth.GET("/apis/linkingthing.com/example/v1/memhit", memHitHandler)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()
@@ -337,4 +344,95 @@ func getKafkaMsg() {
 		time.Sleep(checkDuration)
 		//time.Sleep(20 * time.Second)
 	}
+}
+
+func phyMetrics() {
+	if false {
+		go physicalMetrics.NodeExporter()
+	}
+}
+
+func retCodeHandler(c *gin.Context) {
+	client := &http.Client{}
+	//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
+	startTime := c.Query("start")
+	var numStart int64
+	var err error
+	if numStart, err = strconv.ParseInt(startTime, 10, 64); err != nil {
+		return
+	}
+	endTime := c.Query("end")
+	var step int
+	if endTime == "" {
+		numStart++
+		endTime = strconv.FormatInt(numStart, 10)
+		step = 10
+	} else {
+		var numEnd int64
+		if numEnd, err = strconv.ParseInt(endTime, 10, 64); err != nil {
+			return
+		}
+		if numEnd > numStart {
+			step = int((numEnd - numStart) / 30)
+			fmt.Println("step is:", step)
+		}
+		if step > 10000 {
+			step = 10000
+		}
+	}
+	host := c.Query("node")
+	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?" + "query=dns_counter%7Bdata_type%3D~%22SERVFAIL%7CNXDOMAIN%7CNOERROR%7CREFUSED%22%2Cinstance%3D%22" + host + "%3A8001%22%2Cjob%3D%22dns_exporter%22%7D%20&start=" + startTime + "&end=" + endTime + "&step=" + strconv.Itoa(step)
+	fmt.Println(url)
+	reqest, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	response, _ := client.Do(reqest)
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(c.Writer, string(body))
+}
+
+func memHitHandler(c *gin.Context) {
+	client := &http.Client{}
+	startTime := c.Query("start")
+	var numStart int64
+	var err error
+	if numStart, err = strconv.ParseInt(startTime, 10, 64); err != nil {
+		return
+	}
+	endTime := c.Query("end")
+	var step int
+	if endTime == "" {
+		numStart++
+		endTime = strconv.FormatInt(numStart, 10)
+		step = 10
+	} else {
+		var numEnd int64
+		if numEnd, err = strconv.ParseInt(endTime, 10, 64); err != nil {
+			return
+		}
+		if numEnd > numStart {
+			step = int((numEnd - numStart) / 30)
+			fmt.Println("step is:", step)
+		}
+		if step > 10000 {
+			step = 10000
+		}
+	}
+	host := c.Query("node")
+	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?query=dns_counter%7Bdata_type%3D~%22memhit%7Cquerys%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + startTime + "&end=" + endTime + "&step=" + strconv.Itoa(step)
+	fmt.Println(url)
+	reqest, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	response, _ := client.Do(reqest)
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(c.Writer, string(body))
 }

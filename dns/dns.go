@@ -265,6 +265,12 @@ type ACL struct {
 }
 
 func (handler *BindHandler) StartDNS(req pb.DNSStartReq) error {
+	handler.Start(req)
+	go handler.keepDNSAlive()
+	return nil
+
+}
+func (handler *BindHandler) Start(req pb.DNSStartReq) error {
 	if _, err := os.Stat(handler.dnsConfPath + "named.pid"); err == nil {
 		return nil
 	}
@@ -295,9 +301,7 @@ func (handler *BindHandler) StartDNS(req pb.DNSStartReq) error {
 	if _, err := shell.Shell("named", param); err != nil {
 		return err
 	}
-	go handler.keepDNSAlive()
 	return nil
-
 }
 
 func (handler *BindHandler) StopDNS() error {
@@ -1409,7 +1413,7 @@ func (handler *BindHandler) keepDNSAlive() {
 				continue
 			}
 			req := pb.DNSStartReq{}
-			handler.StartDNS(req)
+			handler.Start(req)
 		case <-handler.quit:
 			return
 		}

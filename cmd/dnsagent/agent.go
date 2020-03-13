@@ -50,7 +50,7 @@ const (
 
 var (
 	kafkaServer     = "localhost:9092"
-	dhcpTopic       = "test"
+	dnsTopic        = "dhcp"
 	kafkaWriter     *kg.Writer
 	kafkaReader     *kg.Reader
 	address         = "localhost:8888"
@@ -91,7 +91,7 @@ func dnsClient() {
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{utils.KafkaServerProm},
-		Topic:   dhcpTopic,
+		Topic:   dnsTopic,
 	})
 	var message kg.Message
 	for {

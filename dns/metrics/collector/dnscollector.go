@@ -23,6 +23,10 @@ const (
 	QuerysPath      = "querys"
 	RecurQuerysPath = "recurquerys"
 	MemHitPath      = "memhit"
+	NOERRORPath     = "NOERROR"
+	SERVFAILPath    = "SERVFAIL"
+	NXDOMAINPath    = "NXDOMAIN"
+	REFUSEDPath     = "REFUSED"
 )
 
 // 指标结构体
@@ -81,7 +85,10 @@ func (c *Metrics) Collect(ch chan<- prometheus.Metric) {
 	c.GenerateQuery()
 	c.GenerateRecurQuery()
 	c.GenerateMemHit()
-
+	c.GenerateRetCode("NOERROR", NOERRORPath)
+	c.GenerateRetCode("SERVFAIL", SERVFAILPath)
+	c.GenerateRetCode("NXDOMAIN", NXDOMAINPath)
+	c.GenerateRetCode("REFUSED", REFUSEDPath)
 	// add dhcp statistics here
 	c.GenerateDhcpPacketStatistics()
 
@@ -201,6 +208,30 @@ func (c *Metrics) GenerateMemHit() error {
 		}
 		fmt.Println("cache hit read from db:", query)
 		c.counterMetricData["memhit"] = float64(query)
+	}
+	return nil
+}
+
+func (c *Metrics) GenerateRetCode(retCode string, table string) error {
+	kvs, err := c.dbHandler.TableKVs(table)
+	if err != nil {
+		return err
+	}
+	var timeStamps []string
+	for k, _ := range kvs {
+		timeStamps = append(timeStamps, k)
+	}
+	sort.Strings(timeStamps)
+	if len(kvs) > 1 {
+		var query int
+		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
+			return err
+		}
+		fmt.Println(retCode, " read from db:", query)
+		c.counterMetricData[retCode] = float64(query)
+	} else if len(kvs) <= 1 {
+		fmt.Println(retCode, " read from db:0")
+		c.counterMetricData[retCode] = 0
 	}
 	return nil
 }

@@ -7,14 +7,14 @@ import (
 
 var (
 	kafkaServer = "localhost:9092"
-	dhcpTopic   = "test"
+	dnsTopic    = "dns"
 	kafkaWriter *kg.Writer
 )
 
 func init() {
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{kafkaServer},
-		Topic:   dhcpTopic,
+		Topic:   dnsTopic,
 	})
 }
 

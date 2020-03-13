@@ -59,7 +59,10 @@ func (h *MetricsHandler) Statics() error {
 			h.QueryStatics()
 			h.RecurQueryStatics()
 			h.MemHitStatics()
-			//h.RetCodeStatics()
+			h.RetCodeStatics("NOERROR", ct.NOERRORPath)
+			h.RetCodeStatics("SERVFAIL", ct.SERVFAILPath)
+			h.RetCodeStatics("NXDOMAIN", ct.NXDOMAINPath)
+			h.RetCodeStatics("REFUSED", ct.REFUSEDPath)
 			//remove the named.stats
 			if err := os.Remove(h.URLPath + "/named.stats"); err != nil {
 				return err
@@ -205,7 +208,7 @@ func (h *MetricsHandler) RecurQueryStatics() error {
 	return nil
 }
 
-func (h *MetricsHandler) RetCodeStatics() error {
+func (h *MetricsHandler) RetCodeStatics(retCode string, table string) error {
 	//get the timestamp
 	var para1 string
 	para1 = "Dump ---"
@@ -225,30 +228,24 @@ func (h *MetricsHandler) RetCodeStatics() error {
 			}
 		}
 	}
-	//get the num of NOERROR RetCode
-	para1 = "queries sent"
-	para2 = h.URLPath + "/named.stats"
-	if value, err = shell.Shell("grep", para1, para2); err != nil {
+	//get the num of RetCode
+	para1 = "-E"
+	para2 = "[0-9]+ " + retCode + "$"
+	para3 := h.URLPath + "/named.stats"
+	if value, err = shell.Shell("grep", para1, para2, para3); err != nil {
 		return err
 	}
+	var currQuery []byte
 	querys := strings.Split(value, "\n")
-	var total int
-	for _, v := range querys {
-		var stringNum []byte
-		for _, vv := range v {
-			if vv >= '0' && vv <= '9' {
-				stringNum = append(stringNum, byte(vv))
+	if len(querys) == 2 {
+		for _, v := range querys[0] {
+			if v >= '0' && v <= '9' {
+				currQuery = append(currQuery, byte(v))
 			}
 		}
-		var err error
-		var num int
-		if num, err = strconv.Atoi(string(stringNum)); err != nil {
-			break
-		}
-		fmt.Println("recursive query's part of tatal:num", num)
 	}
-	fmt.Println("recursive query into db:", string(curr), total)
-	h.SaveToDB(string(curr), []byte(strconv.Itoa(total)), ct.RecurQuerysPath)
+	fmt.Println(retCode, "into db:", string(curr), string(currQuery))
+	h.SaveToDB(string(curr), currQuery, table)
 	return nil
 }
 
