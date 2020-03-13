@@ -38,7 +38,7 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	            }
 	        }
 	        ' 2>/dev/null`
-	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
                 "arguments": { }
 	        }
 	        ' 2>/dev/null`
-	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {
 		log.Println("curl error: ", err)

@@ -150,7 +150,7 @@ func Query_range(w http.ResponseWriter, r *http.Request) {
 
 	result.Data.Values = histData
 
-	//log.Println("xxx cpuHist: ", cpuResp)
+	log.Println("xxx cpuHist: ", cpuResp)
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
@@ -392,6 +392,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 
 	}
 
+	log.Println("GetPromRange(), out: ", out)
 	d := json.NewDecoder(bytes.NewReader([]byte(out)))
 	d.UseNumber()
 	err = d.Decode(&rsp)
