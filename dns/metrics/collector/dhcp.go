@@ -17,6 +17,11 @@ type CurlKeaStats struct {
 	Result    string           `json:"result"`
 }
 
+type CurlKeaStatsAll struct {
+	Arguments map[string]interface{} `json:"arguments"`
+	Result    string                 `json:"result"`
+}
+
 // dashboard -- dhcp -- packet statistics
 func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	//log.Println("+++ into GenerateDhcpPacketStatistics()")
@@ -72,12 +77,16 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 		log.Println("curl error: ", err)
 		return err
 	}
-	log.Println("+++ GenerateDhcpLeasesStatistics(), out")
-	log.Println(out)
-	log.Println("--- GenerateDhcpLeasesStatistics(), out")
 
-	var curlRet CurlKeaStats
+	var curlRet CurlKeaStatsAll
 	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
+
+	maps := curlRet.Arguments
+	for k, v := range maps {
+
+		log.Println("in lease statistics(), for loop, k: ", k, ", v: ", v)
+	}
+
 	//maps := curlRet.Arguments.Pkt4Received
 	c.gaugeMetricData["dhcplease"] = float64(33)
 
