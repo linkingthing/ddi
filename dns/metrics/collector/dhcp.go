@@ -19,8 +19,8 @@ type CurlKeaStats struct {
 }
 
 type CurlKeaStatsAll struct {
-	Arguments map[string]interface{} `json:"arguments"`
-	Result    string                 `json:"result"`
+	Arguments map[string][]interface{} `json:"arguments"`
+	Result    string                   `json:"result"`
 }
 
 // dashboard -- dhcp -- packet statistics
@@ -72,7 +72,7 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
                 "arguments": { }
 	        }
 	        ' 2>/dev/null`
-	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {
 		log.Println("curl error: ", err)
@@ -80,6 +80,7 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 	}
 
 	var curlRet CurlKeaStatsAll
+	leaseNum := 0
 	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
 
 	maps := curlRet.Arguments
@@ -91,15 +92,19 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 		if len(out) > 0 {
 			log.Println("+++ out: ", out)
 			for _, i := range out {
-				log.Println("+++ i: ", i[1])
+
+				//idx := i[1]
+				leaseNum += len(v)
+
+				log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
-			v = ""
+
 		}
 
 	}
 
 	//maps := curlRet.Arguments.Pkt4Received
-	c.gaugeMetricData["dhcplease"] = float64(33)
+	c.gaugeMetricData["dhcplease"] = float64(leaseNum)
 
 	return nil
 }
