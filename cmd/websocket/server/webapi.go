@@ -366,7 +366,8 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 		}
 
 	}
-	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" || promType == "dhcppacket" {
+	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" ||
+		promType == "dhcppacket" || promType == "dhcplease" {
 		//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
 		client := &http.Client{}
 		var url string
