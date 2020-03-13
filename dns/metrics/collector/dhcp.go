@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/linkingthing/ddi/utils"
 	"log"
+	"regexp"
 )
 
 // unmarshall data from kea statistics commands
@@ -84,7 +85,17 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 	maps := curlRet.Arguments
 	for k, v := range maps {
 
-		log.Println("in lease statistics(), for loop, k: ", k, ", v: ", v)
+		//log.Println("in lease statistics(), for loop, k: ", k, ", v: ", v)
+		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.assigned-addresses`)
+		out := rex.FindAllStringSubmatch(k, -1)
+		if len(out) > 0 {
+			log.Println("+++ out: ", out)
+			for _, i := range out {
+				log.Println("+++ i: ", i[1])
+			}
+			v = ""
+		}
+
 	}
 
 	//maps := curlRet.Arguments.Pkt4Received
