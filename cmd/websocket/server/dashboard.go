@@ -59,6 +59,7 @@ func GetDashDnsIps(url string) (string, error) {
 }
 ' 2>/dev/null 
 `
+	log.Println("in GetDashDnsIps(), curlCmd: ", curlCmd)
 
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {
