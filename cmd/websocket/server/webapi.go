@@ -10,18 +10,10 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
 )
-
-func cmd(command string) (string, error) {
-	cmd := exec.Command("bash", "-c", command)
-	out, err := cmd.CombinedOutput()
-	result := string(out)
-	return result, err
-}
 
 type Metric struct {
 	Name     string `json:"__name__"`
@@ -290,7 +282,7 @@ func GetPromItem(promType string, host string) (string, error) {
 	}
 	log.Println("in GetPromItem(), command: ", command)
 
-	out, err := cmd(command)
+	out, err := utils.Cmd(command)
 	if err != nil {
 		return "", err
 	}
@@ -337,10 +329,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
-		out, err = cmd(command)
-		log.Println("+++ in GetPromRange(), out")
-		log.Println(out)
-		log.Println("--- out")
+		out, err = utils.Cmd(command)
 		if err != nil {
 			log.Println("curl error: ", err)
 			return nil, err
@@ -353,10 +342,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
-		out, err = cmd(command)
-		log.Println("+++ in GetPromRange(), out")
-		log.Println(out)
-		log.Println("--- out")
+		out, err = utils.Cmd(command)
 		if err != nil {
 			log.Println("curl error: ", err)
 			return nil, err
@@ -370,7 +356,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&start=" + strconv.Itoa(start) +
 			"&end=" + strconv.Itoa(end) +
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
-		out, err = cmd(command)
+		out, err = utils.Cmd(command)
 
 		//log.Println("+++ in GetPromRange(), out")
 		//log.Println(out)
@@ -380,13 +366,12 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 		}
 
 	}
-	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" {
+	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" || promType == "dhcppacket" {
 		//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
 		client := &http.Client{}
 		var url string
-		var promWebHost = utils.PromServer + ":" + utils.PromPort
 
-		if promType == "qps" {
+		if promType == "qps" || promType == "dhcppacket" || promType == "dhcplease" {
 			url = "http://" + promWebHost + "/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22" + promType + "%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
 		} else if promType == "querys" || promType == "memhit" || promType == "recurquerys" {
 			url = "http://" + promWebHost + "/api/v1/query_range?query=dns_counter%7Bdata_type%3D%22" + promType + "%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
@@ -401,15 +386,13 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			return nil, err
 		}
 		out = string(body)
-		log.Println("+++ in GetPromRange(), out, ")
-		log.Println(out)
-		log.Println("--- out")
 		if err != nil {
 			return nil, err
 		}
 
 	}
 
+	log.Println("GetPromRange(), out: ", out)
 	d := json.NewDecoder(bytes.NewReader([]byte(out)))
 	d.UseNumber()
 	err = d.Decode(&rsp)
@@ -420,7 +403,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 	for _, v := range rsp.Data.Result {
 
 		idx := strings.Index(v.Metric.Instance, ":")
-		log.Println("idx: ", idx)
+		//log.Println("idx: ", idx)
 		newInstance := v.Metric.Instance[:idx]
 		if newInstance == host {
 
@@ -428,7 +411,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			if err != nil {
 				log.Println("json marshal err: ", err)
 			}
-			log.Println("string retJson: ", string(retJson))
+			//log.Println("string retJson: ", string(retJson))
 			tmp := string(retJson)
 
 			return &tmp, nil

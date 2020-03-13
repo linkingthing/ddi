@@ -3,7 +3,6 @@ package server
 import (
 	"bufio"
 	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"io"
 	"log"
 	"net"
@@ -106,14 +105,7 @@ func isTransportOver(data string) (over bool) {
 
 func test() {
 
-	//get yaml config file, update global variable PromServer and localhost
-	var conf *config.VanguardConf
-	conf = config.GetConfig()
-	log.Println("in agent.go, cur utils.promServer ip: ", utils.PromServer)
-	utils.PromServer = conf.Server.Prometheus.IP
-	if conf.Localhost.IP != utils.PromServer {
-		utils.PromLocalInstance = conf.Localhost.IP + ":" + utils.PromLocalPort
-	}
+	utils.SetHostIPs() //set global vars from yaml conf
 
 	port := utils.WebSocket_Port
 	go SocketServer(port)

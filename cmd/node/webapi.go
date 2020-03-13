@@ -13,6 +13,9 @@ import (
 
 func RegisterNode() {
 	//v1
+
+	utils.SetHostIPs() //set global vars from yaml conf
+
 	var conf *config.VanguardConf
 	conf = config.GetConfig()
 	log.Println("in agent.go, localhost ip: ", conf.Localhost.IP)

@@ -7,10 +7,13 @@ var (
 	PromLocalhost     = "localhost" //prometheus localhost ip, server is localhost, node is ip
 	PromLocalPort     = "9100"      //prometheus localhost ip
 	PromLocalInstance = PromLocalhost + ":" + PromLocalPort
-	YAML_CONFIG_FILE  = "/etc/vanguard/vanguard.conf"
 	WebSocket_Port    = 3333 //ping pong check port
 
 	EsServer = "10.0.0.69" //elasticsearch server
 	EsPort   = "9200"      //elasticsearch port
 	EsIndex  = "dns_log"   //elasticsearch index name
+
+	KeaServer = "10.0.0.31" //host ip on which kea is running
+	KeaPort   = 8000        //host port on which kea is running
+
 )

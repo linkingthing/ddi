@@ -24,6 +24,8 @@ var (
 
 func main() {
 
+	utils.SetHostIPs() //set global vars from yaml conf
+
 	dhcprest.PGDBConn = dhcprest.NewPGDB()
 	defer dhcprest.PGDBConn.Close()
 	schemas := schema.NewSchemaManager()
