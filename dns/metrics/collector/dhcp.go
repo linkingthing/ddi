@@ -140,14 +140,17 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 	maps := curlRet.Arguments
 	for k, v := range maps {
 		log.Println("in lease statistics(), for loop, k: ", k)
-		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\s+)`)
+		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\w+)`)
 		out := rex.FindAllStringSubmatch(k, -1)
+
 		if len(out) > 0 {
 			for _, i := range out {
-				idx, _ := strconv.Atoi(i[1])
+
 				addrType := i[2]
 				if addrType == "total-addresses" {
-					totalNum += idx
+					total := maps[k][0].([]interface{})[0]
+					totalNum += int(Decimal(total.(float64)))
+
 				} else if addrType == "assigned-addresses" {
 					leaseNum += len(v)
 				}
@@ -157,9 +160,9 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 	}
 	log.Println("leaseNum: ", leaseNum)
 	log.Println("totalNum: ", totalNum)
-	dhcpUsage := 0
+	dhcpUsage := 0.0
 	if totalNum > 0 {
-		dhcpUsage = leaseNum / totalNum * 100
+		dhcpUsage = Decimal(float64(leaseNum) / float64(totalNum) * 100)
 	}
 	log.Println("dhcpUsage: ", dhcpUsage)
 
@@ -168,6 +171,8 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 
 	return nil
 }
+
+type ValueIntf [3]interface{}
 
 func Decimal(value float64) float64 {
 	value, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", value), 64)
