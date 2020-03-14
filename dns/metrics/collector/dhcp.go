@@ -140,7 +140,7 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 	maps := curlRet.Arguments
 	for k, v := range maps {
 		log.Println("in lease statistics(), for loop, k: ", k)
-		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\w+)`)
+		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\S+)`)
 		out := rex.FindAllStringSubmatch(k, -1)
 
 		if len(out) > 0 {
