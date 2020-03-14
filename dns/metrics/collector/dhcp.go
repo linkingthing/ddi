@@ -155,9 +155,12 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 			}
 		}
 	}
-	dhcpUsage := leaseNum / totalNum * 100
 	log.Println("leaseNum: ", leaseNum)
 	log.Println("totalNum: ", totalNum)
+	dhcpUsage := 0
+	if totalNum > 0 {
+		dhcpUsage = leaseNum / totalNum * 100
+	}
 	log.Println("dhcpUsage: ", dhcpUsage)
 
 	//maps := curlRet.Arguments.Pkt4Received
