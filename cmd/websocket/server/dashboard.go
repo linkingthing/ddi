@@ -229,6 +229,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	// define a temprary variable stores subnet id and total and used
 	curlRet := collector.GetKeaStatisticsAll()
 	maps := curlRet.Arguments
+	stats := map[string]map[string]int{}
 	for k, v := range maps {
 		//log.Println("in lease statistics(), for loop, k: ", k)
 		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\S+)`)
@@ -244,16 +245,19 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 
 				if addrType == "total-addresses" {
 					total := maps[k][0].([]interface{})[0]
-					stat.Total = int(collector.Decimal(total.(float64)))
+					stats[idx]["total"] = int((collector.Decimal(total.(float64))))
+
 				} else if addrType == "assigned-addresses" {
-					stat.Used = len(v)
+
+					stats[idx]["used"] = len(v)
 				}
 				//log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
 			assignMap[idx] = stat
-			log.Println("get kea all stat: ", stat)
+			log.Println("get kea all stats: ", stats)
 		}
 	}
+	log.Println("stats: ", stats)
 
 	//get subnet name and id from dhcp config
 	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
@@ -270,9 +274,12 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		var stat DhcpAssignStat
 		stat.ID = v.Id
 		stat.Name = v.Subnet
+		stat.Total = stats[string(v.Id)]["total"]
+		stat.Used = stats[string(v.Id)]["used"]
 		//stat.Total = assignMap[string(v.Id)].Total
 		//stat.Used = assignMap[string(v.Id)].Used
 		assignMap[string(v.Id)] = stat
+		result.Data = append(result.Data, stat)
 	}
 
 	log.Println("+++ result")
