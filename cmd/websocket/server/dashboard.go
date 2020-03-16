@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/dns/metrics/collector"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"net/http"
+	"regexp"
 )
 
 type Buckets struct {
@@ -38,6 +40,24 @@ type DashDns struct {
 
 func NewDashDns() *DashDns {
 	return &DashDns{}
+}
+
+// dashboard - dhcp - subnet addresses assigned
+type DhcpAssignStat struct {
+	ID    json.Number `json:"id"`
+	Name  string      `json:"name"`
+	Total int         `json:"total"`
+	Used  int         `json:"used"`
+}
+
+type BaseJsonDhcpAssign struct {
+	Status  string           `json:"status"`
+	Message string           `json:"message"`
+	Data    []DhcpAssignStat `json:"data"`
+}
+
+func NewBaseJsonDhcpAssign() *BaseJsonDhcpAssign {
+	return &BaseJsonDhcpAssign{}
 }
 
 func GetDashDnsIps(url string) (string, error) {
@@ -199,10 +219,40 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("in DashDhcpAssign(), Form: ", r.Form)
 
 	//get servers maintained by kafka server
-	result := NewBaseJsonServer()
+	result := NewBaseJsonDhcpAssign()
 
 	result.Status = config.STATUS_SUCCCESS
 	result.Message = config.MSG_OK
+
+	assignMap := map[string]DhcpAssignStat{}
+	// todo: get subnet total-address and assigned address from kea statistics api
+	// define a temprary variable stores subnet id and total and used
+	curlRet := collector.GetKeaStatisticsAll()
+	maps := curlRet.Arguments
+	for k, v := range maps {
+		//log.Println("in lease statistics(), for loop, k: ", k)
+		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\S+)`)
+		out := rex.FindAllStringSubmatch(k, -1)
+
+		if len(out) > 0 {
+			for _, i := range out {
+				idx := i[1]
+				addrType := i[2]
+				log.Println("get kea all, idx: ", idx, ", addrType: ", addrType)
+				var stat = DhcpAssignStat{}
+
+				if addrType == "total-addresses" {
+					total := maps[k][0].([]interface{})[0]
+					stat.Total = int(collector.Decimal(total.(float64)))
+				} else if addrType == "assigned-addresses" {
+					stat.Used = len(v)
+				}
+				assignMap[idx] = stat
+				log.Println("get kea all stat: ", stat)
+				//log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
+			}
+		}
+	}
 
 	//get subnet name and id from dhcp config
 	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
@@ -211,9 +261,18 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("获取dhcp配置信息错误")
 	}
-	log.Println("subnetv4 config: ", conf.Arguments.Dhcp4.Subnet4)
 
-	// todo: get subnet total-address and assigned address from kea statistics api
+	//log.Println("subnetv4 config: ", s4)
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		log.Println("k: ", k, ", v: ", v)
+
+		var stat DhcpAssignStat
+		stat.ID = v.Id
+		stat.Name = v.Subnet
+		//stat.Total = assignMap[string(v.Id)].Total
+		//stat.Used = assignMap[string(v.Id)].Used
+		assignMap[string(v.Id)] = stat
+	}
 
 	log.Println("+++ result")
 	log.Println(result)

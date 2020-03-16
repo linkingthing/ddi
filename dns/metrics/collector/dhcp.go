@@ -60,11 +60,7 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	return nil
 }
 
-// dashboard -- dhcp -- packet statistics
-func (c *Metrics) GenerateDhcpLeasesStatistics() error {
-	//log.Println("+++ into GenerateDhcpPacketStatistics()")
-
-	//get packet statistics data, export it to prometheus
+func GetKeaStatisticsAll() *CurlKeaStatsAll {
 	//todo move ip:port into conf
 	url := "http://10.0.0.31:8000"
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
@@ -82,9 +78,19 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 	}
 
 	var curlRet CurlKeaStatsAll
-	leaseNum := 0
-	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
 
+	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
+	return &curlRet
+}
+
+// dashboard -- dhcp -- packet statistics
+func (c *Metrics) GenerateDhcpLeasesStatistics() error {
+	//log.Println("+++ into GenerateDhcpPacketStatistics()")
+
+	//get packet statistics data, export it to prometheus
+	curlRet := GetKeaStatisticsAll()
+
+	leaseNum := 0
 	maps := curlRet.Arguments
 	for k, v := range maps {
 
@@ -94,15 +100,11 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 		if len(out) > 0 {
 			log.Println("+++ out: ", out)
 			for _, i := range out {
-
 				//idx := i[1]
 				leaseNum += len(v)
-
 				log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
-
 		}
-
 	}
 
 	//maps := curlRet.Arguments.Pkt4Received

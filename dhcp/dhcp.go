@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	DhcpHost        = "10.0.0.55"
-	DhcpPort        = "8081"
+	DhcpHost        = "10.0.0.31"
+	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
 	Dhcp6ConfigFile = "kea-dhcp6.conf"
@@ -108,22 +108,22 @@ type ControlSocket struct {
 }
 
 type SubnetConfig struct {
-	Four4o6Interface   string `json:"4o6-interface"`
-	Four4o6InterfaceId string `json:"4o6-interface-id"`
-	Four4o6Subnet      string `json:"4o6-subnet"`
-	Authoritative      bool   `json:"authoritative"`
-	CalculateTeeTimes  bool   `json:"calculate-tee-times"`
-	//Id json.Number `json:"id"`
-	MatchClientId   bool          `json:"match-client-id"`
-	NextServer      string        `json:"next-server"`
-	OptionData      []Option      `json:"option-data"`
-	Pools           []Pool        `json:"pools"`
-	RebindTimer     json.Number   `json:"rebind-timer"`
-	Relay           SubnetRelay   `json:"relay"`
-	RenewTimer      json.Number   `json:"renew-timer"`
-	ReservationMode string        `json:"reservation-mode"`
-	Reservations    []Reservation `json:"reservations"`
-	Subnet          string        `json:"subnet"`
+	Four4o6Interface   string        `json:"4o6-interface"`
+	Four4o6InterfaceId string        `json:"4o6-interface-id"`
+	Four4o6Subnet      string        `json:"4o6-subnet"`
+	Authoritative      bool          `json:"authoritative"`
+	CalculateTeeTimes  bool          `json:"calculate-tee-times"`
+	Id                 json.Number   `json:"id"`
+	MatchClientId      bool          `json:"match-client-id"`
+	NextServer         string        `json:"next-server"`
+	OptionData         []Option      `json:"option-data"`
+	Pools              []Pool        `json:"pools"`
+	RebindTimer        json.Number   `json:"rebind-timer"`
+	Relay              SubnetRelay   `json:"relay"`
+	RenewTimer         json.Number   `json:"renew-timer"`
+	ReservationMode    string        `json:"reservation-mode"`
+	Reservations       []Reservation `json:"reservations"`
+	Subnet             string        `json:"subnet"`
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
