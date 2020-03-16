@@ -284,7 +284,8 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		stat.Total = stats[string(v.Id)]["total"]
 		stat.Used = stats[string(v.Id)]["used"]
 		stat.Free = stat.Total - stat.Used
-		stat.Usage, err = strconv.ParseFloat(fmt.Sprintf("%.2f", (stat.Used/stat.Total)), 64)
+		stat.Usage, err = strconv.ParseFloat(fmt.Sprintf("%.2f",
+			(float64(stat.Used)/float64(stat.Total)*100)), 64)
 		if err != nil {
 			log.Println("DHCP利用率计算错误 ", err)
 		}
