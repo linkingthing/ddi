@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strconv"
 )
 
 type Buckets struct {
@@ -257,7 +256,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			assignMap[idx] = stat
-			log.Println("get kea all stats: ", stats)
+			//log.Println("get kea all stats: ", stats)
 		}
 	}
 	log.Println("stats: ", stats)
@@ -271,7 +270,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//log.Println("subnetv4 config: ", s4)
-	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Println("k: ", k, ", v: ", v)
 
 		var stat DhcpAssignStat
