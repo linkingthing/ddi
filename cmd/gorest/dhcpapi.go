@@ -67,6 +67,7 @@ func main() {
 	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
 	mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)       //history
 	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns) //dns log info
+    mux.HandleFunc("/apis/linkingthing/dashboard/v1/dhcpassign", server.DashDhcpAssign) //dhcp addresses assign
 
 	log.Println("Starting v2 httpserver")
 	log.Fatal(http.ListenAndServe(":1234", mux))

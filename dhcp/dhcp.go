@@ -186,7 +186,7 @@ func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
 	return instance
 }
 
-func (handler *KEAv4Handler) getDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
+func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
 
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
@@ -309,7 +309,7 @@ func (handler *KEAv4Handler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 	if len(KeaDhcpv4Conf) == 0 {
 		log.Print("KeaDhcpv4Conf is nil")
-		err := handler.getDhcpv4Config(KEADHCPv4Service, conf)
+		err := handler.GetDhcpv4Config(KEADHCPv4Service, conf)
 		if err != nil {
 			log.Print(err)
 			return err

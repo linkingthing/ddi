@@ -192,6 +192,7 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
 		auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDns)
+        auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDhcpAssign)
 		auth.GET("/apis/linkingthing.com/example/v1/retcode", retCodeHandler)
 		auth.GET("/apis/linkingthing.com/example/v1/memhit", memHitHandler)
 	}
@@ -323,6 +324,9 @@ func nodeServers(c *gin.Context) {
 }
 func nodeDashDns(c *gin.Context) {
 	metric.GetDashDns(c.Writer, c.Request)
+}
+func nodeDashDhcpAssign(c *gin.Context) {
+    metric.GetDashDns(c.Writer, c.Request)
 }
 
 func getKafkaMsg() {

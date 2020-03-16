@@ -2,7 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"net/http"
 )
@@ -188,4 +191,36 @@ func GetDashDns(w http.ResponseWriter, r *http.Request) {
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))
+}
+
+func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseForm()
+	fmt.Println("in DashDhcpAssign(), Form: ", r.Form)
+
+	//get servers maintained by kafka server
+	result := NewBaseJsonServer()
+
+	result.Status = config.STATUS_SUCCCESS
+	result.Message = config.MSG_OK
+
+	//get subnet name and id from dhcp config
+	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
+	conf := dhcp.ParseDhcpv4Config{}
+	err := k.GetDhcpv4Config(dhcp.KEADHCPv4Service, &conf)
+	if err != nil {
+		log.Println("获取dhcp配置信息错误")
+	}
+	log.Println("subnetv4 config: ", conf.Arguments.Dhcp4.Subnet4)
+
+	// todo: get subnet total-address and assigned address from kea statistics api
+
+	log.Println("+++ result")
+	log.Println(result)
+	log.Println("--- result")
+
+	bytes, _ := json.Marshal(result)
+	//fmt.Fprint(w, string(bytes))
+	w.Write([]byte(bytes))
+
 }
