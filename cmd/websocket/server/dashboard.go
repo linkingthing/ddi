@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 
 type Buckets struct {
@@ -49,6 +50,8 @@ type DhcpAssignStat struct {
 	Addr  string      `json:"addr"`
 	Total int         `json:"total"`
 	Used  int         `json:"used"`
+	Free  int         `json:"free"`
+	Usage float64     `json:"usage"`
 }
 
 type BaseJsonDhcpAssign struct {
@@ -273,12 +276,18 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Println("k: ", k, ", v: ", v)
 
+		var err error
 		var stat DhcpAssignStat
 		stat.ID = v.Id
 		stat.Name = v.Subnet + ":" + string(v.Id)
 		stat.Addr = v.Subnet
 		stat.Total = stats[string(v.Id)]["total"]
 		stat.Used = stats[string(v.Id)]["used"]
+		stat.Free = stat.Total - stat.Used
+		stat.Usage, err = strconv.ParseFloat(fmt.Sprintf("%.2f", (stat.Used/stat.Total)), 64)
+		if err != nil {
+			log.Println("DHCP利用率计算错误 ", err)
+		}
 		//stat.Total = assignMap[string(v.Id)].Total
 		//stat.Used = assignMap[string(v.Id)].Used
 		assignMap[string(v.Id)] = stat
