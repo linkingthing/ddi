@@ -192,7 +192,7 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
 		auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDns)
-        auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDhcpAssign)
+        auth.GET("/apis/linkingthing.com/example/v1/dashdhpassign", nodeDashDhcpAssign)
 		auth.GET("/apis/linkingthing.com/example/v1/retcode", retCodeHandler)
 		auth.GET("/apis/linkingthing.com/example/v1/memhit", memHitHandler)
 	}
