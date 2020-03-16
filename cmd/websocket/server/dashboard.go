@@ -235,11 +235,12 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		out := rex.FindAllStringSubmatch(k, -1)
 
 		if len(out) > 0 {
+			var idx string
+			var stat = DhcpAssignStat{}
 			for _, i := range out {
-				idx := i[1]
+				idx = i[1]
 				addrType := i[2]
 				log.Println("get kea all, idx: ", idx, ", addrType: ", addrType)
-				var stat = DhcpAssignStat{}
 
 				if addrType == "total-addresses" {
 					total := maps[k][0].([]interface{})[0]
@@ -247,10 +248,10 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 				} else if addrType == "assigned-addresses" {
 					stat.Used = len(v)
 				}
-				assignMap[idx] = stat
-				log.Println("get kea all stat: ", stat)
 				//log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
+			assignMap[idx] = stat
+			log.Println("get kea all stat: ", stat)
 		}
 	}
 

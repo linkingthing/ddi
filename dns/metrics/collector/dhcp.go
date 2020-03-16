@@ -74,7 +74,7 @@ func GetKeaStatisticsAll() *CurlKeaStatsAll {
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {
 		log.Println("curl error: ", err)
-		return err
+		return nil
 	}
 
 	var curlRet CurlKeaStatsAll
