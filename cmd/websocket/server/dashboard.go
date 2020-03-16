@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 )
 
 type Buckets struct {
@@ -46,6 +47,7 @@ func NewDashDns() *DashDns {
 type DhcpAssignStat struct {
 	ID    json.Number `json:"id"`
 	Name  string      `json:"name"`
+	Addr  string      `json:"addr"`
 	Total int         `json:"total"`
 	Used  int         `json:"used"`
 }
@@ -229,7 +231,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	// define a temprary variable stores subnet id and total and used
 	curlRet := collector.GetKeaStatisticsAll()
 	maps := curlRet.Arguments
-	stats := map[string]map[string]int{}
+	stats := make(map[string]map[string]int)
 	for k, v := range maps {
 		//log.Println("in lease statistics(), for loop, k: ", k)
 		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.(\S+)`)
@@ -241,17 +243,18 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 			for _, i := range out {
 				idx = i[1]
 				addrType := i[2]
-				log.Println("get kea all, idx: ", idx, ", addrType: ", addrType)
+				//log.Println("get kea all, idx: ", idx, ", addrType: ", addrType)
+				if stats[idx] == nil {
+					stats[idx] = make(map[string]int)
+				}
 
 				if addrType == "total-addresses" {
 					total := maps[k][0].([]interface{})[0]
+					//log.Println("total: ", total)
 					stats[idx]["total"] = int((collector.Decimal(total.(float64))))
-
 				} else if addrType == "assigned-addresses" {
-
 					stats[idx]["used"] = len(v)
 				}
-				//log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
 			assignMap[idx] = stat
 			log.Println("get kea all stats: ", stats)
@@ -269,11 +272,12 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 
 	//log.Println("subnetv4 config: ", s4)
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Println("k: ", k, ", v: ", v)
+		//log.Println("k: ", k, ", v: ", v)
 
 		var stat DhcpAssignStat
 		stat.ID = v.Id
-		stat.Name = v.Subnet
+		stat.Name = v.Subnet + ":" + string(v.Id)
+		stat.Addr = v.Subnet
 		stat.Total = stats[string(v.Id)]["total"]
 		stat.Used = stats[string(v.Id)]["used"]
 		//stat.Total = assignMap[string(v.Id)].Total
@@ -282,9 +286,9 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		result.Data = append(result.Data, stat)
 	}
 
-	log.Println("+++ result")
-	log.Println(result)
-	log.Println("--- result")
+	//log.Println("+++ result")
+	//log.Println(result)
+	//log.Println("--- result")
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
