@@ -32,7 +32,7 @@ const (
 
 var dhcpv6Start bool = false
 
-func dhcpClient() {
+func Dhcpv6Client() {
 	conn, err := grpc.Dial(dhcp.Dhcpv6AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return
@@ -92,7 +92,7 @@ func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
 }
 
 func main() {
-	go dhcpClient()
+	go Dhcpv6Client()
 	s, err := server.NewDHCPv6GRPCServer(dhcp.KEADHCPv6Service, dhcp.DhcpConfigPath, dhcp.Dhcpv6AgentAddr)
 	if err != nil {
 		return

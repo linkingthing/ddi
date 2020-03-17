@@ -23,6 +23,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+    "github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
+    "github.com/linkingthing/ddi/dhcp/dhcprest"
 )
 
 var (
@@ -76,6 +78,8 @@ func main() {
 
 	utils.SetHostIPs() //set global vars from yaml conf
 
+
+
 	go getKafkaMsg()
 	go node.RegisterNode()
 	phyMetrics()
@@ -100,7 +104,19 @@ func main() {
 	schemas.Import(&version, myapi.RR{}, myapi.NewRRHandler(state))
 	schemas.Import(&version, myapi.Redirection{}, myapi.NewRedirectionHandler(state))
 	schemas.Import(&version, myapi.DNS64{}, myapi.NewDNS64Handler(state))
-	router := gin.Default()
+
+    // start of dhcp model
+    go dhcpv4agent.Dhcpv4Client()
+    dhcprest.PGDBConn = dhcprest.NewPGDB()
+    defer dhcprest.PGDBConn.Close()
+
+    dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
+    schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+    subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
+    schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+    // end of dhcp model
+
+    router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",
 			param.TimeStamp.Format(time.RFC3339),
