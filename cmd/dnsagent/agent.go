@@ -49,7 +49,7 @@ const (
 
 var (
 	kafkaServer     = "localhost:9092"
-	dnsTopic        = "dhcp"
+	dnsTopic        = "dns"
 	kafkaWriter     *kg.Writer
 	kafkaReader     *kg.Reader
 	address         = "localhost:8888"
