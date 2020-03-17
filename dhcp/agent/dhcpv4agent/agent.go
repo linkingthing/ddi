@@ -91,10 +91,6 @@ func Dhcpv4Client() {
 			return
 		}
 
-		l := "message at offset: " + strconv.FormatInt(message.Offset, 10) + " key: " + string(message.Key) +
-			" value: " + string(message.Value)
-		fmt.Print(l)
-
 		switch string(message.Key) {
 		case StartDHCPv4:
 			var target pb.StartDHCPv4Req
