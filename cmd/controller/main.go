@@ -347,7 +347,6 @@ func phyMetrics() {
 
 func retCodeHandler(c *gin.Context) {
 	client := &http.Client{}
-	//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
 	startTime := c.Query("start")
 	var numStart int64
 	var err error
@@ -374,7 +373,10 @@ func retCodeHandler(c *gin.Context) {
 		}
 	}
 	host := c.Query("node")
-	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?" + "query=dns_counter%7Bdata_type%3D~%22SERVFAIL%7CNXDOMAIN%7CNOERROR%7CREFUSED%22%2Cinstance%3D%22" + host + "%3A8001%22%2Cjob%3D%22dns_exporter%22%7D%20&start=" + startTime + "&end=" + endTime + "&step=" + strconv.Itoa(step)
+	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?" +
+	    "query=dns_counter%7Bdata_type%3D~%22SERVFAIL%7CNXDOMAIN%7CNOERROR%7CREFUSED%22%2Cinstance%3D%22" +
+	    host + "%3A8001%22%2Cjob%3D%22dns_exporter%22%7D%20&start=" + startTime + "&end=" + endTime +
+	    "&step=" + strconv.Itoa(step)
 	fmt.Println(url)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {
