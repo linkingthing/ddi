@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+    "github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 )
 
 var (
@@ -33,10 +34,16 @@ func main() {
 	//auth := dhcprest.NewAuth(dhcprest.NewPGDB().DB)
 	//schemas.Import(&version, dhcprest.AuthRest{}, dhcprest.NewAuthHandler(auth))
 
-	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
-	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
-	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
-	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+    // start of dhcp model
+    go dhcpv4agent.Dhcpv4Client()
+    dhcprest.PGDBConn = dhcprest.NewPGDB()
+    defer dhcprest.PGDBConn.Close()
+
+    dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
+    schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+    subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
+    schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+    // end of dhcp model
 
 	dhcpv6 := dhcprest.NewDhcpv6(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
