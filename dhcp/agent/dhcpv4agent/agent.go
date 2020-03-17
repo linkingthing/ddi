@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/ben-han-cn/cement/shell"
+	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
+	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
 	"log"
 	"os"
@@ -42,7 +44,6 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 	log.Print("into KeepDhcpv4Alive, return")
 	return
 
-	shell.shell()
 	for {
 		select {
 		case <-ticker.C:
