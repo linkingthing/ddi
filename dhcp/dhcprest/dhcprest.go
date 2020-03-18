@@ -30,10 +30,14 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
-	err := PGDBConn.CreateSubnetv4(s.db, subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
+	id, err := PGDBConn.CreateSubnetv4(s.db, subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
 	}
+
+	// set newly inserted id
+	subnetv4.ID = id
+	log.Println("newly inserted id: ", id)
 
 	return nil
 }

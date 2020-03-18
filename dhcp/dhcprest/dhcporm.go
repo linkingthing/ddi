@@ -91,7 +91,8 @@ func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.OrmSubnetv4 {
 	return &subnetv4
 }
 
-func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, validLifetime string) error {
+//return (new inserted id, error)
+func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, validLifetime string) (string, error) {
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -104,11 +105,11 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, val
 	query := db.Create(&s4)
 
 	if query.Error != nil {
-		return fmt.Errorf("create subnet error, subnet name: " + name)
+		return "", fmt.Errorf("create subnet error, subnet name: " + name)
 	}
 	var last dhcporm.OrmSubnetv4
-	query.Last(last)
-	log.Println("query.value: ", query.Value, ", id: ", id)
+	query.Last(&last)
+	log.Println("query.value: ", query.Value, ", id: ", last.ID)
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
@@ -119,11 +120,11 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, val
 
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
-	return nil
+	return strconv.Itoa(int(last.ID)), nil
 }
 
 func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, name string, validLifetime string) error {

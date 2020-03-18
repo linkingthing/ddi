@@ -35,9 +35,6 @@ func main() {
 
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
-	dhcprest.PGDBConn = dhcprest.NewPGDB()
-	defer dhcprest.PGDBConn.Close()
-
 	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
