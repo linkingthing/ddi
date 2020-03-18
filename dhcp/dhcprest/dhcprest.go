@@ -34,9 +34,13 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 	if err != nil {
 		return err
 	}
+	if id == "" {
+		return fmt.Errorf("添加子网失败")
+	}
 
 	// set newly inserted id
 	subnetv4.ID = id
+	subnetv4.SubnetId = id
 	log.Println("newly inserted id: ", id)
 
 	return nil
