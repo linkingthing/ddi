@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"github.com/linkingthing/ddi/dhcp"
+	"log"
 	//"github.com/linkingthing/ddi/dhcp/server"
+	"github.com/linkingthing/ddi/dhcp/server"
 	"github.com/linkingthing/ddi/utils"
-    "github.com/linkingthing/ddi/dhcp/server"
 )
 
 func main() {

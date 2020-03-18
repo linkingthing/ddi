@@ -2,7 +2,6 @@ package dhcpv4agent
 
 import (
 	"context"
-	"fmt"
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
@@ -11,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"os"
-	"strconv"
 	"time"
 )
 
