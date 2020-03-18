@@ -2,8 +2,12 @@ package dhcprest
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"github.com/linkingthing/ddi/pb"
 	"log"
 	"strconv"
 )
@@ -86,19 +90,33 @@ func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.OrmSubnetv4 {
 	return &subnetv4
 }
 
-func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
-	var subnet = dhcporm.OrmSubnetv4{
+func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, validLifetime string) error {
+	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
-		Subnet:        name,
+		Name:          name,
+		Subnet:        subnet,
+		SubnetId:      "0",
 		ValidLifetime: validLifetime,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
-	query := db.Create(&subnet)
+	query := db.Create(&s4)
 
 	if query.Error != nil {
 		return fmt.Errorf("create subnet error, subnet name: " + name)
 	}
+	log.Println("query.value: ", query.Value)
+
+	//send msg to kafka queue, which is read by dhcp server
+	req := pb.CreateSubnetv4Req{
+		Subnet: subnet,
+	}
+
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
 	return nil
 }

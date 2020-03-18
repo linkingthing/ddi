@@ -325,6 +325,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 }
 
 func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
+	log.Println("into dhcp--dhcp.go CreateSubnetv4()")
 	var conf ParseDhcpv4Config
 	if err := handler.getv4Config(&conf); err != nil {
 		return err

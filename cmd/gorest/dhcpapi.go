@@ -11,7 +11,6 @@ import (
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"github.com/linkingthing/ddi/utils"
 )
@@ -35,7 +34,7 @@ func main() {
 	//schemas.Import(&version, dhcprest.AuthRest{}, dhcprest.NewAuthHandler(auth))
 
 	// start of dhcp model
-	go dhcpv4agent.Dhcpv4Client()
+	//go dhcpv4agent.Dhcpv4Client()
 	dhcprest.PGDBConn = dhcprest.NewPGDB()
 	defer dhcprest.PGDBConn.Close()
 

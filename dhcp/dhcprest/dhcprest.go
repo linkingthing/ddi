@@ -20,7 +20,7 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 //}
 
 func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into CreateSubnetv4")
+	log.Println("into CreateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -39,7 +39,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 }
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into UpdateSubnetv4")
+	log.Println("into UpdateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -102,6 +102,7 @@ func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
 }
 
 func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
+	log.Println("into GetSubnetv4s()")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

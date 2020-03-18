@@ -61,6 +61,7 @@ type RestPool struct {
 type Subnetv4 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifeTime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
