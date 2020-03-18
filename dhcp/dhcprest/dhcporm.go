@@ -62,13 +62,15 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
 	}
 
 	for k, v := range subnetv4s {
+
+		subnetv4s[k].SubnetId = strconv.Itoa(int(v.ID))
 		rsv := []*dhcporm.Reservation{}
 		if err := db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
 		}
 		subnetv4s[k].Reservations = rsv
 	}
-	log.Println("in Subnetv4List(), subnetv4s: ", subnetv4s)
+
 	return subnetv4s
 }
 

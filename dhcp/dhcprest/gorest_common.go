@@ -166,6 +166,7 @@ func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *Subnetv4 
 	v4 := &Subnetv4{}
 	v4.SetID(strconv.Itoa(int(v.ID)))
 	v4.Subnet = v.Subnet
+	v4.SubnetId = strconv.Itoa(int(v.ID))
 	v4.ValidLifetime = v.ValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	return v4
