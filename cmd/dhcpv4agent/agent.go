@@ -16,6 +16,7 @@ import (
     "os"
     kg "github.com/segmentio/kafka-go"
     "google.golang.org/grpc"
+    "github.com/ben-han-cn/cement/shell"
 )
 const (
     StartDHCPv4               = "StartDHCPv4"
