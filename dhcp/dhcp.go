@@ -223,7 +223,7 @@ type curlRet struct {
 
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
-	log.Print("into  set dhcp config")
+	log.Print("dhcp/dhcp.go, into setDhcpv4Config()")
 	//fmt.Printf("conf: %+v\n", conf)
 
 	handler.mu.Lock()
@@ -325,7 +325,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 }
 
 func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
-	log.Println("into dhcp--dhcp.go CreateSubnetv4()")
+	log.Println("into dhcp/dhcp.go CreateSubnetv4()")
 	var conf ParseDhcpv4Config
 	if err := handler.getv4Config(&conf); err != nil {
 		return err
