@@ -25,7 +25,7 @@ func init() {
 }
 
 func SendDhcpCmd(data []byte, cmd string) error {
-	log.Println("into SendDhcpCmd(), data: ", data, ", cmd: ", cmd)
+	log.Println("into SendDhcpCmd(), cmd: ", cmd)
 
 	postData := kg.Message{
 		Key:   []byte(cmd),

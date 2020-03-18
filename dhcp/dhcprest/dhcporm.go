@@ -68,11 +68,12 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
 		}
 		subnetv4s[k].Reservations = rsv
 	}
+	log.Println("in Subnetv4List(), subnetv4s: ", subnetv4s)
 	return subnetv4s
 }
 
 func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv4 {
-	log.Println("in GetSubnetv4ByName, name: ", name)
+	log.Println("in GetSubnetv4ByName, subnet name: ", name)
 
 	var subnetv4 dhcporm.OrmSubnetv4
 	db.Where(&dhcporm.OrmSubnetv4{Subnet: name}).Find(&subnetv4)
@@ -105,12 +106,16 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, val
 	if query.Error != nil {
 		return fmt.Errorf("create subnet error, subnet name: " + name)
 	}
-	log.Println("query.value: ", query.Value)
+	var last dhcporm.OrmSubnetv4
+	query.Last(last)
+	log.Println("query.value: ", query.Value, ", id: ", id)
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
 		Subnet: subnet,
+		Id:     strconv.Itoa(int(last.ID)),
 	}
+	log.Println("pb.CreateSubnetv4Req req: ", req)
 
 	data, err := proto.Marshal(&req)
 	if err != nil {

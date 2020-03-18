@@ -135,7 +135,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 	log.Println("into dhcprest.go Create")
 
 	subnetv4 := ctx.Resource.(*Subnetv4)
-	subnetv4.SetID(subnetv4.Subnet)
+	//subnetv4.SetID(subnetv4.Subnet)
 	subnetv4.SetCreationTimestamp(time.Now())
 	if err := h.subnetv4s.CreateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
