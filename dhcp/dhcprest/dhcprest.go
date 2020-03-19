@@ -81,6 +81,7 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	log.Println("dhcp/dhcprest DeleteSubnetv4() subnetv4 id: ", subnetv4.ID)
 	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
@@ -101,6 +102,7 @@ func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
 }
 
 func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
+	log.Println("dhcp/dhcprest getSubnetv4ById(), id: ", id)
 	v := PGDBConn.GetSubnetv4ById(s.db, id)
 	if v.ID == 0 {
 		return nil
@@ -181,6 +183,7 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 }
 
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	log.Println("into dhcprest.go Delete")
 	subnetv4 := ctx.Resource.(*Subnetv4)
 
 	if err := h.subnetv4s.DeleteSubnetv4(subnetv4); err != nil {
