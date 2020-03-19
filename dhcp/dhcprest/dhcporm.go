@@ -132,12 +132,18 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, val
 
 func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, ormS4 dhcporm.OrmSubnetv4) error {
 
-	log.Println("into dhcporm, UpdateSubnetv4, name: ", ormS4.Name)
+	log.Println("into dhcporm, UpdateSubnetv4, Subnet: ", ormS4.Subnet)
 	//search subnet, if not exist, return error
 	subnet := handler.getSubnetv4BySubnet(db, ormS4.Subnet)
 	if subnet == nil {
 		return fmt.Errorf(ormS4.Subnet + " not exists, return")
 	}
+
+	log.Println("subnet.id: ", subnet.ID)
+	log.Println("subnet.name: ", subnet.Name)
+	log.Println("subnet.subnet: ", subnet.Subnet)
+	log.Println("subnet.subnet_id: ", subnet.SubnetId)
+	log.Println("subnet.ValidLifetime: ", subnet.ValidLifetime)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}

@@ -62,8 +62,14 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	dbS4.Subnet = subnetv4.Subnet
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
+	id, err := strconv.Atoi(subnetv4.ID)
+	if err != nil {
+		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
+		return err
+	}
+	dbS4.ID = uint(id)
 
-	err := PGDBConn.UpdateSubnetv4(s.db, dbS4)
+	err = PGDBConn.UpdateSubnetv4(s.db, dbS4)
 	if err != nil {
 		return err
 	}
