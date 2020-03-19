@@ -7,6 +7,7 @@ import (
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	"log"
 	"strconv"
 )
@@ -25,7 +26,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4ByName(subnetv4.Subnet); c != nil {
+	if c := s.getSubnetv4BySubnet(subnetv4.Subnet); c != nil {
 		errStr := "subnet " + subnetv4.Subnet + " already exist"
 		return fmt.Errorf(errStr)
 	}
@@ -47,16 +48,22 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 }
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
-	log.Println("into UpdateSubnetv4")
+	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4ByName(subnetv4.Subnet); c == nil {
+	if c := s.getSubnetv4BySubnet(subnetv4.Subnet); c == nil {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
 
-	err := PGDBConn.UpdateSubnetv4(s.db, subnetv4.Subnet, subnetv4.ValidLifetime)
+	dbS4 := dhcporm.OrmSubnetv4{}
+	dbS4.SubnetId = subnetv4.ID
+	dbS4.Subnet = subnetv4.Subnet
+	dbS4.Name = subnetv4.Name
+	dbS4.ValidLifetime = subnetv4.ValidLifetime
+
+	err := PGDBConn.UpdateSubnetv4(s.db, dbS4)
 	if err != nil {
 		return err
 	}
@@ -97,10 +104,10 @@ func (s *Dhcpv4) getSubnetv4(id string) *Subnetv4 {
 	return v4
 }
 
-func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
-	log.Println("In dhcprest getSubnetv4ByName, name: ", name)
+func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *Subnetv4 {
+	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.GetSubnetv4ByName(s.db, name)
+	v := PGDBConn.getSubnetv4BySubnet(s.db, subnet)
 	if v.ID == 0 {
 		return nil
 	}

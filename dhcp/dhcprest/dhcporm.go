@@ -74,16 +74,18 @@ func (handler *PGDB) Subnetv4List(db *gorm.DB) []dhcporm.OrmSubnetv4 {
 	return subnetv4s
 }
 
-func (handler *PGDB) GetSubnetv4ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv4 {
-	log.Println("in GetSubnetv4ByName, subnet name: ", name)
+func (handler *PGDB) getSubnetv4BySubnet(db *gorm.DB, subnet string) *dhcporm.OrmSubnetv4 {
+	log.Println("in getSubnetv4BySubnet, subnet name: ", subnet)
 
 	var subnetv4 dhcporm.OrmSubnetv4
-	db.Where(&dhcporm.OrmSubnetv4{Subnet: name}).Find(&subnetv4)
+	db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
 
+	log.Println("in getSubnetv4BySubnet, subnetv4: ", subnetv4)
 	return &subnetv4
 }
 
 func (handler *PGDB) GetSubnetv4(db *gorm.DB, id string) *dhcporm.OrmSubnetv4 {
+	log.Println("in dhcp/dhcprest/GetSubnetv4, id: ", id)
 	dbId := ConvertStringToUint(id)
 
 	subnetv4 := dhcporm.OrmSubnetv4{}
@@ -129,16 +131,16 @@ func (handler *PGDB) CreateSubnetv4(db *gorm.DB, name string, subnet string, val
 	return strconv.Itoa(int(last.ID)), nil
 }
 
-func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, name string, validLifetime string) error {
+func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, ormS4 dhcporm.OrmSubnetv4) error {
 
-	log.Println("into dhcporm, UpdateSubnetv4, name: ", name)
+	log.Println("into dhcporm, UpdateSubnetv4, name: ", ormS4.Name)
 	//search subnet, if not exist, return error
-	subnet := handler.GetSubnetv4ByName(db, name)
+	subnet := handler.GetSubnetv4(db, ormS4.Subnet)
 	if subnet == nil {
-		return fmt.Errorf(name + " not exists, return")
+		return fmt.Errorf(ormS4.Name + " not exists, return")
 	}
 
-	db.Model(&subnet).Update("valid_life_time", validLifetime)
+	db.Model(&subnet).Update(ormS4)
 
 	return nil
 }
