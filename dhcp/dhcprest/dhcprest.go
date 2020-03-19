@@ -53,8 +53,8 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4BySubnet(subnetv4.Subnet); c == nil {
-		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
+	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
+		return fmt.Errorf("subnet %s not exist", subnetv4.ID)
 	}
 
 	dbS4 := dhcporm.OrmSubnetv4{}
@@ -75,7 +75,7 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4(subnetv4.ID); c == nil {
+	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
 
@@ -87,15 +87,15 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	return nil
 }
 
-func (s *Dhcpv4) GetSubnetv4(id string) *Subnetv4 {
+func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	return s.getSubnetv4(id)
+	return s.getSubnetv4ById(id)
 }
 
-func (s *Dhcpv4) getSubnetv4(id string) *Subnetv4 {
-	v := PGDBConn.GetSubnetv4(s.db, id)
+func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
+	v := PGDBConn.GetSubnetv4ById(s.db, id)
 	if v.ID == 0 {
 		return nil
 	}
@@ -188,7 +188,7 @@ func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
 
 func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
-	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
+	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID())
 }
 
 func (r *ReservationHandler) List(ctx *resource.Context) interface{} {
