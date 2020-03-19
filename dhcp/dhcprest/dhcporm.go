@@ -154,13 +154,19 @@ func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, ormS4 dhcporm.OrmSubnetv4) erro
 }
 func (handler *PGDB) DeleteSubnetv4(db *gorm.DB, id string) error {
 	log.Println("into dhcprest DeleteSubnetv4, id ", id)
-	dbId := ConvertStringToUint(id)
+	//dbId := ConvertStringToUint(id)
 
-	query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
-
-	if query.Error != nil {
-		return fmt.Errorf("delete subnet error, subnet id: " + id)
+	s4 := handler.GetSubnetv4ById(db, id)
+	err := db.Unscoped().Delete(s4).Error
+	if err != nil {
+		log.Println("删除子网出错: ", err)
+		return err
 	}
+	//query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
+	//aCLDB.ID = uint(dbId)
+	//if err := tx.Unscoped().Delete(&aCLDB).Error; err != nil {
+	//    return err
+	//}
 
 	return nil
 }
