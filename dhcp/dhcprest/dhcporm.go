@@ -80,7 +80,6 @@ func (handler *PGDB) getSubnetv4BySubnet(db *gorm.DB, subnet string) *dhcporm.Or
 	var subnetv4 dhcporm.OrmSubnetv4
 	db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
 
-	//log.Println("in getSubnetv4BySubnet, subnetv4: ", subnetv4)
 	return &subnetv4
 }
 
@@ -139,6 +138,9 @@ func (handler *PGDB) UpdateSubnetv4(db *gorm.DB, ormS4 dhcporm.OrmSubnetv4) erro
 	if subnet == nil {
 		return fmt.Errorf(ormS4.Subnet + " not exists, return")
 	}
+	//if subnet.SubnetId == "" {
+	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
+	//}
 
 	db.Model(&subnet).Update(ormS4)
 

@@ -167,6 +167,10 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	}
 
+	if subnetv4.SubnetId == "" {
+		subnetv4.SubnetId = subnetv4.ID
+	}
+
 	return subnetv4, nil
 }
 
