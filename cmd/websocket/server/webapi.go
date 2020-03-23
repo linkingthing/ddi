@@ -358,24 +358,26 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err = utils.Cmd(command)
 
-		//log.Println("+++ in GetPromRange(), out")
-		//log.Println(out)
-		//log.Println("--- out")
+		log.Println("+++ in GetPromRange(), out, command: ", command)
+		log.Println(out)
+		log.Println("--- out")
 		if err != nil {
 			return nil, err
 		}
 
 	}
-	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" || promType == "dhcppacket" {
+	if promType == "qps" || promType == "querys" || promType == "memhit" || promType == "recurquerys" ||
+		promType == "dhcppacket" || promType == "dhcplease" || promType == "dhcpusage" {
 		//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
 		client := &http.Client{}
 		var url string
 
-		if promType == "qps" || promType == "dhcppacket" || promType == "dhcplease" {
+		if promType == "qps" || promType == "dhcppacket" || promType == "dhcplease" || promType == "dhcpusage" {
 			url = "http://" + promWebHost + "/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22" + promType + "%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
 		} else if promType == "querys" || promType == "memhit" || promType == "recurquerys" {
 			url = "http://" + promWebHost + "/api/v1/query_range?query=dns_counter%7Bdata_type%3D%22" + promType + "%22%2Cinstance%3D%22" + host + "%3A8001%22%7D&start=" + strconv.Itoa(start) + "&end=" + strconv.Itoa(end) + "&step=" + strconv.Itoa(step)
 		}
+		log.Println("url: ", url)
 		reqest, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, err
@@ -392,7 +394,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 
 	}
 
-	log.Println("GetPromRange(), out: ", out)
+	//log.Println("GetPromRange(), out: ", out)
 	d := json.NewDecoder(bytes.NewReader([]byte(out)))
 	d.UseNumber()
 	err = d.Decode(&rsp)
@@ -411,7 +413,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			if err != nil {
 				log.Println("json marshal err: ", err)
 			}
-			//log.Println("string retJson: ", string(retJson))
+			log.Println("string retJson: ", string(retJson))
 			tmp := string(retJson)
 
 			return &tmp, nil

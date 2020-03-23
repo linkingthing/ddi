@@ -5,21 +5,43 @@ import (
 
 	"log"
 
-	"github.com/segmentio/kafka-go"
+	kg "github.com/segmentio/kafka-go"
 )
 
 const (
 	KafkaServer = "localhost:9092"
-	DhcpTopic   = "test"
-	Dhcpv4Topic = "testv4"
-	Dhcpv6Topic = "testv6"
+	Dhcpv4Topic = "dhcpv4"
+	Dhcpv6Topic = "dhcpv6"
 )
 
-func produce(msg kafka.Message) {
-	//log.Printf("into produce\n")
-	w := kafka.NewWriter(kafka.WriterConfig{
+var DhcpkafkaWriter *kg.Writer
+
+func init() {
+	DhcpkafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{KafkaServer},
-		Topic:   Dhcpv6Topic,
+		Topic:   Dhcpv4Topic,
+	})
+
+}
+
+func SendDhcpCmd(data []byte, cmd string) error {
+	log.Println("into SendDhcpCmd(), cmd: ", cmd)
+
+	postData := kg.Message{
+		Key:   []byte(cmd),
+		Value: data,
+	}
+	if err := DhcpkafkaWriter.WriteMessages(context.Background(), postData); err != nil {
+		return err
+	}
+	return nil
+}
+
+func produce(msg kg.Message) {
+	//log.Printf("into produce\n")
+	w := kg.NewWriter(kg.WriterConfig{
+		Brokers: []string{KafkaServer},
+		Topic:   Dhcpv4Topic,
 	})
 
 	w.WriteMessages(context.Background(), msg)
@@ -27,10 +49,10 @@ func produce(msg kafka.Message) {
 
 func consumer() {
 
-	r := kafka.NewReader(kafka.ReaderConfig{
+	r := kg.NewReader(kg.ReaderConfig{
 
 		Brokers:     []string{KafkaServer},
-		Topic:       Dhcpv6Topic,
+		Topic:       Dhcpv4Topic,
 		StartOffset: 34,
 	})
 

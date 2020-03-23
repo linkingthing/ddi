@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/ben-han-cn/gorest"
 	"github.com/ben-han-cn/gorest/adaptor"
 	"github.com/ben-han-cn/gorest/resource"
@@ -10,9 +13,6 @@ import (
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"github.com/linkingthing/ddi/utils"
-	"log"
-	"net/http"
-	"time"
 )
 
 var (
@@ -33,13 +33,16 @@ func main() {
 	//auth := dhcprest.NewAuth(dhcprest.NewPGDB().DB)
 	//schemas.Import(&version, dhcprest.AuthRest{}, dhcprest.NewAuthHandler(auth))
 
+	// start of dhcp model
+	//go dhcpv4agent.Dhcpv4Client()
 	dhcpv4 := dhcprest.NewDhcpv4()
 	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+	// end of dhcp model
 
-	dhcpv6 := dhcprest.NewDhcpv6(dhcprest.NewPGDB().DB)
-	schemas.Import(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
+	//dhcpv6 := dhcprest.NewDhcpv6(dhcprest.NewPGDB().DB)
+	//schemas.Import(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
 
 	router := gin.Default()
 
@@ -59,22 +62,22 @@ func main() {
 
 	// web socket server, consume kafka topic prom and check ping/pong msg
 	port := utils.WebSocket_Port
+
 	go server.SocketServer(port)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", &server.MyHandler{})
-	mux.HandleFunc("/apis/linkingthing/node/v1/servers", server.List_server)
-	mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
-	mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)       //history
-	mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns) //dns log info
+	//mux := http.NewServeMux()
+	//mux.Handle("/", &server.MyHandler{})
+	//mux.HandleFunc("/apis/linkingthing/node/v1/servers", server.List_server)
+	//mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
+	//mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)              //history
+	//mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns)        //dns log info
+	//mux.HandleFunc("/apis/linkingthing/dashboard/v1/dhcpassign", server.DashDhcpAssign) //dhcp addresses assign
 
-	log.Println("Starting v2 httpserver")
-	log.Fatal(http.ListenAndServe(":1234", mux))
-	log.Println("end of main, should not come here")
-
+	log.Println("Starting dhcp gorest controller")
+	//log.Fatal(http.ListenAndServe(":1234", mux))
+	//log.Println("end of main, should not come here")
+	router.Run("0.0.0.0:1235")
 	//router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
-	//
-	//router.Run("0.0.0.0:1234")
 
 }
 

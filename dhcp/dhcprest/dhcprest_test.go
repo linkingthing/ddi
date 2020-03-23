@@ -58,7 +58,7 @@ func TestUpdateSubnetv4(t *testing.T) {
 func TestCreateReservation(t *testing.T) {
 	log.Print("---begin to create reservation")
 
-	subnetv4 := dhcpv4.getSubnetv4ByName("test01")
+	subnetv4 := dhcpv4.getSubnetv4BySubnet("test01")
 
 	var rsv RestReservation
 	rsv.ID = subnetv4.GetID()
@@ -74,7 +74,7 @@ func TestCreateReservation(t *testing.T) {
 func TestUpdateReservation(t *testing.T) {
 	log.Print("---begin to update reservation")
 
-	subnetv4 := dhcpv4.getSubnetv4ByName("test01")
+	subnetv4 := dhcpv4.getSubnetv4BySubnet("test01")
 
 	var err error
 	rsvs := rsvController.GetReservations(subnetv4.ID)
@@ -97,7 +97,7 @@ func TestUpdateReservation(t *testing.T) {
 func TestDeleteReservation(t *testing.T) {
 	log.Print("---begin to delete reservation")
 
-	subnetv4 := dhcpv4.getSubnetv4ByName("test01")
+	subnetv4 := dhcpv4.getSubnetv4BySubnet("test01")
 
 	var err error
 	rsvs := rsvController.GetReservations(subnetv4.ID)
@@ -115,7 +115,7 @@ func TestDeleteSubnetv4(t *testing.T) {
 	log.Print("---begin to delete Subnetv4")
 	var subnetv4 Subnetv4
 	subnetv4.Subnet = "test01"
-	subnetv4.ID = dhcpv4.getSubnetv4ByName(subnetv4.Subnet).ID
+	subnetv4.ID = dhcpv4.getSubnetv4BySubnet(subnetv4.Subnet).ID
 	err := dhcpv4.DeleteSubnetv4(&subnetv4)
 
 	unittest.Assert(t, err == nil, "subnetv4 delete error")

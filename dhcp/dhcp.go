@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	DhcpHost        = "10.0.0.55"
-	DhcpPort        = "8081"
+	DhcpHost        = "10.0.0.31"
+	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
 	Dhcp6ConfigFile = "kea-dhcp6.conf"
@@ -30,8 +30,8 @@ const (
 	KeaDhcp4PidFile = "kea-dhcp4.kea-dhcp4.pid"
 	KeaDhcp6PidFile = "kea-dhcp6.kea-dhcp6.pid"
 
-	Dhcpv4AgentAddr = "10.0.0.55:8888"
-	Dhcpv6AgentAddr = "10.0.0.55:8889"
+	Dhcpv4AgentAddr = "10.0.0.55:8898"
+	Dhcpv6AgentAddr = "10.0.0.55:8899"
 
 	IntfStartDHCPv4 = 1 + iota
 	IntfStopDHCPv4
@@ -114,22 +114,22 @@ type ControlSocket struct {
 }
 
 type SubnetConfig struct {
-	Four4o6Interface   string `json:"4o6-interface"`
-	Four4o6InterfaceId string `json:"4o6-interface-id"`
-	Four4o6Subnet      string `json:"4o6-subnet"`
-	Authoritative      bool   `json:"authoritative"`
-	CalculateTeeTimes  bool   `json:"calculate-tee-times"`
-	//Id json.Number `json:"id"`
-	MatchClientId   bool          `json:"match-client-id"`
-	NextServer      string        `json:"next-server"`
-	OptionData      []Option      `json:"option-data"`
-	Pools           []Pool        `json:"pools"`
-	RebindTimer     json.Number   `json:"rebind-timer"`
-	Relay           SubnetRelay   `json:"relay"`
-	RenewTimer      json.Number   `json:"renew-timer"`
-	ReservationMode string        `json:"reservation-mode"`
-	Reservations    []Reservation `json:"reservations"`
-	Subnet          string        `json:"subnet"`
+	Four4o6Interface   string        `json:"4o6-interface"`
+	Four4o6InterfaceId string        `json:"4o6-interface-id"`
+	Four4o6Subnet      string        `json:"4o6-subnet"`
+	Authoritative      bool          `json:"authoritative"`
+	CalculateTeeTimes  bool          `json:"calculate-tee-times"`
+	Id                 json.Number   `json:"id"`
+	MatchClientId      bool          `json:"match-client-id"`
+	NextServer         string        `json:"next-server"`
+	OptionData         []Option      `json:"option-data"`
+	Pools              []Pool        `json:"pools"`
+	RebindTimer        json.Number   `json:"rebind-timer"`
+	Relay              SubnetRelay   `json:"relay"`
+	RenewTimer         json.Number   `json:"renew-timer"`
+	ReservationMode    string        `json:"reservation-mode"`
+	Reservations       []Reservation `json:"reservations"`
+	Subnet             string        `json:"subnet"`
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
@@ -197,7 +197,7 @@ func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
 	return instance
 }
 
-func (handler *KEAv4Handler) getDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
+func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Config) error {
 
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
@@ -234,7 +234,7 @@ type curlRet struct {
 
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
-	log.Print("into  set dhcp config")
+	log.Print("dhcp/dhcp.go, into setDhcpv4Config()")
 	//fmt.Printf("conf: %+v\n", conf)
 
 	handler.mu.Lock()
@@ -320,7 +320,7 @@ func (handler *KEAv4Handler) StopDHCPv4(req pb.StopDHCPv4Req) error {
 func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 	if len(KeaDhcpv4Conf) == 0 {
 		log.Print("KeaDhcpv4Conf is nil")
-		err := handler.getDhcpv4Config(KEADHCPv4Service, conf)
+		err := handler.GetDhcpv4Config(KEADHCPv4Service, conf)
 		if err != nil {
 			log.Print(err)
 			return err
@@ -336,6 +336,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 }
 
 func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
+	log.Println("into dhcp/dhcp.go CreateSubnetv4()")
 	var conf ParseDhcpv4Config
 	if err := handler.getv4Config(&conf); err != nil {
 		return err

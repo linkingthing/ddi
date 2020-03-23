@@ -7,6 +7,7 @@ import (
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	"log"
 	"strconv"
 )
@@ -20,35 +21,55 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 //}
 
 func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into CreateSubnetv4")
+	log.Println("into CreateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4ByName(subnetv4.Subnet); c != nil {
+	if c := s.getSubnetv4BySubnet(subnetv4.Subnet); c != nil {
 		errStr := "subnet " + subnetv4.Subnet + " already exist"
 		return fmt.Errorf(errStr)
 	}
 
-	err := PGDBConn.CreateSubnetv4(subnetv4.Subnet, subnetv4.ValidLifetime)
+	id, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
 	}
+	if id == "" {
+		return fmt.Errorf("添加子网失败")
+	}
+
+	// set newly inserted id
+	subnetv4.ID = id
+	subnetv4.SubnetId = id
+	log.Println("newly inserted id: ", id)
 
 	return nil
 }
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
-	fmt.Println("into UpdateSubnetv4")
+	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4ByName(subnetv4.Subnet); c == nil {
-		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
+	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
+		return fmt.Errorf("subnet %s not exist", subnetv4.ID)
 	}
 
-	err := PGDBConn.UpdateSubnetv4(subnetv4.Subnet, subnetv4.ValidLifetime)
+	dbS4 := dhcporm.OrmSubnetv4{}
+	dbS4.SubnetId = subnetv4.ID
+	dbS4.Subnet = subnetv4.Subnet
+	dbS4.Name = subnetv4.Name
+	dbS4.ValidLifetime = subnetv4.ValidLifetime
+	id, err := strconv.Atoi(subnetv4.ID)
+	if err != nil {
+		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
+		return err
+	}
+	dbS4.ID = uint(id)
+
+	err = PGDBConn.UpdateSubnetv4(dbS4)
 	if err != nil {
 		return err
 	}
@@ -60,7 +81,7 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4(subnetv4.ID); c == nil {
+	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
 
@@ -72,15 +93,15 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	return nil
 }
 
-func (s *Dhcpv4) GetSubnetv4(id string) *Subnetv4 {
+func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	return s.getSubnetv4(id)
+	return s.getSubnetv4ById(id)
 }
 
-func (s *Dhcpv4) getSubnetv4(id string) *Subnetv4 {
-	v := PGDBConn.GetSubnetv4(id)
+func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
+	v := PGDBConn.GetSubnetv4ById(id)
 	if v.ID == 0 {
 		return nil
 	}
@@ -89,10 +110,10 @@ func (s *Dhcpv4) getSubnetv4(id string) *Subnetv4 {
 	return v4
 }
 
-func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
-	log.Println("In dhcprest getSubnetv4ByName, name: ", name)
+func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *Subnetv4 {
+	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.GetSubnetv4ByName(name)
+	v := PGDBConn.getSubnetv4BySubnet(subnet)
 	if v.ID == 0 {
 		return nil
 	}
@@ -102,6 +123,7 @@ func (s *Dhcpv4) getSubnetv4ByName(name string) *Subnetv4 {
 }
 
 func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
+	log.Println("into GetSubnetv4s()")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -134,7 +156,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 	log.Println("into dhcprest.go Create")
 
 	subnetv4 := ctx.Resource.(*Subnetv4)
-	subnetv4.SetID(subnetv4.Subnet)
+	//subnetv4.SetID(subnetv4.Subnet)
 	subnetv4.SetCreationTimestamp(time.Now())
 	if err := h.subnetv4s.CreateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
@@ -149,6 +171,10 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 	subnetv4 := ctx.Resource.(*Subnetv4)
 	if err := h.subnetv4s.UpdateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	if subnetv4.SubnetId == "" {
+		subnetv4.SubnetId = subnetv4.ID
 	}
 
 	return subnetv4, nil
@@ -172,7 +198,7 @@ func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
 
 func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
-	return h.subnetv4s.GetSubnetv4(ctx.Resource.GetID())
+	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID())
 }
 
 func (r *ReservationHandler) List(ctx *resource.Context) interface{} {

@@ -2,10 +2,14 @@ package dhcprest
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
 	"github.com/linkingthing/ddi/ipam"
+	"github.com/linkingthing/ddi/pb"
 	"log"
 	"strconv"
 	"strings"
@@ -21,17 +25,18 @@ type PGDB struct {
 	db *gorm.DB
 }
 
-func init() {
+/*func init() {
 	PGDBConn = NewPGDB()
-}
+}*/
 
-func NewPGDB() *PGDB {
+func NewPGDB(db *gorm.DB) *PGDB {
 	p := &PGDB{}
-	var err error
-	p.db, err = gorm.Open("postgres", CRDBAddr)
+	//var err error
+	/*p.db, err = gorm.Open("postgres", CRDBAddr)
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
+	p.db = db
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv4{})
 	p.db.AutoMigrate(&dhcporm.Reservation{})
@@ -69,55 +74,84 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 		}
 		subnetv4s[k].Reservations = rsv
 	}
+
 	return subnetv4s
 }
 
-func (handler *PGDB) GetSubnetv4ByName(name string) *dhcporm.OrmSubnetv4 {
-	log.Println("in GetSubnetv4ByName, name: ", name)
+func (handler *PGDB) getSubnetv4BySubnet(subnet string) *dhcporm.OrmSubnetv4 {
+	log.Println("in getSubnetv4BySubnet, subnet: ", subnet)
 
 	var subnetv4 dhcporm.OrmSubnetv4
-	db.Where(&dhcporm.OrmSubnetv4{Subnet: name}).Find(&subnetv4)
+	handler.db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
 
 	return &subnetv4
 }
 
-func (handler *PGDB) GetSubnetv4(id string) *dhcporm.OrmSubnetv4 {
+func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
+	log.Println("in dhcp/dhcprest/GetSubnetv4ById, id: ", id)
 	dbId := ConvertStringToUint(id)
 
 	subnetv4 := dhcporm.OrmSubnetv4{}
 	subnetv4.ID = dbId
-	db.Preload("Reservations").First(&subnetv4)
+	handler.db.Preload("Reservations").First(&subnetv4)
 
 	return &subnetv4
 }
 
-func (handler *PGDB) CreateSubnetv4(name string, validLifetime string) error {
-	var subnet = dhcporm.OrmSubnetv4{
+//return (new inserted id, error)
+func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (string, error) {
+	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
-		Subnet:        name,
+		Name:          name,
+		Subnet:        subnet,
+		SubnetId:      "0",
 		ValidLifetime: validLifetime,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
-	query := handler.db.Create(&subnet)
+	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
-		return fmt.Errorf("create subnet error, subnet name: " + name)
+		return "", fmt.Errorf("create subnet error, subnet name: " + name)
 	}
+	var last dhcporm.OrmSubnetv4
+	query.Last(&last)
+	log.Println("query.value: ", query.Value, ", id: ", last.ID)
 
-	return nil
+	//send msg to kafka queue, which is read by dhcp server
+	req := pb.CreateSubnetv4Req{
+		Subnet: subnet,
+		Id:     strconv.Itoa(int(last.ID)),
+	}
+	log.Println("pb.CreateSubnetv4Req req: ", req)
+
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return "", err
+	}
+	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
+
+	return strconv.Itoa(int(last.ID)), nil
 }
 
-func (handler *PGDB) UpdateSubnetv4(name string, validLifetime string) error {
-
-	log.Println("into dhcporm, UpdateSubnetv4, name: ", name)
+func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
+	log.Println("into dhcporm, UpdateSubnetv4, Subnet: ", ormS4.Subnet)
 	//search subnet, if not exist, return error
-	subnet := handler.GetSubnetv4ByName(name)
+	subnet := handler.getSubnetv4BySubnet(ormS4.Subnet)
 	if subnet == nil {
-		return fmt.Errorf(name + " not exists, return")
+		return fmt.Errorf(ormS4.Subnet + " not exists, return")
 	}
 
-	db.Model(&subnet).Update("valid_life_time", validLifetime)
+	log.Println("subnet.id: ", subnet.ID)
+	log.Println("subnet.name: ", subnet.Name)
+	log.Println("subnet.subnet: ", subnet.Subnet)
+	log.Println("subnet.subnet_id: ", subnet.SubnetId)
+	log.Println("subnet.ValidLifetime: ", subnet.ValidLifetime)
+	//if subnet.SubnetId == "" {
+	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
+	//}
+
+	db.Model(&subnet).Update(ormS4)
 
 	return nil
 }

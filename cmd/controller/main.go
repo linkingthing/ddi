@@ -24,6 +24,8 @@ import (
 	"net/http"
 	//"net/url"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
+	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"strconv"
 	"strings"
 	"sync"
@@ -115,6 +117,18 @@ func main() {
 	schemas.Import(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
 	scanAddressState := ipamapi.NewScanAddressState()
 	schemas.Import(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
+
+	// start of dhcp model
+	go dhcpv4agent.Dhcpv4Client()
+	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
+	defer dhcprest.PGDBConn.Close()
+
+	dhcpv4 := dhcprest.NewDhcpv4(db)
+	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	subnetv4s := dhcprest.NewSubnetv4s(db)
+	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+	// end of dhcp model
+
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",
@@ -207,6 +221,7 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/hists", nodeQueryRange)
 		auth.GET("/apis/linkingthing.com/example/v1/servers", nodeServers)
 		auth.GET("/apis/linkingthing.com/example/v1/dashdns", nodeDashDns)
+		auth.GET("/apis/linkingthing.com/example/v1/dashdhcpassign", nodeDashDhcpAssign)
 		auth.GET("/apis/linkingthing.com/example/v1/retcode", retCodeHandler)
 		auth.GET("/apis/linkingthing.com/example/v1/memhit", memHitHandler)
 	}
@@ -339,6 +354,9 @@ func nodeServers(c *gin.Context) {
 func nodeDashDns(c *gin.Context) {
 	metric.GetDashDns(c.Writer, c.Request)
 }
+func nodeDashDhcpAssign(c *gin.Context) {
+	metric.GetDashDns(c.Writer, c.Request)
+}
 
 func getKafkaMsg() {
 	log.Println("into getKafkaMsg")
@@ -352,7 +370,6 @@ func getKafkaMsg() {
 
 func retCodeHandler(c *gin.Context) {
 	client := &http.Client{}
-	//url := "http://10.0.0.24:9090/api/v1/query_range?query=dns_gauge%7Bdata_type%3D%22qps%22%2Cinstance%3D%2210.0.0.19%3A8001%22%7D&start=1582636272.047&end=1582639872.047&step=14"
 	startTime := c.Query("start")
 	var numStart int64
 	var err error
@@ -379,7 +396,10 @@ func retCodeHandler(c *gin.Context) {
 		}
 	}
 	host := c.Query("node")
-	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?" + "query=dns_counter%7Bdata_type%3D~%22SERVFAIL%7CNXDOMAIN%7CNOERROR%7CREFUSED%22%2Cinstance%3D%22" + host + "%3A8001%22%2Cjob%3D%22dns_exporter%22%7D%20&start=" + startTime + "&end=" + endTime + "&step=" + strconv.Itoa(step)
+	url := "http://" + utils.PromServer + ":" + utils.PromPort + "/api/v1/query_range?" +
+		"query=dns_counter%7Bdata_type%3D~%22SERVFAIL%7CNXDOMAIN%7CNOERROR%7CREFUSED%22%2Cinstance%3D%22" +
+		host + "%3A8001%22%2Cjob%3D%22dns_exporter%22%7D%20&start=" + startTime + "&end=" + endTime +
+		"&step=" + strconv.Itoa(step)
 	fmt.Println(url)
 	reqest, err := http.NewRequest("GET", url, nil)
 	if err != nil {

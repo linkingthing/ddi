@@ -46,6 +46,7 @@ func (service *DHCPv4Service) StopDHCPv4(content context.Context, req *pb.StopDH
 }
 
 func (service *DHCPv4Service) CreateSubnetv4(context context.Context, req *pb.CreateSubnetv4Req) (*pb.OperResult, error) {
+	log.Println("into dhcp/server/service.go CreateSubnetv4()")
 	err := service.handler.CreateSubnetv4(*req)
 	if err != nil {
 		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err

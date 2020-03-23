@@ -10,7 +10,8 @@ import (
 
 var (
 	kafkaServer = "localhost:9092"
-	dhcpTopic   = "test"
+	dhcpv4Topic = "dhcpv4"
+	dhcpv6Topic = "dhcpv6"
 	kafkaWriter *kg.Writer
 	kafkaReader *kg.Reader
 	cmd         = ""
@@ -34,12 +35,12 @@ const (
 func init() {
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{kafkaServer},
-		Topic:   dhcpTopic,
+		Topic:   dhcpv4Topic,
 	})
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{kafkaServer},
-		Topic:   dhcpTopic,
+		Topic:   dhcpv4Topic,
 	})
 	flag.StringVar(&cmd, "cmd", "", STARTDNS+"\n"+
 		STOPDNS+"\n"+

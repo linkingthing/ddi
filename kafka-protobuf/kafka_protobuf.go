@@ -17,7 +17,7 @@ import (
 func produce(msg kafka.Message) {
 	w := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Topic:   dhcp.Dhcpv4Topic,
 	})
 
 	w.WriteMessages(context.Background(), msg)
@@ -27,7 +27,7 @@ func consumer() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.DhcpTopic,
+		Topic:   dhcp.Dhcpv4Topic,
 	})
 	defer r.Close()
 
