@@ -14,7 +14,7 @@ import (
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
-	"github.com/linkingthing/ddi/dhcp/server"
+	"github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
 	kg "github.com/segmentio/kafka-go"

@@ -105,7 +105,7 @@ func isTransportOver(data string) (over bool) {
 
 func test() {
 
-	utils.SetHostIPs() //set global vars from yaml conf
+	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
 
 	port := utils.WebSocket_Port
 	go SocketServer(port)

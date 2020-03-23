@@ -12,13 +12,18 @@ import (
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
 	metric "github.com/linkingthing/ddi/cmd/websocket/server"
-	myapi "github.com/linkingthing/ddi/dns/restfulapi"
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+	"github.com/linkingthing/ddi/ipam"
+	ipamapi "github.com/linkingthing/ddi/ipam/restfulapi"
+	//"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
+	//"google.golang.org/grpc"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	//"net/url"
+	"github.com/jinzhu/gorm"
 	"strconv"
 	"strings"
 	"sync"
@@ -73,33 +78,43 @@ type User struct {
 }
 
 func main() {
+	const addr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
+	var err error
+	var db *gorm.DB
+	db, err = gorm.Open("postgres", addr)
+	if err != nil {
+		panic(err)
+	}
 
-	utils.SetHostIPs() //set global vars from yaml conf
-
+	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
 	go getKafkaMsg()
-	go node.RegisterNode()
-	phyMetrics()
-	myapi.DBCon = myapi.NewDBController()
-	defer myapi.DBCon.Close()
+	go node.RegisterNode("/etc/vanguard/vanguard.conf", "controller")
+	go physicalMetrics.NodeExporter()
+	dnsapi.DBCon = dnsapi.NewDBController(db)
+	defer dnsapi.DBCon.Close()
 	schemas := schema.NewSchemaManager()
-	aCLsState := myapi.NewACLsState()
-	forwardState := myapi.NewForwardState()
-	dnsState := myapi.NewDefaultDNS64State()
-	blackHoleState := myapi.NewIPBlackHoleState()
-	conState := myapi.NewRecursiveConcurrentState()
-	sortListsState := myapi.NewSortListsState()
-	schemas.Import(&version, myapi.ACL{}, myapi.NewACLHandler(aCLsState))
-	schemas.Import(&version, myapi.Forward{}, myapi.NewForwardHandler(forwardState))
-	schemas.Import(&version, myapi.DefaultDNS64{}, myapi.NewDefaultDNS64Handler(dnsState))
-	schemas.Import(&version, myapi.IPBlackHole{}, myapi.NewIPBlackHoleHandler(blackHoleState))
-	schemas.Import(&version, myapi.RecursiveConcurrent{}, myapi.NewRecursiveConcurrentHandler(conState))
-	schemas.Import(&version, myapi.SortList{}, myapi.NewSortListHandler(sortListsState))
-	state := myapi.NewViewsState()
-	schemas.Import(&version, myapi.View{}, myapi.NewViewHandler(state))
-	schemas.Import(&version, myapi.Zone{}, myapi.NewZoneHandler(state))
-	schemas.Import(&version, myapi.RR{}, myapi.NewRRHandler(state))
-	schemas.Import(&version, myapi.Redirection{}, myapi.NewRedirectionHandler(state))
-	schemas.Import(&version, myapi.DNS64{}, myapi.NewDNS64Handler(state))
+	aCLsState := dnsapi.NewACLsState()
+	forwardState := dnsapi.NewForwardState()
+	dnsState := dnsapi.NewDefaultDNS64State()
+	blackHoleState := dnsapi.NewIPBlackHoleState()
+	conState := dnsapi.NewRecursiveConcurrentState()
+	sortListsState := dnsapi.NewSortListsState()
+	schemas.Import(&version, dnsapi.ACL{}, dnsapi.NewACLHandler(aCLsState))
+	schemas.Import(&version, dnsapi.Forward{}, dnsapi.NewForwardHandler(forwardState))
+	schemas.Import(&version, dnsapi.DefaultDNS64{}, dnsapi.NewDefaultDNS64Handler(dnsState))
+	schemas.Import(&version, dnsapi.IPBlackHole{}, dnsapi.NewIPBlackHoleHandler(blackHoleState))
+	schemas.Import(&version, dnsapi.RecursiveConcurrent{}, dnsapi.NewRecursiveConcurrentHandler(conState))
+	schemas.Import(&version, dnsapi.SortList{}, dnsapi.NewSortListHandler(sortListsState))
+	state := dnsapi.NewViewsState()
+	schemas.Import(&version, dnsapi.View{}, dnsapi.NewViewHandler(state))
+	schemas.Import(&version, dnsapi.Zone{}, dnsapi.NewZoneHandler(state))
+	schemas.Import(&version, dnsapi.RR{}, dnsapi.NewRRHandler(state))
+	schemas.Import(&version, dnsapi.Redirection{}, dnsapi.NewRedirectionHandler(state))
+	schemas.Import(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
+	devidedAddressState := ipamapi.NewDividedAddressState()
+	schemas.Import(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
+	scanAddressState := ipamapi.NewScanAddressState()
+	schemas.Import(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 		return fmt.Sprintf("[%s] client:%s \"%s %s\" %s %d %s %s\n",
@@ -113,7 +128,7 @@ func main() {
 			param.Request.UserAgent(),
 		)
 	}))
-	err := gocaptcha.ReadFonts("fonts", ".ttf")
+	err = gocaptcha.ReadFonts("fonts", ".ttf")
 	router.GET("/apis/linkingthing.com/example/v1", Index)
 	router.GET("/apis/linkingthing.com/example/v1/getcheckimage.jpeg", Get)
 	// the jwt middleware
@@ -143,7 +158,7 @@ func main() {
 				return "", jwt.ErrMissingLoginValues
 			}
 			userID := loginVals.Username
-			pwd, err := myapi.DBCon.GetUserPWD(userID)
+			pwd, err := dnsapi.DBCon.GetUserPWD(userID)
 			if err != nil {
 				return nil, err
 			}
@@ -305,7 +320,7 @@ func ChangePWD(c *gin.Context) {
 		c.String(200, "username or password value format is not correct!")
 		return
 	}
-	if err := myapi.DBCon.UpdatePWD(loginVals.Username, loginVals.Password); err != nil {
+	if err := dnsapi.DBCon.UpdatePWD(loginVals.Username, loginVals.Password); err != nil {
 		c.String(200, "change password value fail!")
 		return
 	}
@@ -332,12 +347,6 @@ func getKafkaMsg() {
 		utils.ConsumerProm()
 		time.Sleep(checkDuration)
 		//time.Sleep(20 * time.Second)
-	}
-}
-
-func phyMetrics() {
-	if false {
-		go physicalMetrics.NodeExporter()
 	}
 }
 

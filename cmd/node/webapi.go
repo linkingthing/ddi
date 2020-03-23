@@ -11,18 +11,17 @@ import (
 	"time"
 )
 
-func RegisterNode() {
+func RegisterNode(confPath string, role string) {
 	//v1
 
-	utils.SetHostIPs() //set global vars from yaml conf
+	//utils.SetHostIPs(confPath) //set global vars from yaml conf
 
 	var conf *config.VanguardConf
-	conf = config.GetConfig()
+	conf = config.GetConfig(confPath)
 	log.Println("in agent.go, localhost ip: ", conf.Localhost.IP)
 
 	hostname := conf.Localhost.Hostname
 	hostIP := conf.Localhost.IP
-	hostRole := conf.Localhost.Role
 	promHostIP := conf.Server.Prometheus.IP
 	promHostPort := conf.Server.Prometheus.Port
 	//send kafka msg to topic prom
@@ -31,7 +30,7 @@ func RegisterNode() {
 		PromHost: promHostIP,
 		PromPort: promHostPort,
 		IP:       hostIP,
-		Role:     hostRole,
+		Role:     role,
 		State:    1, // 1 online 0 offline
 		OnTime:   time.Now().Unix(),
 		ParentIP: conf.Localhost.ParentIP,

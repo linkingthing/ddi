@@ -92,7 +92,7 @@ func ConsumerProm() {
 			}
 			//put Role struct into OnlinePromHosts map
 			Role.OnTime = time.Now().Unix()
-			OnlinePromHosts[Role.IP] = Role
+			OnlinePromHosts[Role.IP+Role.Role] = Role
 
 			//log.Println("+++ OnlinePromHosts")
 			//log.Println(OnlinePromHosts)

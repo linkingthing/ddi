@@ -33,7 +33,7 @@ func main() {
 	//auth := dhcprest.NewAuth(dhcprest.NewPGDB().DB)
 	//schemas.Import(&version, dhcprest.AuthRest{}, dhcprest.NewAuthHandler(auth))
 
-	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
+	dhcpv4 := dhcprest.NewDhcpv4()
 	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))

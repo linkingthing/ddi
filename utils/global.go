@@ -15,5 +15,5 @@ var (
 
 	KeaServer = "10.0.0.31" //host ip on which kea is running
 	KeaPort   = 8000        //host port on which kea is running
-
+	NodeRole  = "controller"
 )

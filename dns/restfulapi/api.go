@@ -36,7 +36,6 @@ type View struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string         `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	Priority              int            `json:"priority" rest:"required=true,min=1,max=100"`
-	IsUsed                int            `json:"isused" rest:"required=true,min=0,max=2"`
 	ACLIDs                []string       `json:"aclids"`
 	Zones                 []*Zone        `json:"-"`
 	ACLs                  []*ACL         `json:"acls"`
@@ -51,7 +50,6 @@ type View struct {
 type Zone struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string  `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	IsUsed                int     `json:"isused" rest:"required=true,min=0,max=2"`
 	rRs                   []*RR   `json:"-"`
 	forwards              Forward `json:"-"`
 	RRSize                int     `json:"rrsize"`
@@ -70,7 +68,6 @@ type RR struct {
 	DataType              string `json:"type" rest:"required=true,minLen=1,maxLen=20"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=39"`
-	IsUsed                int    `json:"isused" rest:"required=true,min=0,max=2"`
 }
 
 func (z Zone) CreateAction(name string) *resource.Action {
@@ -104,7 +101,7 @@ type Redirection struct {
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	DataType              string `json:"datatype" rest:"required=true,options=A|AAAA|CNAME"`
 	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpz|redirect"`
-	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=39"`
+	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=40"`
 }
 
 type DefaultDNS64 struct {

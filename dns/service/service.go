@@ -16,7 +16,7 @@ type DNSService struct {
 	handler *dns.BindHandler
 }
 
-func newDNSService(dnsConfPath string, agentPath string) *DNSService {
+func NewDNSService(dnsConfPath string, agentPath string) *DNSService {
 	return &DNSService{dns.NewBindHandler(dnsConfPath, agentPath)}
 }
 

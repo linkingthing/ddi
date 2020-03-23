@@ -50,14 +50,9 @@ type DBController struct {
 	aesKey []byte
 }
 
-func NewDBController() *DBController {
+func NewDBController(db *gorm.DB) *DBController {
 	one := &DBController{}
-	const addr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
-	var err error
-	one.db, err = gorm.Open("postgres", addr)
-	if err != nil {
-		panic(err)
-	}
+	one.db = db
 	tx := one.db.Begin()
 	defer tx.Rollback()
 	if err := tx.AutoMigrate(&tb.View{}).Error; err != nil {
@@ -125,7 +120,6 @@ func NewDBController() *DBController {
 	any.ID = 1
 	if err := tx.Find(&any).Error; err != nil {
 		any.Name = "any"
-		any.IsUsed = 1
 		if err := tx.Create(&any).Error; err != nil {
 			panic(err)
 		}
@@ -134,7 +128,6 @@ func NewDBController() *DBController {
 	none.ID = 2
 	if err := tx.Find(&none).Error; err != nil {
 		none.Name = "none"
-		none.IsUsed = 1
 		if err := tx.Create(&none).Error; err != nil {
 			panic(err)
 		}
@@ -148,7 +141,6 @@ func NewDBController() *DBController {
 	if err := tx.Find(&viewDefault).Error; err != nil {
 		viewDefault.Name = "default"
 		viewDefault.Priority = len(many) + 1
-		viewDefault.IsUsed = 1
 		viewDefault.ACLs = append(viewDefault.ACLs, any)
 		if err := tx.Create(&viewDefault).Error; err != nil {
 			panic(err)
@@ -160,10 +152,6 @@ func NewDBController() *DBController {
 func (controller *DBController) Close() {
 	controller.db.Close()
 }
-
-/*func init() {
-	DBCon = NewDBController()
-}*/
 
 func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
 	//create new data in the database
@@ -370,7 +358,6 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 		return tb.View{}, err
 	}
 	one.Priority = view.Priority
-	one.IsUsed = view.IsUsed
 	if view.Priority > len(allView) {
 		one.Priority = len(allView)
 	} else if view.Priority < 0 {
@@ -606,7 +593,6 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	view.SetID(id)
 	view.Name = a.Name
 	view.Priority = a.Priority
-	view.IsUsed = a.IsUsed
 	view.Type = "view"
 	view.SetCreationTimestamp(a.CreatedAt)
 	var acls []tb.ACL
@@ -842,7 +828,6 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 	one.DataType = rr.DataType
 	one.TTL = rr.TTL
 	one.Value = rr.Value
-	one.IsUsed = rr.IsUsed
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Create(&one).Error; err != nil {
@@ -942,7 +927,6 @@ func (controller *DBController) GetRR(id string, zoneID string, viewID string) (
 	rr.Value = dbRR.Value
 	rr.Type = "rr"
 	rr.SetCreationTimestamp(dbRR.CreatedAt)
-	rr.IsUsed = dbRR.IsUsed
 	return &rr, nil
 }
 
@@ -958,7 +942,6 @@ func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) e
 	one.DataType = rr.DataType
 	one.TTL = rr.TTL
 	one.Value = rr.Value
-	one.IsUsed = rr.IsUsed
 	var id int
 	if id, err = strconv.Atoi(zoneID); err != nil {
 		return err
@@ -1014,7 +997,6 @@ func (controller *DBController) GetRRs(zoneID string, viewID string) ([]*RR, err
 		one.TTL = dbRR.TTL
 		one.Value = dbRR.Value
 		one.SetCreationTimestamp(dbRR.CreatedAt)
-		one.IsUsed = dbRR.IsUsed
 		rrs = append(rrs, one)
 	}
 	defer tx.Rollback()

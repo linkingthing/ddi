@@ -55,7 +55,8 @@ type RestReservation struct {
 type RestPool struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	OptionData            []RestOption `json:"option-data"`
-	Pool                  string       `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	BeginAddress          string       `json:"begin address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	EndAddress            string       `json:"end address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 }
 
 type Subnetv4 struct {
@@ -127,7 +128,7 @@ func NewPoolHandler(s *Subnetv4s) *PoolHandler {
 }
 
 //tools func
-func ConvertReservationsFromOrmToRest(rs []*dhcporm.Reservation) []*RestReservation {
+func ConvertReservationsFromOrmToRest(rs []dhcporm.Reservation) []*RestReservation {
 
 	var restRs []*RestReservation
 	for _, v := range rs {
@@ -150,7 +151,8 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 	var restPs []*RestPool
 	for _, v := range ps {
 		restP := RestPool{
-			Pool: v.Pool,
+			BeginAddress: v.BeginAddress,
+			EndAddress:   v.EndAddress,
 		}
 		restP.ID = strconv.Itoa(int(v.ID))
 		restPs = append(restPs, &restP)
@@ -207,13 +209,13 @@ func ConvertStringToUint(s string) uint {
 }
 
 func (r *ReservationHandler) GetReservations(subnetId string) []*RestReservation {
-	list := PGDBConn.OrmReservationList(r.db, subnetId)
+	list := PGDBConn.OrmReservationList(subnetId)
 	rsv := ConvertReservationsFromOrmToRest(list)
 
 	return rsv
 }
 func (r *ReservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id string) *RestReservation {
-	orm := PGDBConn.OrmGetReservation(r.db, subnetId, rsv_id)
+	orm := PGDBConn.OrmGetReservation(subnetId, rsv_id)
 	rsv := r.convertSubnetv4ReservationFromOrmToRest(orm)
 
 	return rsv
