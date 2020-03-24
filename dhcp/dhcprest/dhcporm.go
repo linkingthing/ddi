@@ -2,6 +2,10 @@ package dhcprest
 
 import (
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp"
@@ -10,9 +14,6 @@ import (
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
-	"log"
-	"strconv"
-	"strings"
 )
 
 const Dhcpv4Ver string = "4"
@@ -158,11 +159,10 @@ func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 func (handler *PGDB) DeleteSubnetv4(id string) error {
 	log.Println("into dhcprest DeleteSubnetv4, id ", id)
 
-	dbId := ConvertStringToUint(id)
+	//dbId := ConvertStringToUint(id)
+	//query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
-
-	s4 := handler.GetSubnetv4ById(db, id)
+	s4 := handler.GetSubnetv4ById(id)
 	err := db.Unscoped().Delete(s4).Error
 	if err != nil {
 		log.Println("删除子网出错: ", err)

@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/appleboy/gin-jwt/v2"
+
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/ben-han-cn/gorest"
 	"github.com/ben-han-cn/gorest/adaptor"
 	"github.com/ben-han-cn/gorest/resource"
@@ -15,6 +16,8 @@ import (
 	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/ipam"
 	ipamapi "github.com/linkingthing/ddi/ipam/restfulapi"
+	"github.com/linkingthing/ddi/utils/config"
+
 	//"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
 	//"google.golang.org/grpc"
@@ -22,14 +25,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
 	//"net/url"
-	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
-	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
+	"github.com/linkingthing/ddi/dhcp/dhcprest"
 )
 
 var (
@@ -80,15 +85,14 @@ type User struct {
 }
 
 func main() {
-	const addr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
 	var err error
 	var db *gorm.DB
-	db, err = gorm.Open("postgres", addr)
+	db, err = gorm.Open("postgres", utils.DBAddr)
 	if err != nil {
 		panic(err)
 	}
 
-	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 	go getKafkaMsg()
 	go node.RegisterNode("/etc/vanguard/vanguard.conf", "controller")
 	go physicalMetrics.NodeExporter()

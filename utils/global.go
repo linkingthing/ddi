@@ -13,6 +13,8 @@ var (
 	EsPort   = "9200"      //elasticsearch port
 	EsIndex  = "dns_log"   //elasticsearch index name
 
+	DBAddr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
+
 	KeaServer = "10.0.0.31" //host ip on which kea is running
 	KeaPort   = 8000        //host port on which kea is running
 	NodeRole  = "controller"

@@ -3,8 +3,11 @@ package dhcprest
 import (
 	"testing"
 
-	"github.com/ben-han-cn/cement/unittest"
 	"log"
+
+	"github.com/ben-han-cn/cement/unittest"
+	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/utils"
 )
 
 var (
@@ -14,11 +17,17 @@ var (
 )
 
 func init() {
-	PGDBConn = NewPGDB()
-	defer PGDBConn.Close()
-	dhcpv4 = NewDhcpv4(NewPGDB().DB)
+	//var db *gorm.DB
+	db, err := gorm.Open("postgres", utils.DBAddr)
+	if err != nil {
+		panic(err)
+	}
 
-	subnetv4s = NewSubnetv4s(NewPGDB().DB)
+	PGDBConn = NewPGDB(db)
+	defer PGDBConn.Close()
+	dhcpv4 = NewDhcpv4(db)
+
+	subnetv4s = NewSubnetv4s(db)
 
 	rsvController = NewReservationHandler(subnetv4s)
 }
