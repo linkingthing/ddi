@@ -3,6 +3,8 @@ package restfulapi
 import (
 	"context"
 
+	"log"
+
 	"github.com/linkingthing/ddi/utils"
 	kg "github.com/segmentio/kafka-go"
 )
@@ -18,6 +20,7 @@ var (
 )
 
 func init() {
+	log.Println("kafkaserverprom: ", utils.KafkaServerProm)
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{utils.KafkaServerProm},
 		Topic:   dnsTopic,

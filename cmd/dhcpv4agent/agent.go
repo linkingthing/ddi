@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -43,6 +44,8 @@ const (
 )
 
 var dhcpv4Start bool = false
+var KafkaOffsetFileDhcpv4 = "/tmp/kafka-offset-dhcpv4.txt" // store kafka offset num into this file
+var KafkaOffsetDhcpv4 int64 = 0
 
 func dhcpClient() {
 
@@ -58,6 +61,18 @@ func dhcpClient() {
 		Topic:   dhcp.Dhcpv4Topic,
 		//StartOffset: 95,
 	})
+	var KafkaOffsetDhcpv4 int64
+	size, err := ioutil.ReadFile(KafkaOffsetFileDhcpv4)
+	if err == nil {
+		offset, err2 := strconv.Atoi(string(size))
+		if err2 != nil {
+			log.Println(err2)
+		}
+		KafkaOffsetDhcpv4 = int64(offset)
+		kafkaReader.SetOffset(KafkaOffsetDhcpv4)
+	}
+	log.Println("kafka Offset: ", KafkaOffsetDhcpv4)
+
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)
 	quit := make(chan int)
@@ -72,6 +87,16 @@ func dhcpClient() {
 			" value: " + string(message.Value)
 		fmt.Print(l)
 
+		//store curOffset into KafkaOffsetFile
+		curOffset := kafkaReader.Stats().Offset
+		if curOffset > KafkaOffsetDhcpv4 {
+			KafkaOffsetDhcpv4 = curOffset
+			byteOffset := []byte(strconv.Itoa(int(curOffset)))
+			err = ioutil.WriteFile(KafkaOffsetFileDhcpv4, byteOffset, 0644)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		switch string(message.Key) {
 		case StartDHCPv4:
 			var target pb.StartDHCPv4Req
