@@ -5,27 +5,26 @@ import (
 
 	"log"
 
+	"github.com/linkingthing/ddi/utils"
 	kg "github.com/segmentio/kafka-go"
 )
 
-const (
-	KafkaServer = "localhost:9092"
+var (
+	KafkaServer = utils.KafkaServerProm
 	Dhcpv4Topic = "dhcpv4"
 	Dhcpv6Topic = "dhcpv6"
 )
 
-var DhcpkafkaWriter *kg.Writer
+func SendDhcpCmd(data []byte, cmd string) error {
+	log.Println("into SendDhcpCmd(), cmd: ", cmd)
 
-func init() {
+	//KafkaServer = utils.KafkaServerProm
+	log.Println("after kafkaServer: ", KafkaServer)
+	var DhcpkafkaWriter *kg.Writer
 	DhcpkafkaWriter = kg.NewWriter(kg.WriterConfig{
 		Brokers: []string{KafkaServer},
 		Topic:   Dhcpv4Topic,
 	})
-
-}
-
-func SendDhcpCmd(data []byte, cmd string) error {
-	log.Println("into SendDhcpCmd(), cmd: ", cmd)
 
 	postData := kg.Message{
 		Key:   []byte(cmd),

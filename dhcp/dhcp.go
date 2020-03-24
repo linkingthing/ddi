@@ -32,8 +32,8 @@ const (
 	KeaDhcp4PidFile = "kea-dhcp4.kea-dhcp4.pid"
 	KeaDhcp6PidFile = "kea-dhcp6.kea-dhcp6.pid"
 
-	Dhcpv4AgentAddr = "10.0.0.55:8898"
-	Dhcpv6AgentAddr = "10.0.0.55:8899"
+	Dhcpv4AgentAddr = "localhost:8898"
+	Dhcpv6AgentAddr = "localhost:8899"
 
 	IntfStartDHCPv4 = 1 + iota
 	IntfStopDHCPv4
