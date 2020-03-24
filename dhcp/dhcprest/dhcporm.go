@@ -100,7 +100,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 }
 
 //return (new inserted id, error)
-func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (string, error) {
+func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -113,7 +113,7 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
-		return "", fmt.Errorf("create subnet error, subnet name: " + name)
+		return s4, fmt.Errorf("create subnet error, subnet name: " + name)
 	}
 	var last dhcporm.OrmSubnetv4
 	query.Last(&last)
@@ -128,17 +128,20 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return "", err
+		return last, err
 	}
 	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
-	return strconv.Itoa(int(last.ID)), nil
+	return last, nil
 }
 
 func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 	log.Println("into dhcporm, UpdateSubnetv4, Subnet: ", ormS4.Subnet)
+
+	sv4Id := strconv.Itoa(int(ormS4.ID))
 	//search subnet, if not exist, return error
-	subnet := handler.getSubnetv4BySubnet(ormS4.Subnet)
+	//subnet := handler.getSubnetv4BySubnet(ormS4.Subnet)
+	subnet := handler.GetSubnetv4ById(sv4Id)
 	if subnet == nil {
 		return fmt.Errorf(ormS4.Subnet + " not exists, return")
 	}

@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"log"
+	"strconv"
+
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
-	"log"
-	"strconv"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -31,18 +32,19 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
-	id, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
+	s4, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
 	}
-	if id == "" {
+	if s4.Subnet == "" {
 		return fmt.Errorf("添加子网失败")
 	}
 
 	// set newly inserted id
-	subnetv4.ID = id
-	subnetv4.SubnetId = id
-	log.Println("newly inserted id: ", id)
+	subnetv4.ID = strconv.Itoa(int(s4.ID))
+	subnetv4.SubnetId = strconv.Itoa(int(s4.ID))
+	subnetv4.SetCreationTimestamp(s4.CreatedAt)
+	log.Println("newly inserted id: ", s4.ID)
 
 	return nil
 }
