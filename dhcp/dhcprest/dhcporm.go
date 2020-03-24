@@ -183,13 +183,39 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 
 	//dbId := ConvertStringToUint(id)
 	//query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
+	var ormS4 dhcporm.OrmSubnetv4
 
-	s4 := handler.GetSubnetv4ById(id)
-	err := db.Unscoped().Delete(s4).Error
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormS4, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4 with ID %s, %w", id, err)
+	}
+	num, err := strconv.Atoi(id)
 	if err != nil {
-		log.Println("删除子网出错: ", err)
 		return err
 	}
+	ormS4.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormS4).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4Req{Id: id}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := restfulapi.SendCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+		return err
+	}
+	tx.Commit()
+
+	//s4 := handler.GetSubnetv4ById(id)
+	//err := db.Unscoped().Delete(s4).Error
+	//if err != nil {
+	//	log.Println("删除子网出错: ", err)
+	//	return err
+	//}
 	//query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
 	//aCLDB.ID = uint(dbId)
 	//if err := tx.Unscoped().Delete(&aCLDB).Error; err != nil {
