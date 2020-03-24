@@ -136,28 +136,32 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	return last, nil
 }
 
-func (handler *PGDB) OrmUpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
-	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", ormS4.Subnet)
+func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
+	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", subnetv4.Subnet)
 
-	sv4Id := strconv.Itoa(int(ormS4.ID))
-	//search subnet, if not exist, return error
-	//subnet := handler.getSubnetv4BySubnet(ormS4.Subnet)
-	subnet := handler.GetSubnetv4ById(sv4Id)
-	if subnet == nil {
-		return fmt.Errorf(ormS4.Subnet + " not exists, return")
+	dbS4 := dhcporm.OrmSubnetv4{}
+	dbS4.SubnetId = subnetv4.ID
+	dbS4.Subnet = subnetv4.Subnet
+	dbS4.Name = subnetv4.Name
+	dbS4.ValidLifetime = subnetv4.ValidLifetime
+	id, err := strconv.Atoi(subnetv4.ID)
+	if err != nil {
+		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
+		return err
 	}
-
-	log.Println("ormS4.id: ", ormS4.ID)
-	log.Println("ormS4.name: ", ormS4.Name)
-	log.Println("ormS4.subnet: ", ormS4.Subnet)
-	log.Println("ormS4.subnet_id: ", ormS4.SubnetId)
-	log.Println("ormS4.ValidLifetime: ", ormS4.ValidLifetime)
+	dbS4.ID = uint(id)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
 
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&dbS4).Error; err != nil {
+		return err
+	}
+
 	//todo send kafka msg
-	req := pb.UpdateSubnetv4Req{Id: sv4Id, Subnet: ormS4.Subnet, ValidLifetime: ormS4.ValidLifetime}
+	req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		log.Println("proto.Marshal error, ", err)
@@ -168,12 +172,6 @@ func (handler *PGDB) OrmUpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 		return err
 	}
 	//end of todo
-
-	tx := handler.db.Begin()
-	defer tx.Rollback()
-	if err := tx.Save(&ormS4).Error; err != nil {
-		return err
-	}
 
 	//db.Model(subnet).Update(ormS4)
 
