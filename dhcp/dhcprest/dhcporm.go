@@ -12,6 +12,7 @@ import (
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
+	"github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
 )
@@ -147,13 +148,26 @@ func (handler *PGDB) OrmUpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 	}
 
 	log.Println("ormS4.id: ", ormS4.ID)
-	log.Println("ormS4.name: ", subnet.Name)
+	log.Println("ormS4.name: ", ormS4.Name)
 	log.Println("ormS4.subnet: ", ormS4.Subnet)
 	log.Println("ormS4.subnet_id: ", ormS4.SubnetId)
 	log.Println("ormS4.ValidLifetime: ", ormS4.ValidLifetime)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
+
+	//todo send kafka msg
+	req := pb.UpdateSubnetv4Req{Id: sv4Id, Subnet: ormS4.Subnet, ValidLifetime: ormS4.ValidLifetime}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	if err := restfulapi.SendCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+		log.Println("SendCmd error, ", err)
+		return err
+	}
+	//end of todo
 
 	tx := handler.db.Begin()
 	defer tx.Rollback()
@@ -163,6 +177,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 
 	//db.Model(subnet).Update(ormS4)
 
+	tx.Commit()
 	return nil
 }
 func (handler *PGDB) DeleteSubnetv4(id string) error {

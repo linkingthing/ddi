@@ -3,17 +3,19 @@ package dhcp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/jinzhu/gorm"
+
+	"strconv"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -368,6 +370,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 }
 
 func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
+	log.Println("into dhcp/UpdateSubnetv4, req.subnet: ", req.Subnet)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
