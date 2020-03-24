@@ -52,6 +52,9 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
 
+	log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
+	log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
+	log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv4.Subnet)
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -71,7 +74,7 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	}
 	dbS4.ID = uint(id)
 
-	err = PGDBConn.UpdateSubnetv4(dbS4)
+	err = PGDBConn.OrmUpdateSubnetv4(dbS4)
 	if err != nil {
 		return err
 	}

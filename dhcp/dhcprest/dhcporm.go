@@ -135,8 +135,8 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	return last, nil
 }
 
-func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
-	log.Println("into dhcporm, UpdateSubnetv4, Subnet: ", ormS4.Subnet)
+func (handler *PGDB) OrmUpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
+	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", ormS4.Subnet)
 
 	sv4Id := strconv.Itoa(int(ormS4.ID))
 	//search subnet, if not exist, return error
@@ -146,16 +146,22 @@ func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 		return fmt.Errorf(ormS4.Subnet + " not exists, return")
 	}
 
-	log.Println("subnet.id: ", subnet.ID)
-	log.Println("subnet.name: ", subnet.Name)
-	log.Println("subnet.subnet: ", subnet.Subnet)
-	log.Println("subnet.subnet_id: ", subnet.SubnetId)
-	log.Println("subnet.ValidLifetime: ", subnet.ValidLifetime)
+	log.Println("ormS4.id: ", ormS4.ID)
+	log.Println("ormS4.name: ", subnet.Name)
+	log.Println("ormS4.subnet: ", ormS4.Subnet)
+	log.Println("ormS4.subnet_id: ", ormS4.SubnetId)
+	log.Println("ormS4.ValidLifetime: ", ormS4.ValidLifetime)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
 
-	db.Model(&subnet).Update(ormS4)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormS4).Error; err != nil {
+		return err
+	}
+
+	//db.Model(subnet).Update(ormS4)
 
 	return nil
 }
