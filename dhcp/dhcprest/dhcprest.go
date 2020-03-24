@@ -31,7 +31,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
-	id, err := PGDBConn.CreateSubnetv4(s.db, subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
+	id, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	}
 	dbS4.ID = uint(id)
 
-	err = PGDBConn.UpdateSubnetv4(s.db, dbS4)
+	err = PGDBConn.UpdateSubnetv4(dbS4)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
 
-	err := PGDBConn.DeleteSubnetv4(s.db, subnetv4.ID)
+	err := PGDBConn.DeleteSubnetv4(subnetv4.ID)
 	if err != nil {
 		return err
 	}
@@ -102,8 +102,8 @@ func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
 }
 
 func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
-	log.Println("dhcp/dhcprest getSubnetv4ById(), id: ", id)
-	v := PGDBConn.GetSubnetv4ById(s.db, id)
+
+	v := PGDBConn.GetSubnetv4ById(id)
 	if v.ID == 0 {
 		return nil
 	}
@@ -115,7 +115,7 @@ func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
 func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *Subnetv4 {
 	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.getSubnetv4BySubnet(s.db, subnet)
+	v := PGDBConn.getSubnetv4BySubnet(subnet)
 	if v.ID == 0 {
 		return nil
 	}
@@ -129,7 +129,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	list := PGDBConn.Subnetv4List(s.db)
+	list := PGDBConn.Subnetv4List()
 
 	var v4 []*Subnetv4
 	for _, v := range list {
@@ -261,7 +261,7 @@ func (r *ReservationHandler) CreateReservation(rsv *RestReservation) (*RestReser
 
 	subnetv4ID := rsv.GetParent().GetID()
 	fmt.Println("before OrmCreateReservation")
-	rsv2, err := PGDBConn.OrmCreateReservation(r.db, subnetv4ID, rsv)
+	rsv2, err := PGDBConn.OrmCreateReservation(subnetv4ID, rsv)
 	if err != nil {
 		log.Println("OrmCreateReservation error")
 		log.Print(err)
@@ -284,7 +284,7 @@ func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 	subnetId := rsv.GetParent().GetID()
 	log.Println("+++subnetId")
 	log.Print(subnetId)
-	err := PGDBConn.OrmUpdateReservation(r.db, subnetId, rsv)
+	err := PGDBConn.OrmUpdateReservation(subnetId, rsv)
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	err := PGDBConn.OrmDeleteReservation(r.db, rsv.ID)
+	err := PGDBConn.OrmDeleteReservation(rsv.ID)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
 }
 
 func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
-	list := PGDBConn.OrmPoolList(r.db, subnetId)
+	list := PGDBConn.OrmPoolList(subnetId)
 	pool := ConvertPoolsFromOrmToRest(list)
 
 	return pool
@@ -315,7 +315,7 @@ func (r *PoolHandler) DeletePool(rsv *RestPool) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	err := PGDBConn.OrmDeleteReservation(r.db, rsv.ID)
+	err := PGDBConn.OrmDeleteReservation(rsv.ID)
 	if err != nil {
 		return err
 	}

@@ -6,12 +6,15 @@ import (
 	"github.com/golang/protobuf/proto"
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
+	"github.com/linkingthing/ddi/dhcp"
 	businessMetrics "github.com/linkingthing/ddi/dns/metrics"
-	"github.com/linkingthing/ddi/dns/server"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
+	"github.com/linkingthing/ddi/utils/grpcserver"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+	"log"
 )
 
 const (
@@ -46,10 +49,23 @@ const (
 	DELETEIPBLACKHOLE         = "DeleteIPBlackHole"
 	UPDATERECURSIVECONCURRENT = "UpdateRecursiveConcurrent"
 )
+const (
+	StartDHCPv4               = "StartDHCPv4"
+	StopDHCPv4                = "StopDHCPv4"
+	CreateSubnetv4            = "CreateSubnetv4"
+	UpdateSubnetv4            = "UpdateSubnetv4"
+	DeleteSubnetv4            = "DeleteSubnetv4"
+	CreateSubnetv4Pool        = "CreateSubnetv4Pool"
+	UpdateSubnetv4Pool        = "UpdateSubnetv4Pool"
+	DeleteSubnetv4Pool        = "DeleteSubnetv4Pool"
+	CreateSubnetv4Reservation = "CreateSubnetv4Reservation"
+	UpdateSubnetv4Reservation = "UpdateSubnetv4Reservation"
+	DeleteSubnetv4Reservation = "DeleteSubnetv4Reservation"
+)
 
 var (
 	kafkaServer     = "localhost:9092"
-	dnsTopic        = "dhcp"
+	dnsTopic        = "dns"
 	kafkaWriter     *kg.Writer
 	kafkaReader     *kg.Reader
 	address         = "localhost:8888"
@@ -57,28 +73,41 @@ var (
 )
 
 func main() {
-	utils.SetHostIPs() //set global vars from yaml conf
+	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
 
 	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
 	go handler.Statics()
 	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
-	go node.RegisterNode()
-	go physicalMetrics.NodeExporter()
-	s, err := server.NewDNSGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/")
+	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	if yamlConfig.Localhost.IsDHCP {
+		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
+	}
+	if yamlConfig.Localhost.IsDNS {
+		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dns")
+	}
+	if !yamlConfig.Localhost.IsController {
+		go physicalMetrics.NodeExporter()
+	}
+	s, err := grpcserver.NewGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/", dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr, yamlConfig.Localhost.IsDNS, yamlConfig.Localhost.IsDHCP)
 	if err != nil {
 		return
 	}
-	go dnsClient()
-	s.Start()
-	defer s.Stop()
-}
-
-func dnsClient() {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
 	defer conn.Close()
+	if yamlConfig.Localhost.IsDNS {
+		go dnsClient(conn)
+	}
+	if yamlConfig.Localhost.IsDHCP {
+		go dhcpClient(conn)
+	}
+	s.Start()
+	defer s.Stop()
+}
+
+func dnsClient(conn *grpc.ClientConn) {
 	cli := pb.NewAgentManagerClient(conn)
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
@@ -86,6 +115,7 @@ func dnsClient() {
 		Topic:   dnsTopic,
 	})
 	var message kg.Message
+	var err error
 	for {
 		message, err = kafkaReader.ReadMessage(context.Background())
 		if err != nil {
@@ -245,6 +275,99 @@ func dnsClient() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.UpdateRecursiveConcurrent(context.Background(), &target)
+		}
+	}
+}
+
+func dhcpClient(conn *grpc.ClientConn) {
+	cliv4 := pb.NewDhcpv4ManagerClient(conn)
+
+	kafkaReader = kg.NewReader(kg.ReaderConfig{
+
+		Brokers:     []string{dhcp.KafkaServer},
+		Topic:       dhcp.Dhcpv4Topic,
+		StartOffset: 95,
+	})
+	var message kg.Message
+	var err error
+	for {
+		message, err = kafkaReader.ReadMessage(context.Background())
+		if err != nil {
+			panic(err)
+			return
+		}
+
+		switch string(message.Key) {
+		case StartDHCPv4:
+			var target pb.StartDHCPv4Req
+
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+				log.Fatal(err)
+			}
+			cliv4.StartDHCPv4(context.Background(), &target)
+
+		case StopDHCPv4:
+			var target pb.StopDHCPv4Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+				log.Fatal(err)
+			}
+
+			cliv4.StopDHCPv4(context.Background(), &target)
+
+		case CreateSubnetv4:
+			var target pb.CreateSubnetv4Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.CreateSubnetv4(context.Background(), &target)
+
+		case UpdateSubnetv4:
+			var target pb.UpdateSubnetv4Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.UpdateSubnetv4(context.Background(), &target)
+
+		case DeleteSubnetv4:
+			var target pb.DeleteSubnetv4Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.DeleteSubnetv4(context.Background(), &target)
+
+		case CreateSubnetv4Pool:
+			var target pb.CreateSubnetv4PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.CreateSubnetv4Pool(context.Background(), &target)
+
+		case UpdateSubnetv4Pool:
+			var target pb.UpdateSubnetv4PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.UpdateSubnetv4Pool(context.Background(), &target)
+
+		case DeleteSubnetv4Pool:
+			var target pb.DeleteSubnetv4PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.DeleteSubnetv4Pool(context.Background(), &target)
+
+		case CreateSubnetv4Reservation:
+			var target pb.CreateSubnetv4ReservationReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.CreateSubnetv4Reservation(context.Background(), &target)
+
+		case UpdateSubnetv4Reservation:
+			var target pb.UpdateSubnetv4ReservationReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.UpdateSubnetv4Reservation(context.Background(), &target)
+
+		case DeleteSubnetv4Reservation:
+			var target pb.DeleteSubnetv4ReservationReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cliv4.DeleteSubnetv4Reservation(context.Background(), &target)
+
 		}
 	}
 }

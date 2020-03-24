@@ -2,7 +2,7 @@ package config
 
 import (
 	"errors"
-	"flag"
+	//"flag"
 	"github.com/zdnscloud/cement/configure"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -13,6 +13,13 @@ import (
 type ConfigureOwner interface {
 	ReloadConfig(*VanguardConf)
 }
+
+var (
+	YAML_CONFIG_FILE = "/etc/vanguard/vanguard.conf"
+	//configFile                    string
+	ErrConfigureObjectIsNotStruct = errors.New("configure object isn't struct")
+	ErrRequiredFieldIsEmpty       = errors.New("required filed hasn't been set")
+)
 
 func ReloadConfig(o interface{}, conf *VanguardConf) {
 	if owner, ok := o.(ConfigureOwner); ok {
@@ -43,10 +50,12 @@ type PrometheusConf struct {
 }
 
 type LocalConf struct {
-	Role     string `yaml:"role"` // 3 roles: Controller, Db, Kafka
-	IP       string `yaml:"ip"`
-	Hostname string `yaml:"hostname"`
-	ParentIP string `yaml:"parent_ip"`
+	IsController bool   `yaml:"isController"` // 3 roles: controller, dhcp, dns
+	IsDHCP       bool   `yaml:"isDHCP"`       // 3 roles: controller, dhcp, dns
+	IsDNS        bool   `yaml:"isDNS"`        // 3 roles: controller, dhcp, dns
+	IP           string `yaml:"ip"`
+	Hostname     string `yaml:"hostname"`
+	ParentIP     string `yaml:"parent_ip"`
 	//PromHost string `yaml:"prom_host"`
 	//PromPort string `yaml:"prom_port"`
 	//State  uint  `yaml:"state"`   // 1 online 0 offline
@@ -65,13 +74,6 @@ type VanguardConf struct {
 	Localhost LocalConf  `yaml:"localhost"`
 	Server    ServerConf `yaml:"server"`
 }
-
-var (
-	YAML_CONFIG_FILE              = "/etc/vanguard/vanguard.conf"
-	configFile                    string
-	ErrConfigureObjectIsNotStruct = errors.New("configure object isn't struct")
-	ErrRequiredFieldIsEmpty       = errors.New("required filed hasn't been set")
-)
 
 func Load(config interface{}, file string) error {
 	if err := processFile(config, file); err != nil {
@@ -149,13 +151,14 @@ func LoadConfig(path string) (*VanguardConf, error) {
 
 	return &conf, nil
 }
-func init() {
+
+/*func init() {
 	flag.Parse()
 	flag.StringVar(&configFile, "c", YAML_CONFIG_FILE, "configure file path")
-}
+}*/
 
-func GetConfig() *VanguardConf {
-	conf, err := LoadConfig(configFile)
+func GetConfig(confPath string) *VanguardConf {
+	conf, err := LoadConfig(confPath)
 	if err != nil {
 		panic(PANIC_CONFIG_FILE + err.Error())
 	}
@@ -163,9 +166,9 @@ func GetConfig() *VanguardConf {
 	return conf
 }
 
-func GetLocalIP() string {
+func GetLocalIP(confPath string) string {
 
-	ip := GetConfig().Localhost.IP
+	ip := GetConfig(confPath).Localhost.IP
 	log.Println("in GetLocalIP(), localhost ip: ")
 
 	return ip

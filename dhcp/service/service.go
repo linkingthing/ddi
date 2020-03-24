@@ -19,7 +19,7 @@ type DHCPv4Service struct {
 	handler *dhcp.KEAv4Handler
 }
 
-func newDHCPv4Service(ver string, addr string, dhcpConfPath string) *DHCPv4Service {
+func NewDHCPv4Service(ver string, addr string, dhcpConfPath string) *DHCPv4Service {
 
 	return &DHCPv4Service{dhcp.NewKEAv4Handler(ver, dhcpConfPath, addr)}
 }
@@ -118,6 +118,15 @@ func (service *DHCPv4Service) DeleteSubnetv4Reservation(context context.Context,
 		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
 	} else {
 		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
+func (service *DHCPv4Service) GetLeaseAddress(context context.Context, req *pb.GetLeaseAddressReq) (*pb.GetLeaseAddressResp, error) {
+	resp, err := service.handler.GetLeaseAddress(*req)
+	if err != nil {
+		return nil, err
+	} else {
+		return resp, nil
 	}
 }
 

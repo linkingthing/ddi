@@ -19,7 +19,7 @@ func NewDHCPv4GRPCServer(ver string, ConfPath string, addr string) (*DHCPv4GRPCS
 	fmt.Printf("ver: %s, confpath: %s, addr: %s\n", ver, ConfPath, addr)
 
 	server := grpc.NewServer()
-	servicev4 := newDHCPv4Service(ver, addr, ConfPath)
+	servicev4 := NewDHCPv4Service(ver, addr, ConfPath)
 	pb.RegisterDhcpv4ManagerServer(server, servicev4)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
