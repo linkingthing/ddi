@@ -285,9 +285,8 @@ func dhcpClient(conn *grpc.ClientConn) {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers:     []string{dhcp.KafkaServer},
-		Topic:       dhcp.Dhcpv4Topic,
-		StartOffset: 95,
+		Brokers: []string{utils.KafkaServerProm},
+		Topic:   dhcp.Dhcpv4Topic,
 	})
 	var message kg.Message
 	var err error

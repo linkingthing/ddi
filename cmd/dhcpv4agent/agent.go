@@ -11,7 +11,6 @@ import (
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	server "github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
@@ -55,10 +54,9 @@ func dhcpClient() {
 	cliv4 := pb.NewDhcpv4ManagerClient(conn)
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
-
-		Brokers:     []string{dhcp.KafkaServer},
-		Topic:       dhcp.Dhcpv4Topic,
-		StartOffset: 95,
+		Brokers: []string{utils.KafkaServerProm},
+		Topic:   dhcp.Dhcpv4Topic,
+		//StartOffset: 95,
 	})
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)
@@ -180,8 +178,6 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 func main() {
 	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 
-	go dhcpv4agent.Dhcpv4Client()
-
 	//ver string, ConfPath string, addr string
 	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
 	if err != nil {
@@ -189,6 +185,10 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	log.Println("begin to call dhcpv4client")
+	//go dhcpv4agent.Dhcpv4Client()
+	go dhcpClient()
+
 	s.Start()
 	defer s.Stop()
 

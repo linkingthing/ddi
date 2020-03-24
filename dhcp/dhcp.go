@@ -15,6 +15,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +41,7 @@ const (
 	IntfCreateSubnetv4
 	IntfUpdateSubnetv4
 	IntfDeleteSubnetv4
-	postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
+	//postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
 )
 
 var KeaDhcpv4Conf []byte // global var, stores config content of dhcpv4 in json format
@@ -185,7 +186,7 @@ type KEAv6Handler struct {
 func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 	instance := &KEAv4Handler{ver: ver, ConfigPath: ConfPath}
 	var err error
-	instance.db, err = gorm.Open("postgres", postgresqlAddress)
+	instance.db, err = gorm.Open("postgres", utils.DBAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
