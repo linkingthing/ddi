@@ -167,8 +167,8 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 		log.Println("proto.Marshal error, ", err)
 		return err
 	}
-	if err := restfulapi.SendCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
-		log.Println("SendCmd error, ", err)
+	if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
 	//end of todo
@@ -205,7 +205,7 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := restfulapi.SendCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+	if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.DeleteSubnetv4); err != nil {
 		return err
 	}
 	tx.Commit()

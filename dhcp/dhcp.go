@@ -346,6 +346,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	}
 
 	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
+		log.Println("conf Subnet4: ", v.Subnet)
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
 		}
