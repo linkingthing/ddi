@@ -84,9 +84,8 @@ message DeleteSubnetv4Req{
 
 message CreateSubnetv4PoolReq{
     string      id = 1;
-    string      subnet = 2;
-    repeated    Option options = 3;
-    repeated    Pools  pool = 4;
+    repeated    Option options = 2;
+    repeated    Pools  pool = 3;
 }
 
 message UpdateSubnetv4PoolReq{

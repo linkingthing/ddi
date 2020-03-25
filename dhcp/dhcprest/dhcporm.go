@@ -368,10 +368,7 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
 	log.Println("into OrmCreatePool")
-	sid, err := strconv.Atoi(subnetv4_id)
-	if err != nil {
-		log.Println("OrmCreatePool, subnetv4_id error: ", subnetv4_id)
-	}
+
 	var ormPool dhcporm.Pool
 	ormPool = dhcporm.Pool{
 		BeginAddress: r.BeginAddress,
