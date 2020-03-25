@@ -412,11 +412,13 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
+		log.Println("in dhcp/UpdateSubnetv4(), getv4config error: ", err)
 		return err
 	}
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
+			conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
 			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
 				{
 					[]Option{},
