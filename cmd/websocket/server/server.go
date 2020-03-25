@@ -2,7 +2,6 @@ package server
 
 import (
 	"bufio"
-	"github.com/linkingthing/ddi/utils"
 	"io"
 	"log"
 	"net"
@@ -11,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 const (
@@ -105,7 +107,7 @@ func isTransportOver(data string) (over bool) {
 
 func test() {
 
-	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 
 	port := utils.WebSocket_Port
 	go SocketServer(port)

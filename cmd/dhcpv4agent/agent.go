@@ -3,19 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ben-han-cn/cement/shell"
-	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing/ddi/dhcp"
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
-	"github.com/linkingthing/ddi/dhcp/service"
-	"github.com/linkingthing/ddi/pb"
-	"github.com/linkingthing/ddi/utils"
-	kg "github.com/segmentio/kafka-go"
-	"google.golang.org/grpc"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/ben-han-cn/cement/shell"
+	"github.com/golang/protobuf/proto"
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
+	server "github.com/linkingthing/ddi/dhcp/service"
+	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
+	kg "github.com/segmentio/kafka-go"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -176,7 +178,7 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 }
 
 func main() {
-	utils.SetHostIPs() //set global vars from yaml conf
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 
 	go dhcpv4agent.Dhcpv4Client()
 

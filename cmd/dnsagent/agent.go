@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/golang/protobuf/proto"
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
@@ -14,7 +16,6 @@ import (
 	"github.com/linkingthing/ddi/utils/grpcserver"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
-	"log"
 )
 
 const (
@@ -73,7 +74,7 @@ var (
 )
 
 func main() {
-	utils.SetHostIPs("/etc/vanguard/vanguard.conf") //set global vars from yaml conf
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 
 	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
 	go handler.Statics()

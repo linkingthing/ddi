@@ -10,9 +10,11 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 var (
@@ -24,9 +26,14 @@ var (
 
 func main() {
 
-	utils.SetHostIPs() //set global vars from yaml conf
+	//var db *gorm.DB
+	db, err := gorm.Open("postgres", utils.DBAddr)
+	if err != nil {
+		panic(err)
+	}
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
 
-	dhcprest.PGDBConn = dhcprest.NewPGDB()
+	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
 	defer dhcprest.PGDBConn.Close()
 	schemas := schema.NewSchemaManager()
 
@@ -35,9 +42,9 @@ func main() {
 
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
-	dhcpv4 := dhcprest.NewDhcpv4()
+	dhcpv4 := dhcprest.NewDhcpv4(db)
 	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
-	subnetv4s := dhcprest.NewSubnetv4s(dhcprest.NewPGDB().DB)
+	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	// end of dhcp model
 

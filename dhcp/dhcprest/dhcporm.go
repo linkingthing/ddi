@@ -2,19 +2,21 @@ package dhcprest
 
 import (
 	"fmt"
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
+	"github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/arp"
-	"log"
 	"net"
-	"strconv"
-	"strings"
 )
 
 const Dhcpv4Ver string = "4"
@@ -101,7 +103,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 }
 
 //return (new inserted id, error)
-func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (string, error) {
+func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -113,7 +115,7 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
-		return "", fmt.Errorf("create subnet error, subnet name: " + name)
+		return s4, fmt.Errorf("create subnet error, subnet name: " + name)
 	}
 	var last dhcporm.OrmSubnetv4
 	query.Last(&last)
@@ -128,43 +130,98 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return "", err
+		return last, err
 	}
 	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
-	return strconv.Itoa(int(last.ID)), nil
+	return last, nil
 }
 
-func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
-	log.Println("into dhcporm, UpdateSubnetv4, Subnet: ", ormS4.Subnet)
-	//search subnet, if not exist, return error
-	subnet := handler.getSubnetv4BySubnet(ormS4.Subnet)
-	if subnet == nil {
-		return fmt.Errorf(ormS4.Subnet + " not exists, return")
-	}
+func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
+	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", subnetv4.Subnet)
 
-	log.Println("subnet.id: ", subnet.ID)
-	log.Println("subnet.name: ", subnet.Name)
-	log.Println("subnet.subnet: ", subnet.Subnet)
-	//log.Println("subnet.subnet_id: ", subnet.SubnetId)
-	log.Println("subnet.ValidLifetime: ", subnet.ValidLifetime)
+	dbS4 := dhcporm.OrmSubnetv4{}
+	//dbS4.SubnetId = subnetv4.ID
+	dbS4.Subnet = subnetv4.Subnet
+	dbS4.Name = subnetv4.Name
+	dbS4.ValidLifetime = subnetv4.ValidLifetime
+	id, err := strconv.Atoi(subnetv4.ID)
+	if err != nil {
+		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
+		return err
+	}
+	dbS4.ID = uint(id)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
 
-	db.Model(&subnet).Update(ormS4)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&dbS4).Error; err != nil {
+		return err
+	}
 
+	//todo send kafka msg
+	req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	if err := restfulapi.SendCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+		log.Println("SendCmd error, ", err)
+		return err
+	}
+	//end of todo
+
+	//db.Model(subnet).Update(ormS4)
+
+	tx.Commit()
 	return nil
 }
 func (handler *PGDB) DeleteSubnetv4(id string) error {
 	log.Println("into dhcprest DeleteSubnetv4, id ", id)
-	dbId := ConvertStringToUint(id)
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
+	//dbId := ConvertStringToUint(id)
+	//query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
+	var ormS4 dhcporm.OrmSubnetv4
 
-	if query.Error != nil {
-		return fmt.Errorf("delete subnet error, subnet id: " + id)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormS4, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4 with ID %s, %w", id, err)
 	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormS4.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormS4).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4Req{Id: id}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := restfulapi.SendCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+		return err
+	}
+	tx.Commit()
+
+	//s4 := handler.GetSubnetv4ById(id)
+	//err := db.Unscoped().Delete(s4).Error
+	//if err != nil {
+	//	log.Println("删除子网出错: ", err)
+	//	return err
+	//}
+	//query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
+	//aCLDB.ID = uint(dbId)
+	//if err := tx.Unscoped().Delete(&aCLDB).Error; err != nil {
+	//    return err
+	//}
 
 	return nil
 }

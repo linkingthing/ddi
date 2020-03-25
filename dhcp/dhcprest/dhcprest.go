@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"log"
+	"strconv"
+
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp/dhcporm"
-	"log"
-	"strconv"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -31,24 +31,28 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
-	id, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
+	s4, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
 	}
-	if id == "" {
+	if s4.Subnet == "" {
 		return fmt.Errorf("添加子网失败")
 	}
 
 	// set newly inserted id
-	subnetv4.ID = id
-	subnetv4.SubnetId = id
-	log.Println("newly inserted id: ", id)
+	subnetv4.ID = strconv.Itoa(int(s4.ID))
+	subnetv4.SubnetId = strconv.Itoa(int(s4.ID))
+	subnetv4.SetCreationTimestamp(s4.CreatedAt)
+	log.Println("newly inserted id: ", s4.ID)
 
 	return nil
 }
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
+	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
+	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
+	//log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv4.Subnet)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -57,22 +61,13 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf("subnet %s not exist", subnetv4.ID)
 	}
 
-	dbS4 := dhcporm.OrmSubnetv4{}
-	//dbS4.SubnetId = subnetv4.ID
-	//dbS4.id = subnetv4.Subnet
-	dbS4.Name = subnetv4.Name
-	dbS4.ValidLifetime = subnetv4.ValidLifetime
-	id, err := strconv.Atoi(subnetv4.ID)
+	err := PGDBConn.OrmUpdateSubnetv4(subnetv4)
 	if err != nil {
-		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
 		return err
 	}
-	dbS4.ID = uint(id)
 
-	err = PGDBConn.UpdateSubnetv4(dbS4)
-	if err != nil {
-		return err
-	}
+	subnetv4.CreationTimestamp = resource.ISOTime(subnetv4.GetCreationTimestamp())
+	log.Println("subnetv4.CreationTimestamp ", subnetv4.CreationTimestamp)
 
 	return nil
 }
@@ -81,6 +76,7 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	log.Println("dhcp/dhcprest DeleteSubnetv4() subnetv4 id: ", subnetv4.ID)
 	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
 		return fmt.Errorf("subnet %s not exist", subnetv4.Subnet)
 	}
@@ -101,6 +97,7 @@ func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
 }
 
 func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
+
 	v := PGDBConn.GetSubnetv4ById(id)
 	if v.ID == 0 {
 		return nil
@@ -181,6 +178,7 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 }
 
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	log.Println("into dhcprest.go Delete")
 	subnetv4 := ctx.Resource.(*Subnetv4)
 
 	if err := h.subnetv4s.DeleteSubnetv4(subnetv4); err != nil {
