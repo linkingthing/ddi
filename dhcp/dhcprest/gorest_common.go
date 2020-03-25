@@ -186,7 +186,18 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 
 	return rsv
 }
+func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
+	pool := &RestPool{}
 
+	if v == nil {
+		return pool
+	}
+
+	pool.SetID(strconv.Itoa(int(v.ID)))
+	pool.BeginAddress = v.BeginAddress
+
+	return pool
+}
 func (n RestReservation) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into GetParents")
 	return []resource.ResourceKind{Subnetv4{}}
@@ -222,4 +233,17 @@ func (r *ReservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id stri
 	rsv := r.convertSubnetv4ReservationFromOrmToRest(orm)
 
 	return rsv
+}
+
+func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
+	list := PGDBConn.OrmPoolList(subnetId)
+	pool := ConvertPoolsFromOrmToRest(list)
+
+	return pool
+}
+func (r *PoolHandler) GetSubnetv4Pool(subnetId string, pool_id string) *RestPool {
+	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+	pool := r.convertSubnetv4PoolFromOrmToRest(orm)
+
+	return pool
 }

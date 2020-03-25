@@ -33,7 +33,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 )
 
@@ -123,7 +122,7 @@ func main() {
 	schemas.Import(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
 
 	// start of dhcp model
-	go dhcpv4agent.Dhcpv4Client()
+	//go dhcpv4agent.Dhcpv4Client()
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
 	go dhcprest.PGDBConn.KeepDetectAlive()
 	defer dhcprest.PGDBConn.Close()
