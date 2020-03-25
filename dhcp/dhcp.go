@@ -351,6 +351,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		return err
 	}
 
+	var subnetv4 []SubnetConfig
 	var maxId json.Number
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		log.Println("conf Subnet4: ", v.Subnet)
@@ -364,7 +365,9 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
 		}
+		subnetv4 = append(subnetv4, v)
 	}
+	log.Println("---subnetv4: ", subnetv4)
 
 	newSubnet4 := SubnetConfig{
 		ReservationMode: "all",
@@ -378,7 +381,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	}
 	newSubnet4.Pools = []Pool{}
 
-	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
+	conf.Arguments.Dhcp4.Subnet4 = append(subnetv4, newSubnet4)
 	setErr := handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
 		return setErr
