@@ -205,7 +205,7 @@ func (r *PoolHandler) List(ctx *resource.Context) interface{} {
 	return r.GetPools(pool.GetParent().GetID())
 }
 func (r *PoolHandler) Get(ctx *resource.Context) resource.Resource {
-	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
+	log.Println("into dhcprest.go PoolHandler Get")
 	pool := ctx.Resource.(*RestPool)
 	return r.GetSubnetv4Pool(pool.GetParent().GetID(), pool.GetID())
 }

@@ -367,18 +367,23 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
 	log.Println("into OrmCreatePool")
-	var rsv = dhcporm.Pool{
+	sid, err := strconv.Atoi(subnetv4_id)
+	if err != nil {
+		log.Println("OrmCreatePool, subnetv4_id error: ", subnetv4_id)
+	}
+	var pool = dhcporm.Pool{
 		BeginAddress: r.BeginAddress,
 		EndAddress:   r.EndAddress,
+		Subnetv4ID:   uint(sid),
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
-	query := handler.db.Create(&rsv)
+	query := handler.db.Create(&pool)
 	if query.Error != nil {
 		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " + r.EndAddress)
 	}
 
-	return rsv, nil
+	return pool, nil
 }
 
 func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {

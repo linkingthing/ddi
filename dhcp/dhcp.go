@@ -389,6 +389,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
+		ValidLifetime:   json.Number(req.ValidLifetime),
 		Id:              json.Number(strconv.Itoa(maxId)),
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},

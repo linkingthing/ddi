@@ -55,8 +55,8 @@ type RestReservation struct {
 type RestPool struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	OptionData            []RestOption `json:"option-data"`
-	BeginAddress          string       `json:"begin address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	EndAddress            string       `json:"end address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	BeginAddress          string       `json:"begin-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	EndAddress            string       `json:"end-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 }
 
 type Subnetv4 struct {
@@ -199,7 +199,11 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	return pool
 }
 func (n RestReservation) GetParents() []resource.ResourceKind {
-	log.Println("dhcprest, into GetParents")
+	log.Println("dhcprest, into RestReservation GetParents")
+	return []resource.ResourceKind{Subnetv4{}}
+}
+func (n RestPool) GetParents() []resource.ResourceKind {
+	log.Println("dhcprest, into RestPool GetParents")
 	return []resource.ResourceKind{Subnetv4{}}
 }
 
