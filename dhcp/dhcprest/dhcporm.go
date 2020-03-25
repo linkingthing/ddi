@@ -372,19 +372,44 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	if err != nil {
 		log.Println("OrmCreatePool, subnetv4_id error: ", subnetv4_id)
 	}
-	var pool = dhcporm.Pool{
+	var ormPool dhcporm.Pool
+	ormPool = dhcporm.Pool{
 		BeginAddress: r.BeginAddress,
 		EndAddress:   r.EndAddress,
-		Subnetv4ID:   uint(sid),
+		OptionData:   []dhcporm.Option{},
+	}
+	var pool = pb.Pools{
+		Pool:    r.BeginAddress + "-" + r.EndAddress,
+		Options: []*pb.Option{},
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
+	//todo: post kafka msg to dhcp agent
+	pools := []*pb.Pools{}
+	pools = append(pools, &pool)
+	req := pb.CreateSubnetv4PoolReq{
+		Id:     subnetv4_id,
+		Subnet: subnetv4_id,
+		Pool:   pools,
+	}
+	log.Println("OrmCreatePool, req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return ormPool, err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Pool); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
+		return ormPool, err
+	}
+	//end of todo
+
 	query := handler.db.Create(&pool)
 	if query.Error != nil {
-		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " + r.EndAddress)
+		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " +
+			r.EndAddress)
 	}
 
-	return pool, nil
+	return ormPool, nil
 }
 
 func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {

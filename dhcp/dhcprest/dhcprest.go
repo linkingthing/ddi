@@ -219,7 +219,7 @@ func (r *PoolHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	}
 
-	log.Println("+++rsv. rsv.id", pool.ID)
+	log.Println("+++pool. pool.id", pool.ID)
 	log.Print(pool)
 
 	return pool, nil
