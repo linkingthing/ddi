@@ -97,3 +97,9 @@ type ManualAddress struct {
 	Comment    string
 	Subnetv4ID uint `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }
+
+type AliveAddress struct {
+	IPAddress  string `gorm:"primary_key"`
+	AliveTime  int64
+	Subnetv4ID uint `sql:"type:integer REFERENCES subnetv4s(id)"`
+}

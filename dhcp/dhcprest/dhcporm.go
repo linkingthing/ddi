@@ -16,17 +16,22 @@ import (
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/arp"
+	"github.com/paulstuart/ping"
 	"net"
+	"time"
 )
 
 const Dhcpv4Ver string = "4"
 
 const CRDBAddr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
 
+const checkPeriod = 10
+
 var PGDBConn *PGDB
 
 type PGDB struct {
-	db *gorm.DB
+	db     *gorm.DB
+	ticker *time.Ticker
 }
 
 /*func init() {
@@ -51,7 +56,8 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv6{})
 	p.db.AutoMigrate(&dhcporm.Reservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
-
+	p.db.AutoMigrate(&dhcporm.AliveAddress{})
+	p.ticker = time.NewTicker(checkPeriod * time.Second)
 	return p
 }
 
@@ -554,5 +560,78 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 			retData.Collision = append(retData.Collision, ip)
 		}
 	}
+	//get the dead ip
+	var alives []dhcporm.AliveAddress
+	if err := handler.db.Where("subnetv4_id = ?", id).Find(&alives).Error; err != nil {
+		return nil, err
+	}
+	for _, a := range alives {
+		if time.Now().Unix()-a.AliveTime > 60*60*24 {
+			retData.Dead = append(retData.Dead, a.IPAddress)
+		}
+	}
 	return &retData, nil
+}
+
+func (handler *PGDB) KeepDetectAlive() {
+	for {
+		select {
+		case <-handler.ticker.C:
+			if err := handler.DetectAliveAddress(); err != nil {
+				continue
+			}
+		}
+	}
+}
+
+func (handler *PGDB) DetectAliveAddress() error {
+	//get all the resevation address where reserv_type equal "hw-address" or "client-id"
+	var reservs []dhcporm.Reservation
+	if err := handler.db.Find(&reservs).Error; err != nil {
+		return err
+	}
+	type stable struct {
+		IP         string
+		Subnetv4ID uint
+	}
+	var stables []stable
+	for _, r := range reservs {
+		if r.ReservType == "hw-address" || r.ReservType == "client-id" {
+			tmp := stable{IP: r.IpAddress, Subnetv4ID: r.Subnetv4ID}
+			stables = append(stables, tmp)
+		}
+	}
+	type alive struct {
+		ScanTime   int64
+		IP         string
+		Subnetv4ID uint
+	}
+	var alives []alive
+	for _, s := range stables {
+		if ping.Ping(s.IP, 2) {
+			tmp := alive{ScanTime: time.Now().Unix(), IP: s.IP, Subnetv4ID: s.Subnetv4ID}
+			alives = append(alives, tmp)
+		} else {
+			tmp := alive{ScanTime: 0, IP: s.IP, Subnetv4ID: s.Subnetv4ID}
+			alives = append(alives, tmp)
+		}
+	}
+	var aliveAdd []dhcporm.AliveAddress
+	for _, one := range alives {
+		var tmp dhcporm.AliveAddress
+		tmp.IPAddress = one.IP
+		tmp.AliveTime = one.ScanTime
+		tmp.Subnetv4ID = one.Subnetv4ID
+		aliveAdd = append(aliveAdd, tmp)
+	}
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	for _, a := range aliveAdd {
+		fmt.Println("alive one:", a)
+		if err := tx.Save(&a).Error; err != nil {
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
 }
