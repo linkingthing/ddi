@@ -250,7 +250,10 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 		"service":   []string{service},
 		"arguments": conf,
 	}
-	postStr, _ := json.Marshal(postData)
+	postStr, err := json.Marshal(postData)
+	if err != nil {
+		log.Println("json.Marshal error: ", err)
+	}
 
 	log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
@@ -355,19 +358,19 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	var maxId json.Number
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		log.Println("conf Subnet4: ", v.Subnet)
+		log.Println("conf Subnet4 id: ", v.Id)
 		if v.Id >= maxId {
 			maxId = v.Id + json.Number(1)
 		}
 		if v.ReservationMode == "" {
 			log.Println("reserationMode == nil, subnet: ", v.Subnet)
-			v.ReservationMode = "all"
+			conf.Arguments.Dhcp4.Subnet4[k].ReservationMode = "all"
 		}
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
 		}
 		subnetv4 = append(subnetv4, v)
 	}
-	log.Println("---subnetv4: ", subnetv4)
 
 	newSubnet4 := SubnetConfig{
 		ReservationMode: "all",
@@ -380,8 +383,10 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		//},
 	}
 	newSubnet4.Pools = []Pool{}
+	subnetv4 = append(subnetv4, newSubnet4)
+	log.Println("---subnetv4: ", subnetv4)
 
-	conf.Arguments.Dhcp4.Subnet4 = append(subnetv4, newSubnet4)
+	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
 	log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
 	setErr := handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
