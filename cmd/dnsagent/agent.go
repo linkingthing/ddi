@@ -99,20 +99,20 @@ func main() {
 	}
 	defer conn.Close()
 	if yamlConfig.Localhost.IsDNS {
-		go dnsClient(conn)
+		go dnsClient(conn, yamlConfig.Server.Kafka.Host+":"+yamlConfig.Server.Kafka.Port)
 	}
 	if yamlConfig.Localhost.IsDHCP {
-		go dhcpClient(conn)
+		go dhcpClient(conn, yamlConfig.Server.Kafka.Host+":"+yamlConfig.Server.Kafka.Port)
 	}
 	s.Start()
 	defer s.Stop()
 }
 
-func dnsClient(conn *grpc.ClientConn) {
+func dnsClient(conn *grpc.ClientConn, kafkaServer string) {
 	cli := pb.NewAgentManagerClient(conn)
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{utils.KafkaServerProm},
+		Brokers: []string{kafkaServer},
 		Topic:   dnsTopic,
 	})
 	var message kg.Message
@@ -280,11 +280,10 @@ func dnsClient(conn *grpc.ClientConn) {
 	}
 }
 
-func dhcpClient(conn *grpc.ClientConn) {
+func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 	cliv4 := pb.NewDhcpv4ManagerClient(conn)
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
-
 		Brokers: []string{utils.KafkaServerProm},
 		Topic:   dhcp.Dhcpv4Topic,
 	})

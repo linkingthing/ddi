@@ -13,6 +13,6 @@ type DividedAddress struct {
 
 type ScanAddress struct {
 	resource.ResourceBase `json:",inline"`
-	Collision             []string `json:"acls"`
-	Dead                  []string `json:"acls"`
+	Collision             []string `json:"collision"`
+	Dead                  []string `json:"dead"`
 }

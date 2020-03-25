@@ -135,7 +135,7 @@ func ConvertReservationsFromOrmToRest(rs []dhcporm.Reservation) []*RestReservati
 	var restRs []*RestReservation
 	for _, v := range rs {
 		restR := RestReservation{
-			Duid:         v.Duid,
+			//Duid:         v.Duid,
 			BootFileName: v.BootFileName,
 			Hostname:     v.Hostname,
 		}
@@ -182,7 +182,7 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 
 	rsv.SetID(strconv.Itoa(int(v.ID)))
 	rsv.BootFileName = v.BootFileName
-	rsv.Duid = v.Duid
+	//rsv.Duid = v.Duid
 
 	return rsv
 }

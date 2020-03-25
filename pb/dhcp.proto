@@ -215,7 +215,12 @@ message GetLeaseAddressReq{
         string subnetid = 1;
 }
 
+message Lease{
+string ipAddress = 1;
+bytes hwAddress = 2;
+}
+
 message GetLeaseAddressResp{
-        repeated string addresses = 1;
+        repeated Lease leases = 1;
 }
 

@@ -18,9 +18,9 @@ type Dhcpv4Conf struct {
 // table.
 type OrmSubnetv4 struct {
 	gorm.Model
-	Dhcpv4ConfId    uint
-	Name            string          `gorm:"column:name"`
-	SubnetId        string          `gorm:"column:subnet_id"`
+	Dhcpv4ConfId uint
+	Name         string `gorm:"column:name"`
+	//SubnetId        string          `gorm:"column:subnet_id"`
 	Subnet          string          `gorm:"column:subnet"`
 	ValidLifetime   string          `gorm:"column:valid_life_time"`
 	Reservations    []Reservation   `gorm:"foreignkey:Subnetv4ID"`
@@ -52,8 +52,8 @@ func (OrmSubnetv4) TableName() string {
 
 type Reservation struct {
 	gorm.Model
-	Duid           string
 	ReservType     string
+	ReservValue    string
 	IpAddress      string
 	Hostname       string
 	NextServer     string

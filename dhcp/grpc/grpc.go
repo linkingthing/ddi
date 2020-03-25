@@ -10,7 +10,7 @@ const (
 	address = "localhost:8888"
 )
 
-func GetLeases(subNetID string) []string {
+func GetLeases(subNetID string) []*pb.Lease {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return nil
@@ -23,5 +23,5 @@ func GetLeases(subNetID string) []string {
 	if resp, err = cli.GetLeaseAddress(context.Background(), &target); err != nil {
 		return nil
 	}
-	return resp.GetAddresses()
+	return resp.Leases
 }
