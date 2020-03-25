@@ -351,17 +351,17 @@ func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 	return pools
 }
 
-func (handler *PGDB) OrmGetPool(subnetId string, rsv_id string) *dhcporm.Pool {
-	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "rsv_id: ", rsv_id)
-	dbRsvId := ConvertStringToUint(rsv_id)
+func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
+	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "rsv_id: ", pool_id)
+	dbRsvId := ConvertStringToUint(pool_id)
 
-	rsv := dhcporm.Pool{}
-	if err := handler.db.First(&rsv, int(dbRsvId)).Error; err != nil {
+	pool := dhcporm.Pool{}
+	if err := handler.db.First(&pool, int(dbRsvId)).Error; err != nil {
 		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
 		return nil
 	}
 
-	return &rsv
+	return &pool
 }
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {

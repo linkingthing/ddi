@@ -199,6 +199,100 @@ func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID())
 }
 
+func (r *PoolHandler) List(ctx *resource.Context) interface{} {
+	log.Println("into dhcprest.go subnetv4PoolHandler List")
+	pool := ctx.Resource.(*RestPool)
+	return r.GetPools(pool.GetParent().GetID())
+}
+func (r *PoolHandler) Get(ctx *resource.Context) resource.Resource {
+	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
+	pool := ctx.Resource.(*RestPool)
+	return r.GetSubnetv4Pool(pool.GetParent().GetID(), pool.GetID())
+}
+func (r *PoolHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into dhcprest.go pool Create")
+
+	pool := ctx.Resource.(*RestPool)
+
+	log.Println("in PoolHandler, create(), pool: ", pool)
+	if _, err := r.CreatePool(pool); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	log.Println("+++rsv. rsv.id", pool.ID)
+	log.Print(pool)
+
+	return pool, nil
+}
+func (r *PoolHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into rest rsv Update")
+
+	pool := ctx.Resource.(*RestPool)
+	if err := r.UpdatePool(pool); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	return pool, nil
+}
+func (r *PoolHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	pool := ctx.Resource.(*RestPool)
+
+	if err := r.DeletePool(pool); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+}
+func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
+	fmt.Println("into dhcprest/CreatePool")
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	//todo check whether it exists
+
+	subnetv4ID := pool.GetParent().GetID()
+	fmt.Println("before CreatePool, subnetv4ID: ", subnetv4ID)
+	pool2, err := PGDBConn.OrmCreatePool(subnetv4ID, pool)
+	if err != nil {
+		log.Println("OrmCreatePool error")
+		log.Print(err)
+		return &RestPool{}, err
+	}
+
+	pool.SetID(strconv.Itoa(int(pool2.ID)))
+	pool.SetCreationTimestamp(pool2.CreatedAt)
+
+	return pool, nil
+}
+func (r *PoolHandler) UpdatePool(pool *RestPool) error {
+	fmt.Println("into UpdatePool")
+	log.Print(pool)
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	subnetId := pool.GetParent().GetID()
+	log.Println("+++subnetId")
+	log.Print(subnetId)
+	err := PGDBConn.OrmUpdatePool(subnetId, pool)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (r *PoolHandler) DeletePool(pool *RestPool) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err := PGDBConn.OrmDeletePool(pool.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *ReservationHandler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go subnetv4ReservationHandler List")
 	rsv := ctx.Resource.(*RestReservation)
@@ -288,25 +382,6 @@ func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 }
 
 func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	err := PGDBConn.OrmDeleteReservation(rsv.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
-	list := PGDBConn.OrmPoolList(subnetId)
-	pool := ConvertPoolsFromOrmToRest(list)
-
-	return pool
-}
-
-func (r *PoolHandler) DeletePool(rsv *RestPool) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
