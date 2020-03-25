@@ -70,6 +70,10 @@ var KeaDhcpv6Conf []byte // same like dhcpv4 above
 //
 //	return p
 //}
+type CmdRet struct {
+	Result string `json:"result"`
+	Text   string `json:"text"`
+}
 
 type ParseDhcpv4Config struct {
 	Result    json.Number
@@ -233,11 +237,6 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	return nil
 }
 
-type curlRet struct {
-	result json.Number
-	text   string
-}
-
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
 	log.Print("dhcp/dhcp.go, into setDhcpv4Config()")
@@ -255,19 +254,27 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 		log.Println("json.Marshal error: ", err)
 	}
 
-	log.Println("postStr: ", postStr)
+	//log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
-	log.Println("curlCmd: ", curlCmd)
-	r, err := cmd(curlCmd)
-
-	//log.Print(curlCmd)
-	log.Print("print r")
-	log.Print(r)
-
+	//log.Println("curlCmd: ", curlCmd)
+	var cmdRet CmdRet
+	str, err := cmd(curlCmd)
 	if err != nil {
+		log.Println("cmd Error, err: ", err)
 		return err
 	}
+	if err := json.Unmarshal([]byte(str), &cmdRet); err != nil {
+		log.Println("cmd unmarshal Error, err: ", err)
+		return err
+	}
+	if cmdRet.Result != "0" {
+		log.Println("set dhcpv4 config Error, err: ", cmdRet.Text)
+		return fmt.Errorf(cmdRet.Text)
+	}
+	//log.Print(curlCmd)
+	//log.Print("print r")
+	//log.Print(r)
 
 	// todo 正则匹配successful.
 
@@ -284,7 +291,7 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	//	log.Print("shell ok")
 	//	log.Print(ret)
 	//
-	//	var r curlRet
+	//var r curlRet
 	//	if err := json.Unmarshal([]byte(ret), &r); err != nil {
 	//		log.Print("err != nil")
 	//		log.Print(err)
@@ -354,13 +361,17 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		return err
 	}
 
-	var subnetv4 []SubnetConfig
-	var maxId json.Number
+	//var subnetv4 []SubnetConfig
+	var maxId int
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Println("conf Subnet4: ", v.Subnet)
-		log.Println("conf Subnet4 id: ", v.Id)
-		if v.Id >= maxId {
-			maxId = v.Id + json.Number(1)
+		//log.Println("conf Subnet4: ", v.Subnet)
+		//log.Println("conf Subnet4 id: ", v.Id, ", maxId: ", maxId)
+		curId, err := strconv.Atoi(string(v.Id))
+		if err != nil {
+			return err
+		}
+		if curId >= maxId {
+			maxId = curId + 1
 		}
 		if v.ReservationMode == "" {
 			log.Println("reserationMode == nil, subnet: ", v.Subnet)
@@ -369,7 +380,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
 		}
-		subnetv4 = append(subnetv4, v)
+		//subnetv4 = append(subnetv4, v)
 	}
 
 	newSubnet4 := SubnetConfig{
@@ -377,17 +388,17 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
-		Id:              maxId,
+		Id:              json.Number(strconv.Itoa(maxId)),
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},
 		//},
 	}
 	newSubnet4.Pools = []Pool{}
-	subnetv4 = append(subnetv4, newSubnet4)
-	log.Println("---subnetv4: ", subnetv4)
+	//subnetv4 = append(subnetv4, newSubnet4)
+	//log.Println("---subnetv4: ", subnetv4)
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
-	log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
+	//log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
 	setErr := handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
 		return setErr
