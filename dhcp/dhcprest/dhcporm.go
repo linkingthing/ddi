@@ -10,7 +10,9 @@ import (
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils/arp"
 	"log"
+	"net"
 	"strconv"
 	"strings"
 )
@@ -104,7 +106,6 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 		Dhcpv4ConfId:  1,
 		Name:          name,
 		Subnet:        subnet,
-		SubnetId:      "0",
 		ValidLifetime: validLifetime,
 		//DhcpVer:       Dhcpv4Ver,
 	}
@@ -145,7 +146,7 @@ func (handler *PGDB) UpdateSubnetv4(ormS4 dhcporm.OrmSubnetv4) error {
 	log.Println("subnet.id: ", subnet.ID)
 	log.Println("subnet.name: ", subnet.Name)
 	log.Println("subnet.subnet: ", subnet.Subnet)
-	log.Println("subnet.subnet_id: ", subnet.SubnetId)
+	//log.Println("subnet.subnet_id: ", subnet.SubnetId)
 	log.Println("subnet.ValidLifetime: ", subnet.ValidLifetime)
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
@@ -218,7 +219,7 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
 	log.Println("into OrmCreateReservation")
 	var rsv = dhcporm.Reservation{
-		Duid:         r.Duid,
+		//Duid:         r.Duid,
 		BootFileName: r.BootFileName,
 		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
 		Hostname:     r.Hostname,
@@ -246,7 +247,7 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 	ormRsv := dhcporm.Reservation{}
 	ormRsv.ID = ConvertStringToUint(r.GetID())
 	ormRsv.Hostname = r.Hostname
-	ormRsv.Duid = r.Duid
+	//ormRsv.Duid = r.Duid
 	ormRsv.BootFileName = r.BootFileName
 
 	db.Model(&ormRsv).Updates(ormRsv)
@@ -361,7 +362,7 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 	for _, a := range data {
 		if a.ReservType == "hw-address" || a.ReservType == "client-id" {
 			//get the stable address
-			one.Stable = append(one.Reserved, a.IpAddress)
+			one.Stable = append(one.Stable, a.IpAddress)
 		} else {
 			one.Reserved = append(one.Reserved, a.IpAddress)
 		}
@@ -382,7 +383,7 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 			break
 		}
 		var beginPart string
-		beginPart = beginNums[0] + "." + beginNums[1] + "." + beginNums[2]
+		beginPart = beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
 		for i := begin; i <= end; i++ {
 			dynamicAddress = append(dynamicAddress, beginPart+strconv.Itoa(i))
 		}
@@ -410,10 +411,91 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 	}
 	//get the release address for the subnet
 	leases := dhcpgrpc.GetLeases(subNetID)
-	one.Lease = leases
+	for _, l := range leases {
+		one.Lease = append(one.Lease, l.IpAddress)
+	}
 	return &one, nil
 }
 
 func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
-	return nil, nil
+	leases := dhcpgrpc.GetLeases(id)
+	var retData ipam.ScanAddress
+	retData.SetID(id)
+	var subnet dhcporm.OrmSubnetv4
+	if err := handler.db.First(&subnet, id).Error; err != nil {
+		return nil, err
+	}
+	originalReservData := handler.OrmReservationList(id)
+	var notUsedIP []string
+	var allIP []string
+	//for not used IP adderss
+	s := strings.Split(subnet.Subnet, "/")
+	if len(s) == 2 && s[1] == "24" {
+		nums := strings.Split(s[0], ".")
+		if len(nums) >= 3 {
+			for i := 1; i <= 255; i++ {
+				allIP = append(allIP, nums[0]+"."+nums[1]+"."+nums[2]+"."+strconv.Itoa(i))
+			}
+		}
+	}
+	found := false
+	for _, ip := range allIP {
+		found = false
+		for _, reserve := range originalReservData {
+			if ip == reserve.IpAddress {
+				found = true
+				break
+			}
+		}
+		if !found {
+			for _, lease := range leases {
+				if ip == lease.IpAddress {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			notUsedIP = append(notUsedIP, ip)
+		}
+	}
+	for _, ip := range notUsedIP {
+		if _, err := arp.Arp("ens37", ip, 1); err != nil {
+			log.Println(err)
+			continue
+		}
+		retData.Collision = append(retData.Collision, ip)
+	}
+	//for used ip addresses
+	usedIP := map[string]string{}
+	var reservs []dhcporm.Reservation
+	if err := handler.db.Where("subnetv4_id = ?", id).Find(&reservs).Error; err != nil {
+		return nil, err
+	}
+	for _, r := range reservs {
+		if r.ReservType == "hw-address" {
+			usedIP[r.IpAddress] = r.ReservValue
+		}
+	}
+	for _, l := range leases {
+		var macAddr string
+		for i := 0; i < len(l.HwAddress); i++ {
+			tmp := fmt.Sprintf("%d", l.HwAddress[i])
+			macAddr += tmp
+		}
+		usedIP[l.IpAddress] = macAddr
+	}
+	var retMac *net.HardwareAddr
+	var err error
+	for ip, mac := range usedIP {
+		retMac = nil
+		if retMac, err = arp.Arp("ens37", ip, 1); err != nil {
+			log.Println(err)
+			continue
+		}
+		if retMac.String() != mac {
+			retData.Collision = append(retData.Collision, ip)
+		}
+	}
+	return &retData, nil
 }

@@ -510,7 +510,10 @@ func (handler *KEAv4Handler) GetLeaseAddress(req pb.GetLeaseAddressReq) (*pb.Get
 	for _, l := range ls {
 		var address string
 		address = strconv.Itoa(l.Address&0xff000000>>24&0xff) + "." + strconv.Itoa(l.Address&0x00ff0000>>16&0xff) + "." + strconv.Itoa(l.Address&0x0000ff00>>8&0xff) + "." + strconv.Itoa(l.Address&0x000000ff&0xff)
-		resp.Addresses = append(resp.Addresses, address)
+		tmp := pb.Lease{}
+		tmp.IpAddress = address
+		tmp.HwAddress = l.Hwaddr
+		resp.Leases = append(resp.Leases, &tmp)
 	}
 	return &resp, nil
 }

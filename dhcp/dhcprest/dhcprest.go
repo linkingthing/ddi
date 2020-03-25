@@ -58,8 +58,8 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	}
 
 	dbS4 := dhcporm.OrmSubnetv4{}
-	dbS4.SubnetId = subnetv4.ID
-	dbS4.Subnet = subnetv4.Subnet
+	//dbS4.SubnetId = subnetv4.ID
+	//dbS4.id = subnetv4.Subnet
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
 	id, err := strconv.Atoi(subnetv4.ID)
