@@ -203,7 +203,7 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	if err := tx.Unscoped().Delete(&ormS4).Error; err != nil {
 		return err
 	}
-	req := pb.DeleteSubnetv4Req{Id: id}
+	req := pb.DeleteSubnetv4Req{Id: id, Subnet: ormS4.Subnet}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err
