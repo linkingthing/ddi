@@ -71,7 +71,7 @@ var KeaDhcpv6Conf []byte // same like dhcpv4 above
 //	return p
 //}
 type CmdRet struct {
-	Result string `json:"result"`
+	Result int    `json:"result"`
 	Text   string `json:"text"`
 }
 
@@ -264,11 +264,12 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 		log.Println("cmd Error, err: ", err)
 		return err
 	}
-	if err := json.Unmarshal([]byte(str), &cmdRet); err != nil {
+	//log.Println("cmd ret: ", str)
+	if err := json.Unmarshal([]byte(str[1:len(str)-1]), &cmdRet); err != nil {
 		log.Println("cmd unmarshal Error, err: ", err)
 		return err
 	}
-	if cmdRet.Result != "0" {
+	if cmdRet.Result != 0 {
 		log.Println("set dhcpv4 config Error, err: ", cmdRet.Text)
 		return fmt.Errorf(cmdRet.Text)
 	}
