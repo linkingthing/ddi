@@ -117,22 +117,22 @@ type ControlSocket struct {
 }
 
 type SubnetConfig struct {
-	Four4o6Interface   string        `json:"4o6-interface"`
-	Four4o6InterfaceId string        `json:"4o6-interface-id"`
-	Four4o6Subnet      string        `json:"4o6-subnet"`
-	Authoritative      bool          `json:"authoritative"`
-	CalculateTeeTimes  bool          `json:"calculate-tee-times"`
-	Id                 json.Number   `json:"id"`
-	MatchClientId      bool          `json:"match-client-id"`
-	NextServer         string        `json:"next-server"`
-	OptionData         []Option      `json:"option-data"`
-	Pools              []Pool        `json:"pools"`
-	RebindTimer        json.Number   `json:"rebind-timer"`
-	Relay              SubnetRelay   `json:"relay"`
-	RenewTimer         json.Number   `json:"renew-timer"`
-	ReservationMode    string        `json:"reservation-mode"`
-	Reservations       []Reservation `json:"reservations"`
-	Subnet             string        `json:"subnet"`
+	//Four4o6Interface   string        `json:"4o6-interface"`
+	//Four4o6InterfaceId string        `json:"4o6-interface-id"`
+	//Four4o6Subnet      string        `json:"4o6-subnet"`
+	//Authoritative     bool          `json:"authoritative"`
+	//CalculateTeeTimes bool          `json:"calculate-tee-times"`
+	Id json.Number `json:"id"`
+	//MatchClientId   bool          `json:"match-client-id"`
+	//NextServer      string        `json:"next-server"`
+	OptionData []Option `json:"option-data"`
+	Pools      []Pool   `json:"pools"`
+	//RebindTimer     json.Number   `json:"rebind-timer"`
+	//Relay           SubnetRelay   `json:"relay"`
+	//RenewTimer      json.Number   `json:"renew-timer"`
+	ReservationMode string        `json:"reservation-mode"`
+	Reservations    []Reservation `json:"reservations"`
+	Subnet          string        `json:"subnet"`
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
@@ -248,11 +248,11 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	postData := map[string]interface{}{
 		"command":   "config-set",
 		"service":   []string{service},
-		"arguments": &conf,
+		"arguments": conf,
 	}
 	postStr, _ := json.Marshal(postData)
 
-	//log.Println("postStr: ", postStr)
+	log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	log.Println("curlCmd: ", curlCmd)
@@ -360,7 +360,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		}
 		if v.ReservationMode == "" {
 			log.Println("reserationMode == nil, subnet: ", v.Subnet)
-			conf.Arguments.Dhcp4.Subnet4[k].ReservationMode = "all"
+			v.ReservationMode = "all"
 		}
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
@@ -375,13 +375,14 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
 		Id:              maxId,
-		Relay: SubnetRelay{
-			IpAddresses: []string{},
-		},
+		//Relay: SubnetRelay{
+		//	IpAddresses: []string{},
+		//},
 	}
 	newSubnet4.Pools = []Pool{}
 
 	conf.Arguments.Dhcp4.Subnet4 = append(subnetv4, newSubnet4)
+	log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
 	setErr := handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 	if setErr != nil {
 		return setErr
