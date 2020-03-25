@@ -154,6 +154,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
 
+	log.Println("begin to save db, dbS4.ID: ", dbS4.ID)
 	tx := handler.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&dbS4).Error; err != nil {
@@ -167,6 +168,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 		log.Println("proto.Marshal error, ", err)
 		return err
 	}
+	log.Println("begin to call sendcmddhcpv4, update subnetv4")
 	if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err

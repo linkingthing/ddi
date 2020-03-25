@@ -219,6 +219,9 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	if err != nil {
 		return err
 	}
+	log.Println("config json: ", configJson)
+	log.Println("dhcphost: ", DhcpHost)
+	log.Println("DhcpPort: ", DhcpPort)
 
 	KeaDhcpv4Conf = []byte(string(configJson[2 : len(configJson)-2]))
 
@@ -249,13 +252,15 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	}
 	postStr, _ := json.Marshal(postData)
 
+	//log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
-	_, err := cmd(curlCmd)
+	log.Println("curlCmd: ", curlCmd)
+	r, err := cmd(curlCmd)
 
 	//log.Print(curlCmd)
-	//log.Print("print r")
-	//log.Print(r)
+	log.Print("print r")
+	log.Print(r)
 
 	if err != nil {
 		return err
@@ -288,6 +293,7 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	//}
 
 	KeaDhcpv4Conf = postStr
+
 	return nil
 }
 

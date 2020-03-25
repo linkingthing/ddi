@@ -47,6 +47,7 @@ func SendCmd(data []byte, cmd string) error {
 }
 
 func SendCmdDhcpv4(data []byte, cmd string) error {
+	log.Println("into SendCmdDhcpv4, cmd: ", cmd)
 	postData := kg.Message{
 		Key:   []byte(cmd),
 		Value: data,

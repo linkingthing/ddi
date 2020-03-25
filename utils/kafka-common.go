@@ -3,27 +3,28 @@ package utils
 import (
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
 	"io/ioutil"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
-var (
-	KafkaServerProm = HostIP + ":" + KafkaPort
-	KafkaPort       = "9092"
-	KafkaTopicProm  = "prom"
+const (
+	KafkaPort      = "9092"
+	KafkaTopicProm = "prom"
 	//checkDuration   = 24 * time.Hour
-	Hostname        = "ip-19"
-	HostIP          = "10.0.0.19"
+	Hostname        = "ip-55"
+	HostIP          = "10.0.0.55"
 	PromMetricsPort = "9100"
 )
 
 const (
-	RoleController = "controller"
-	RoleDB         = "db"
-	RoleKafka      = "kafka"
+	RoleController  = "controller"
+	RoleDB          = "db"
+	RoleKafka       = "kafka"
+	KafkaServerProm = HostIP + ":" + KafkaPort
 )
 
 type PromRole struct {
