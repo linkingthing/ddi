@@ -12,7 +12,6 @@ import (
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
-	"github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
 )
@@ -209,7 +208,8 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
 	tx.Commit()

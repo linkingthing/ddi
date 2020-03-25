@@ -355,7 +355,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 	return nil
 }
 
-func (handler *KEAv4Handler) CreateSubnetv4(req *pb.CreateSubnetv4Req) error {
+func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	log.Println("into dhcp/dhcp.go CreateSubnetv4(), req.subnet: ", req.Subnet)
 	var conf ParseDhcpv4Config
 	if err := handler.getv4Config(&conf); err != nil {
@@ -407,7 +407,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req *pb.CreateSubnetv4Req) error {
 	return nil
 }
 
-func (handler *KEAv4Handler) UpdateSubnetv4(req *pb.UpdateSubnetv4Req) error {
+func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 	log.Println("into dhcp/UpdateSubnetv4, req.subnet: ", req.Subnet)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
@@ -418,12 +418,16 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req *pb.UpdateSubnetv4Req) error {
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
+			log.Println("v.Subnet: ", v.Subnet)
 			conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
-			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
-				{
-					[]Option{},
-					req.Pool[0].Pool,
-				},
+			if len(req.Pool) > 0 {
+				log.Println("req.pool: ", req.Pool)
+				conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
+					{
+						[]Option{},
+						req.Pool[0].Pool,
+					},
+				}
 			}
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
@@ -436,14 +440,16 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req *pb.UpdateSubnetv4Req) error {
 }
 
 func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
+	log.Println("into dhcp/DeleteSubnetv4, req.id: ", req.Id)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
 		return err
 	}
-
+	//todo,loop and found subnet id
 	tmp := conf.Arguments.Dhcp4.Subnet4
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
 		if v.Subnet == req.Subnet {
 			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
