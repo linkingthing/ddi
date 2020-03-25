@@ -352,6 +352,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 			return err
 		}
 	}
+	log.Println("in getv4Config, conf: ", conf)
 	return nil
 }
 

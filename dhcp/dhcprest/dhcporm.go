@@ -122,8 +122,9 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
-		Subnet: subnet,
-		Id:     strconv.Itoa(int(last.ID)),
+		Subnet:        subnet,
+		Id:            strconv.Itoa(int(last.ID)),
+		ValidLifetime: validLifetime,
 	}
 	log.Println("pb.CreateSubnetv4Req req: ", req)
 
@@ -168,7 +169,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 		log.Println("proto.Marshal error, ", err)
 		return err
 	}
-	log.Println("begin to call sendcmddhcpv4, update subnetv4")
+	log.Println("begin to call SendDhcpCmd, update subnetv4")
 	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
