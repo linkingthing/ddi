@@ -351,8 +351,16 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		return err
 	}
 
-	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
+	var maxId json.Number
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		log.Println("conf Subnet4: ", v.Subnet)
+		if v.Id >= maxId {
+			maxId = v.Id + json.Number(1)
+		}
+		if v.ReservationMode == "" {
+			log.Println("reserationMode == nil, subnet: ", v.Subnet)
+			conf.Arguments.Dhcp4.Subnet4[k].ReservationMode = "all"
+		}
 		if v.Subnet == req.Subnet {
 			return fmt.Errorf(req.Subnet + " exists, return")
 		}
@@ -363,6 +371,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
+		Id:              maxId,
 		Relay: SubnetRelay{
 			IpAddresses: []string{},
 		},
