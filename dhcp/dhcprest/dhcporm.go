@@ -169,12 +169,14 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 		return err
 	}
 	log.Println("begin to call sendcmddhcpv4, update subnetv4")
-	if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
-	//end of todo
 
+	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
+	//}
+	//end of todo
 	//db.Model(subnet).Update(ormS4)
 
 	tx.Commit()
