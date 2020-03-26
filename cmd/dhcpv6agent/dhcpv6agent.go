@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"fmt"
-
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
@@ -14,6 +12,7 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+	"log"
 )
 
 const (
@@ -54,7 +53,7 @@ func Dhcpv6Client() {
 			panic(err)
 			return
 		}
-		fmt.Printf("v6 message at offset %d: key: %s, value: %s\n", message.Offset, string(message.Key), string(message.Value))
+		log.Println("v6 message at offset %d: key: %s, value: %s\n", message.Offset, string(message.Key), string(message.Value))
 
 		switch string(message.Key) {
 		case StartDHCPv6:

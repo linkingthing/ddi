@@ -367,10 +367,15 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 }
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
-	log.Println("into OrmCreatePool")
+	log.Println("into OrmCreatePool, r: ", r)
 
+	sid, err := strconv.Atoi(subnetv4_id)
+	if err != nil {
+		log.Println("OrmCreatePool, sid error: ", subnetv4_id)
+	}
 	var ormPool dhcporm.Pool
 	ormPool = dhcporm.Pool{
+		Subnetv4ID:   uint(sid),
 		BeginAddress: r.BeginAddress,
 		EndAddress:   r.EndAddress,
 		OptionData:   []dhcporm.Option{},
@@ -385,7 +390,7 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	pools := []*pb.Pools{}
 	pools = append(pools, &pool)
 	req := pb.CreateSubnetv4PoolReq{
-		Id: subnetv4_id,
+		Id: r.Subnetv4Id,
 		//Subnet: subnetv4_id,
 		Pool: pools,
 	}
@@ -400,8 +405,7 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	}
 	//end of todo
 
-	log.Println("pools: ", pools)
-	query := handler.db.Create(&pools)
+	query := handler.db.Create(&ormPool)
 	if query.Error != nil {
 		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " +
 			r.EndAddress)

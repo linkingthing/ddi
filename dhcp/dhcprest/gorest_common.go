@@ -54,6 +54,7 @@ type RestReservation struct {
 
 type RestPool struct {
 	resource.ResourceBase `json:"embedded,inline"`
+	Subnetv4Id            string       `json:"subnetv4_id"`
 	OptionData            []RestOption `json:"option-data"`
 	BeginAddress          string       `json:"begin-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	EndAddress            string       `json:"end-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
