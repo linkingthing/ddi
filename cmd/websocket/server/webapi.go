@@ -413,7 +413,7 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			if err != nil {
 				log.Println("json marshal err: ", err)
 			}
-			log.Println("string retJson: ", string(retJson))
+			//log.Println("string retJson: ", string(retJson))
 			tmp := string(retJson)
 
 			return &tmp, nil
