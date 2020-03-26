@@ -150,7 +150,7 @@ func Query_range(w http.ResponseWriter, r *http.Request) {
 
 	result.Data.Values = histData
 
-	log.Println("xxx cpuHist: ", cpuResp)
+	//log.Println("xxx cpuHist: ", cpuResp)
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
