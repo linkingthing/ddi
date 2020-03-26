@@ -287,9 +287,9 @@ func GetPromItem(promType string, host string) (string, error) {
 		return "", err
 	}
 
-	log.Println("+++ in GetPromItem(), out")
-	log.Println(out)
-	log.Println("--- out")
+	//log.Println("+++ in GetPromItem(), out")
+	//log.Println(out)
+	//log.Println("--- out")
 
 	err = json.Unmarshal([]byte(out), &rsp)
 	if err != nil {
@@ -358,9 +358,9 @@ func GetPromRange(promType string, host string, start int, end int, step int) (*
 			"&step=" + strconv.Itoa(step) + "s' 2>/dev/null"
 		out, err = utils.Cmd(command)
 
-		log.Println("+++ in GetPromRange(), out, command: ", command)
-		log.Println(out)
-		log.Println("--- out")
+		//log.Println("+++ in GetPromRange(), out, command: ", command)
+		//log.Println(out)
+		//log.Println("--- out")
 		if err != nil {
 			return nil, err
 		}
