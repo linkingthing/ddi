@@ -43,7 +43,7 @@ func TestSubnetv4List(t *testing.T) {
 func TestCreateSubnetv4(t *testing.T) {
 	log.Print("---begin to create subnet v4")
 
-	var subnetv4 Subnetv4
+	var subnetv4 RestSubnetv4
 	subnetv4.Subnet = "test01"
 	subnetv4.ValidLifetime = "3000"
 
@@ -55,7 +55,7 @@ func TestCreateSubnetv4(t *testing.T) {
 func TestUpdateSubnetv4(t *testing.T) {
 	log.Print("---begin to update subnet v4")
 
-	var subnetv4 Subnetv4
+	var subnetv4 RestSubnetv4
 	subnetv4.Subnet = "test01"
 	subnetv4.ValidLifetime = "3001"
 

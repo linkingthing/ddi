@@ -107,6 +107,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
+	log.Println("into CreateSubnetv4, name: %s, subnet: %s, validLifetime: %s", name, subnet, validLifetime)
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -141,7 +142,7 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	return last, nil
 }
 
-func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
+func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", subnetv4.Subnet)
 
 	dbS4 := dhcporm.OrmSubnetv4{}

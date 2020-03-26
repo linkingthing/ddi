@@ -65,7 +65,7 @@ type Subnetv4 struct {
 	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
-	ValidLifetime         string `json:"validLifeTime"`
+	ValidLifetime         string `json:"validLifetime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
 }
@@ -74,10 +74,10 @@ type RestSubnetv4 struct {
 	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
-	ValidLifetime         string `json:"validLifeTime"`
+	ValidLifetime         string `json:"validLifetime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
-	SubnetTotal           string `json"total"`
+	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 }
 

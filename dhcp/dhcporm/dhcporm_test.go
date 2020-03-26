@@ -35,14 +35,14 @@ func TestCreateSubnetv4(t *testing.T) {
 	defer db.Close()
 	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
 
-	s4 := dhcprest.Subnetv4{
+	s4 := dhcprest.RestSubnetv4{
 		Name:          "subnetname2",
 		ValidLifetime: "3333",
 	}
 	err = dhcpv4.CreateSubnetv4(&s4)
 	ut.Assert(t, err == nil, "create subnetv4 ok")
 
-	var subnets *dhcprest.Subnetv4
+	var subnets *dhcprest.RestSubnetv4
 	subnets = dhcpv4.GetSubnetv4ById(s4.ID)
 
 	if len(subnets.ID) > 0 {

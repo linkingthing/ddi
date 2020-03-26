@@ -21,8 +21,8 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 //	return &Subnetv4State{db: db}
 //}
 
-func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
-	log.Println("into CreateSubnetv4")
+func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
+	log.Println("into CreateSubnetv4, subnetv4: ", subnetv4)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -32,6 +32,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
+	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv4)
 	s4, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
 	if err != nil {
 		return err
@@ -49,7 +50,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *Subnetv4) error {
 	return nil
 }
 
-func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
+func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
 	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
 	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
@@ -73,7 +74,7 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *Subnetv4) error {
 	return nil
 }
 
-func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
+func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *RestSubnetv4) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -196,9 +197,12 @@ type subnetv4PoolHandler struct {
 func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go Create")
 
-	subnetv4 := ctx.Resource.(*Subnetv4)
+	subnetv4 := ctx.Resource.(*RestSubnetv4)
 	//subnetv4.SetID(subnetv4.Subnet)
 	subnetv4.SetCreationTimestamp(time.Now())
+	log.Println("into dhcprest.go Create, subnetv4: ", subnetv4)
+	log.Println("into dhcprest.go Create, subnetv4 ValidLifetime: ", subnetv4.ValidLifetime)
+	log.Println("into dhcprest.go Create, subnetv4 name: ", subnetv4.Name)
 	if err := h.subnetv4s.CreateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	} else {
@@ -209,7 +213,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go Update")
 
-	subnetv4 := ctx.Resource.(*Subnetv4)
+	subnetv4 := ctx.Resource.(*RestSubnetv4)
 	if err := h.subnetv4s.UpdateSubnetv4(subnetv4); err != nil {
 		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
 	}
@@ -223,7 +227,7 @@ func (h *subnetv4Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 
 func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 	log.Println("into dhcprest.go Delete")
-	subnetv4 := ctx.Resource.(*Subnetv4)
+	subnetv4 := ctx.Resource.(*RestSubnetv4)
 
 	if err := h.subnetv4s.DeleteSubnetv4(subnetv4); err != nil {
 		return goresterr.NewAPIError(goresterr.ServerError, err.Error())

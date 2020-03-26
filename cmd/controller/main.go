@@ -127,7 +127,7 @@ func main() {
 	defer dhcprest.PGDBConn.Close()
 
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	// end of dhcp model
