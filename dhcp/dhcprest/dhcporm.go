@@ -385,9 +385,9 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	pools := []*pb.Pools{}
 	pools = append(pools, &pool)
 	req := pb.CreateSubnetv4PoolReq{
-		Id:     subnetv4_id,
-		Subnet: subnetv4_id,
-		Pool:   pools,
+		Id: subnetv4_id,
+		//Subnet: subnetv4_id,
+		Pool: pools,
 	}
 	log.Println("OrmCreatePool, req: ", req)
 	data, err := proto.Marshal(&req)
@@ -400,7 +400,8 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	}
 	//end of todo
 
-	query := handler.db.Create(&pool)
+	log.Println("pools: ", pools)
+	query := handler.db.Create(&pools)
 	if query.Error != nil {
 		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " +
 			r.EndAddress)

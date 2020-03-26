@@ -481,14 +481,13 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Print("in for loop")
-		log.Print(v.Subnet)
-		log.Print(req.Subnet)
-		if v.Subnet == req.Subnet {
+		log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
+		//log.Print(v.Subnet)
+		//log.Print(req.Subnet)
+		if v.Id == json.Number(req.Id) {
 			for _, pool := range req.Pool {
 
 				var ops = []Option{}
-
 				if len(pool.Options) > 0 {
 					for _, op := range pool.Options {
 
@@ -510,9 +509,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 				p.OptionData = []Option{}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
-			//log.Print("begin subnet\n")
-			//log.Print(conf.Arguments.Dhcp4)
-			//log.Print("end subnet\n")
+			log.Print("begin subnet\n")
+			log.Print(conf.Arguments.Dhcp4)
+			log.Print("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
