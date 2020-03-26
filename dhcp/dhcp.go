@@ -443,6 +443,7 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 
 func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 	log.Println("into dhcp/DeleteSubnetv4, req.id: ", req.Id)
+	log.Println("into dhcp/DeleteSubnetv4, req.Subnet: ", req.Subnet)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
