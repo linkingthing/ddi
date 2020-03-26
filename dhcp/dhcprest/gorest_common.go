@@ -16,7 +16,7 @@ var (
 		Version: "dhcp/v1",
 	}
 
-	subnetv4Kind    = resource.DefaultKindName(Subnetv4{})
+	subnetv4Kind    = resource.DefaultKindName(RestSubnetv4{})
 	ReservationKind = resource.DefaultKindName(RestReservation{})
 	PoolKind        = resource.DefaultKindName(RestPool{})
 	OptionKind      = resource.DefaultKindName(RestOption{})
@@ -69,9 +69,20 @@ type Subnetv4 struct {
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
 }
+type RestSubnetv4 struct {
+	resource.ResourceBase `json:"embedded,inline"`
+	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	SubnetId              string `json:"subnet_id"`
+	ValidLifetime         string `json:"validLifeTime"`
+	Reservations          []*RestReservation
+	Pools                 []*RestPool
+	SubnetTotal           string `json"total"`
+	SubnetUsage           string `json:"usage"`
+}
 
 type Subnetv4State struct {
-	Subnetv4s []*Subnetv4
+	Subnetv4s []*RestSubnetv4
 }
 type Subnetv4Handler struct {
 	subnetv4s *Subnetv4State
@@ -91,12 +102,12 @@ func NewPoolsState() *PoolsState {
 
 type Dhcpv4 struct {
 	db        *gorm.DB
-	subnetv4s []*Subnetv4
+	subnetv4s []*RestSubnetv4
 	lock      sync.Mutex
 }
 
 type Subnetv4s struct {
-	Subnetv4s []*Subnetv4
+	Subnetv4s []*RestSubnetv4
 	db        *gorm.DB
 }
 
@@ -164,11 +175,12 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 	return restPs
 }
 
-func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *Subnetv4 {
+func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubnetv4 {
 
-	v4 := &Subnetv4{}
+	v4 := &RestSubnetv4{}
 	v4.SetID(strconv.Itoa(int(v.ID)))
 	v4.Subnet = v.Subnet
+	v4.Name = v.Name
 	v4.SubnetId = strconv.Itoa(int(v.ID))
 	v4.ValidLifetime = v.ValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
@@ -201,11 +213,11 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 }
 func (n RestReservation) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into RestReservation GetParents")
-	return []resource.ResourceKind{Subnetv4{}}
+	return []resource.ResourceKind{RestSubnetv4{}}
 }
 func (n RestPool) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into RestPool GetParents")
-	return []resource.ResourceKind{Subnetv4{}}
+	return []resource.ResourceKind{RestSubnetv4{}}
 }
 
 //func (s *Dhcpv4) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {

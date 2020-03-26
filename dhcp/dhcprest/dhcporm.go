@@ -65,12 +65,16 @@ func (handler *PGDB) Close() {
 
 func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
+
 	query := handler.db.Find(&subnetv4s)
 	if query.Error != nil {
 		log.Print(query.Error.Error())
 	}
 
 	for k, v := range subnetv4s {
+		//log.Println("k: ", k, ", v: ", v)
+		//log.Println("in Subnetv4List, v.ID: ", v.ID)
+
 		rsv := []dhcporm.Reservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)

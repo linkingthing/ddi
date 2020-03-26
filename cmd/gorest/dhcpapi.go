@@ -43,7 +43,7 @@ func main() {
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
@@ -73,17 +73,10 @@ func main() {
 
 	go server.SocketServer(port)
 
-	//mux := http.NewServeMux()
-	//mux.Handle("/", &server.MyHandler{})
-	//mux.HandleFunc("/apis/linkingthing/node/v1/servers", server.List_server)
-	//mux.HandleFunc("/apis/linkingthing/node/v1/nodes", server.Query)
-	//mux.HandleFunc("/apis/linkingthing/node/v1/hists", server.Query_range)              //history
-	//mux.HandleFunc("/apis/linkingthing/dashboard/v1/dashdns", server.GetDashDns)        //dns log info
-	//mux.HandleFunc("/apis/linkingthing/dashboard/v1/dhcpassign", server.DashDhcpAssign) //dhcp addresses assign
-
 	log.Println("Starting dhcp gorest controller")
-	//log.Fatal(http.ListenAndServe(":1234", mux))
-	//log.Println("end of main, should not come here")
+	router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
+	router.GET("/apis/linkingthing/dashboard/v1/dhcpassign", nodeGetDhcpAssign)
+
 	router.Run("0.0.0.0:1235")
 	//router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
 
@@ -91,4 +84,7 @@ func main() {
 
 func nodeGetDashDns(c *gin.Context) {
 	server.GetDashDns(c.Writer, c.Request)
+}
+func nodeGetDhcpAssign(c *gin.Context) {
+	server.DashDhcpAssign(c.Writer, c.Request)
 }

@@ -28,6 +28,12 @@ type OrmSubnetv4 struct {
 	ManualAddresses []ManualAddress `gorm:"foreignkey:Subnetv4ID"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
+type OrmSubnetv4Front struct {
+	DbS4    OrmSubnetv4
+	S4Name  string
+	S4Total int
+	S4Usage float64
+}
 
 func (OrmSubnetv4) TableName() string {
 	return "subnetv4s"

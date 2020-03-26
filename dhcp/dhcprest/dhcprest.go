@@ -10,6 +10,7 @@ import (
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/cmd/websocket/server"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -89,14 +90,14 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *Subnetv4) error {
 	return nil
 }
 
-func (s *Dhcpv4) GetSubnetv4ById(id string) *Subnetv4 {
+func (s *Dhcpv4) GetSubnetv4ById(id string) *RestSubnetv4 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	return s.getSubnetv4ById(id)
 }
 
-func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
+func (s *Dhcpv4) getSubnetv4ById(id string) *RestSubnetv4 {
 
 	v := PGDBConn.GetSubnetv4ById(id)
 	if v.ID == 0 {
@@ -107,7 +108,7 @@ func (s *Dhcpv4) getSubnetv4ById(id string) *Subnetv4 {
 	return v4
 }
 
-func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *Subnetv4 {
+func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *RestSubnetv4 {
 	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
 	v := PGDBConn.getSubnetv4BySubnet(subnet)
@@ -119,19 +120,62 @@ func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *Subnetv4 {
 	return v4
 }
 
-func (s *Dhcpv4) GetSubnetv4s() []*Subnetv4 {
+func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 	log.Println("into GetSubnetv4s()")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	list := PGDBConn.Subnetv4List()
+	//var subnetv4Fronts []*dhcporm.OrmSubnetv4Front
+	//var subnetv4Front *dhcporm.OrmSubnetv4Front
 
-	var v4 []*Subnetv4
-	for _, v := range list {
-		var subnet *Subnetv4
-		subnet = s.convertSubnetv4FromOrmToRest(&v)
-		v4 = append(v4, subnet)
+	//todo get subnet name, usage, totalIP
+	usage := server.GetSubnetUsage()
+	//log.Println("in Subnetv4List, usage: ", usage)
+	var getUsages = map[string]server.DhcpAssignStat{}
+	for _, v := range usage.Data {
+		//log.Println("in usage.data, k: ", k, ", v.addr: ", v.Addr)
+		//log.Println("in usage.data, k: ", k, ", v.Usage: ", v.Usage)
+		getUsages[v.Addr] = v
 	}
+	//log.Println("getUsages: ", getUsages)
+
+	list := PGDBConn.Subnetv4List()
+	var v4 []*RestSubnetv4
+	for _, v := range list {
+		//log.Println("v.name: ", v.Name)
+		//log.Println("v.ID: ", v.ID)
+		//log.Println("v.Subnet: ", v.Subnet)
+		//log.Println("v.CreatedAt: ", v.CreatedAt)
+
+		var subnet *RestSubnetv4
+		subnet = s.convertSubnetv4FromOrmToRest(&v)
+
+		subnet.SubnetTotal = "0"
+		subnet.SubnetUsage = "0.0"
+		//subnet.Name = ""
+		if _, ok := getUsages[v.Subnet]; ok {
+			//存在
+
+			//log.Println("---- v.name: ", v.Name)
+			//log.Println("---- v.subnet: ", v.Subnet)
+			//subnet.Name = getUsages[v.Subnet].Name
+			subnet.SubnetTotal = strconv.Itoa(getUsages[v.Subnet].Total)
+			subnet.SubnetUsage = fmt.Sprintf("%.2f", getUsages[v.Subnet].Usage)
+			//subnet.SubnetUsage = strconv.Itoa(int((collector.Decimal(getUsages[v.Subnet].Usage))))
+			//strconv.FormatFloat(getUsages[v.Subnet].Usage, 'f', 5, 64)
+
+			log.Println("--- subnet.Subnet: ", subnet.Subnet)
+			log.Println("--- subnet.subnetTotal: ", subnet.SubnetTotal)
+			log.Println("--- subnet.SubnetUsage: ", subnet.SubnetUsage)
+		}
+
+		v4 = append(v4, subnet)
+
+		//subnetv4Front.DbS4 = *subnet
+
+	}
+
+	//log.Println("GetSubnetv4s, v4: ", v4)
 	return v4
 }
 
