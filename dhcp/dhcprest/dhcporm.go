@@ -378,7 +378,7 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 }
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
-	log.Println("into OrmCreatePool, r: ", r)
+	log.Println("into OrmCreatePool, r: ", r, ", subnetv4_id: ", subnetv4_id)
 
 	sid, err := strconv.Atoi(subnetv4_id)
 	if err != nil {
@@ -397,13 +397,17 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
+	//get subnet by subnetv4_id
+	ormSubnetv4 := handler.GetSubnetv4ById(subnetv4_id)
+	s4Subnet := ormSubnetv4.Subnet
+
 	//todo: post kafka msg to dhcp agent
 	pools := []*pb.Pools{}
 	pools = append(pools, &pool)
 	req := pb.CreateSubnetv4PoolReq{
-		Id: r.Subnetv4Id,
-		//Subnet: subnetv4_id,
-		Pool: pools,
+		Id:     r.Subnetv4Id,
+		Subnet: s4Subnet,
+		Pool:   pools,
 	}
 	log.Println("OrmCreatePool, req: ", req)
 	data, err := proto.Marshal(&req)

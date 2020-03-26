@@ -269,7 +269,6 @@ func (r *PoolHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 	}
 
 	log.Println("dhcp/dhcprest. pool.id: ", pool.ID)
-	log.Println("dhcp/dhcprest. pool.Subnetv4Id: ", pool.Subnetv4Id)
 
 	return pool, nil
 }
