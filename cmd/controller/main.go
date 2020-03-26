@@ -124,6 +124,7 @@ func main() {
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
+	go dhcprest.PGDBConn.KeepDetectAlive()
 	defer dhcprest.PGDBConn.Close()
 
 	dhcpv4 := dhcprest.NewDhcpv4(db)
