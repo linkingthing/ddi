@@ -4,8 +4,12 @@
 package pb
 
 import (
+	context "context"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -1816,4 +1820,588 @@ var fileDescriptor_0b4c6fed4d91e328 = []byte{
 	0x57, 0x5c, 0x63, 0xae, 0xb8, 0xd5, 0x5c, 0x71, 0xef, 0xce, 0x15, 0xb7, 0x92, 0x2b, 0x66, 0x93,
 	0x85, 0x23, 0xff, 0x27, 0x74, 0xf9, 0x67, 0x00, 0x00, 0x00, 0xff, 0xff, 0x23, 0x85, 0x9a, 0x8d,
 	0x31, 0x12, 0x00, 0x00,
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Dhcpv4ManagerClient is the client API for Dhcpv4Manager service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type Dhcpv4ManagerClient interface {
+	StartDHCPv4(ctx context.Context, in *StartDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	StopDHCPv4(ctx context.Context, in *StopDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4(ctx context.Context, in *CreateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4(ctx context.Context, in *UpdateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4(ctx context.Context, in *DeleteSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4Pool(ctx context.Context, in *CreateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4Pool(ctx context.Context, in *UpdateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4Pool(ctx context.Context, in *DeleteSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error)
+	CreateSubnetv4Reservation(ctx context.Context, in *CreateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	UpdateSubnetv4Reservation(ctx context.Context, in *UpdateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	DeleteSubnetv4Reservation(ctx context.Context, in *DeleteSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error)
+	GetLeaseAddress(ctx context.Context, in *GetLeaseAddressReq, opts ...grpc.CallOption) (*GetLeaseAddressResp, error)
+}
+
+type dhcpv4ManagerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewDhcpv4ManagerClient(cc *grpc.ClientConn) Dhcpv4ManagerClient {
+	return &dhcpv4ManagerClient{cc}
+}
+
+func (c *dhcpv4ManagerClient) StartDHCPv4(ctx context.Context, in *StartDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/StartDHCPv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) StopDHCPv4(ctx context.Context, in *StopDHCPv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/StopDHCPv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) CreateSubnetv4(ctx context.Context, in *CreateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/CreateSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) UpdateSubnetv4(ctx context.Context, in *UpdateSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/UpdateSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) DeleteSubnetv4(ctx context.Context, in *DeleteSubnetv4Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/DeleteSubnetv4", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) CreateSubnetv4Pool(ctx context.Context, in *CreateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/CreateSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) UpdateSubnetv4Pool(ctx context.Context, in *UpdateSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/UpdateSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) DeleteSubnetv4Pool(ctx context.Context, in *DeleteSubnetv4PoolReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/DeleteSubnetv4Pool", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) CreateSubnetv4Reservation(ctx context.Context, in *CreateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/CreateSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) UpdateSubnetv4Reservation(ctx context.Context, in *UpdateSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/UpdateSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) DeleteSubnetv4Reservation(ctx context.Context, in *DeleteSubnetv4ReservationReq, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/DeleteSubnetv4Reservation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv4ManagerClient) GetLeaseAddress(ctx context.Context, in *GetLeaseAddressReq, opts ...grpc.CallOption) (*GetLeaseAddressResp, error) {
+	out := new(GetLeaseAddressResp)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv4Manager/GetLeaseAddress", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Dhcpv4ManagerServer is the server API for Dhcpv4Manager service.
+type Dhcpv4ManagerServer interface {
+	StartDHCPv4(context.Context, *StartDHCPv4Req) (*OperResult, error)
+	StopDHCPv4(context.Context, *StopDHCPv4Req) (*OperResult, error)
+	CreateSubnetv4(context.Context, *CreateSubnetv4Req) (*OperResult, error)
+	UpdateSubnetv4(context.Context, *UpdateSubnetv4Req) (*OperResult, error)
+	DeleteSubnetv4(context.Context, *DeleteSubnetv4Req) (*OperResult, error)
+	CreateSubnetv4Pool(context.Context, *CreateSubnetv4PoolReq) (*OperResult, error)
+	UpdateSubnetv4Pool(context.Context, *UpdateSubnetv4PoolReq) (*OperResult, error)
+	DeleteSubnetv4Pool(context.Context, *DeleteSubnetv4PoolReq) (*OperResult, error)
+	CreateSubnetv4Reservation(context.Context, *CreateSubnetv4ReservationReq) (*OperResult, error)
+	UpdateSubnetv4Reservation(context.Context, *UpdateSubnetv4ReservationReq) (*OperResult, error)
+	DeleteSubnetv4Reservation(context.Context, *DeleteSubnetv4ReservationReq) (*OperResult, error)
+	GetLeaseAddress(context.Context, *GetLeaseAddressReq) (*GetLeaseAddressResp, error)
+}
+
+// UnimplementedDhcpv4ManagerServer can be embedded to have forward compatible implementations.
+type UnimplementedDhcpv4ManagerServer struct {
+}
+
+func (*UnimplementedDhcpv4ManagerServer) StartDHCPv4(ctx context.Context, req *StartDHCPv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDHCPv4 not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) StopDHCPv4(ctx context.Context, req *StopDHCPv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDHCPv4 not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) CreateSubnetv4(ctx context.Context, req *CreateSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) UpdateSubnetv4(ctx context.Context, req *UpdateSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) DeleteSubnetv4(ctx context.Context, req *DeleteSubnetv4Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4 not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) CreateSubnetv4Pool(ctx context.Context, req *CreateSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) UpdateSubnetv4Pool(ctx context.Context, req *UpdateSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) DeleteSubnetv4Pool(ctx context.Context, req *DeleteSubnetv4PoolReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4Pool not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) CreateSubnetv4Reservation(ctx context.Context, req *CreateSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) UpdateSubnetv4Reservation(ctx context.Context, req *UpdateSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) DeleteSubnetv4Reservation(ctx context.Context, req *DeleteSubnetv4ReservationReq) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSubnetv4Reservation not implemented")
+}
+func (*UnimplementedDhcpv4ManagerServer) GetLeaseAddress(ctx context.Context, req *GetLeaseAddressReq) (*GetLeaseAddressResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLeaseAddress not implemented")
+}
+
+func RegisterDhcpv4ManagerServer(s *grpc.Server, srv Dhcpv4ManagerServer) {
+	s.RegisterService(&_Dhcpv4Manager_serviceDesc, srv)
+}
+
+func _Dhcpv4Manager_StartDHCPv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDHCPv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).StartDHCPv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/StartDHCPv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).StartDHCPv4(ctx, req.(*StartDHCPv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_StopDHCPv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDHCPv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).StopDHCPv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/StopDHCPv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).StopDHCPv4(ctx, req.(*StopDHCPv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_CreateSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/CreateSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4(ctx, req.(*CreateSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_UpdateSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/UpdateSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4(ctx, req.(*UpdateSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_DeleteSubnetv4_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/DeleteSubnetv4",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4(ctx, req.(*DeleteSubnetv4Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_CreateSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/CreateSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4Pool(ctx, req.(*CreateSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_UpdateSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/UpdateSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4Pool(ctx, req.(*UpdateSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_DeleteSubnetv4Pool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4PoolReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4Pool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/DeleteSubnetv4Pool",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4Pool(ctx, req.(*DeleteSubnetv4PoolReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_CreateSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/CreateSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).CreateSubnetv4Reservation(ctx, req.(*CreateSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_UpdateSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/UpdateSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).UpdateSubnetv4Reservation(ctx, req.(*UpdateSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_DeleteSubnetv4Reservation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSubnetv4ReservationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4Reservation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/DeleteSubnetv4Reservation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).DeleteSubnetv4Reservation(ctx, req.(*DeleteSubnetv4ReservationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv4Manager_GetLeaseAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLeaseAddressReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv4ManagerServer).GetLeaseAddress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv4Manager/GetLeaseAddress",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv4ManagerServer).GetLeaseAddress(ctx, req.(*GetLeaseAddressReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Dhcpv4Manager_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.Dhcpv4Manager",
+	HandlerType: (*Dhcpv4ManagerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "StartDHCPv4",
+			Handler:    _Dhcpv4Manager_StartDHCPv4_Handler,
+		},
+		{
+			MethodName: "StopDHCPv4",
+			Handler:    _Dhcpv4Manager_StopDHCPv4_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4",
+			Handler:    _Dhcpv4Manager_CreateSubnetv4_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4",
+			Handler:    _Dhcpv4Manager_UpdateSubnetv4_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4",
+			Handler:    _Dhcpv4Manager_DeleteSubnetv4_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4Pool",
+			Handler:    _Dhcpv4Manager_CreateSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4Pool",
+			Handler:    _Dhcpv4Manager_UpdateSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4Pool",
+			Handler:    _Dhcpv4Manager_DeleteSubnetv4Pool_Handler,
+		},
+		{
+			MethodName: "CreateSubnetv4Reservation",
+			Handler:    _Dhcpv4Manager_CreateSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "UpdateSubnetv4Reservation",
+			Handler:    _Dhcpv4Manager_UpdateSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "DeleteSubnetv4Reservation",
+			Handler:    _Dhcpv4Manager_DeleteSubnetv4Reservation_Handler,
+		},
+		{
+			MethodName: "GetLeaseAddress",
+			Handler:    _Dhcpv4Manager_GetLeaseAddress_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dhcp.proto",
+}
+
+// Dhcpv6ManagerClient is the client API for Dhcpv6Manager service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type Dhcpv6ManagerClient interface {
+	StartDHCPv6(ctx context.Context, in *StartDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error)
+	StopDHCPv6(ctx context.Context, in *StopDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error)
+}
+
+type dhcpv6ManagerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewDhcpv6ManagerClient(cc *grpc.ClientConn) Dhcpv6ManagerClient {
+	return &dhcpv6ManagerClient{cc}
+}
+
+func (c *dhcpv6ManagerClient) StartDHCPv6(ctx context.Context, in *StartDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv6Manager/StartDHCPv6", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dhcpv6ManagerClient) StopDHCPv6(ctx context.Context, in *StopDHCPv6Req, opts ...grpc.CallOption) (*OperResult, error) {
+	out := new(OperResult)
+	err := c.cc.Invoke(ctx, "/pb.Dhcpv6Manager/StopDHCPv6", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Dhcpv6ManagerServer is the server API for Dhcpv6Manager service.
+type Dhcpv6ManagerServer interface {
+	StartDHCPv6(context.Context, *StartDHCPv6Req) (*OperResult, error)
+	StopDHCPv6(context.Context, *StopDHCPv6Req) (*OperResult, error)
+}
+
+// UnimplementedDhcpv6ManagerServer can be embedded to have forward compatible implementations.
+type UnimplementedDhcpv6ManagerServer struct {
+}
+
+func (*UnimplementedDhcpv6ManagerServer) StartDHCPv6(ctx context.Context, req *StartDHCPv6Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StartDHCPv6 not implemented")
+}
+func (*UnimplementedDhcpv6ManagerServer) StopDHCPv6(ctx context.Context, req *StopDHCPv6Req) (*OperResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopDHCPv6 not implemented")
+}
+
+func RegisterDhcpv6ManagerServer(s *grpc.Server, srv Dhcpv6ManagerServer) {
+	s.RegisterService(&_Dhcpv6Manager_serviceDesc, srv)
+}
+
+func _Dhcpv6Manager_StartDHCPv6_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartDHCPv6Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv6ManagerServer).StartDHCPv6(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv6Manager/StartDHCPv6",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv6ManagerServer).StartDHCPv6(ctx, req.(*StartDHCPv6Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Dhcpv6Manager_StopDHCPv6_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDHCPv6Req)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(Dhcpv6ManagerServer).StopDHCPv6(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Dhcpv6Manager/StopDHCPv6",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(Dhcpv6ManagerServer).StopDHCPv6(ctx, req.(*StopDHCPv6Req))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Dhcpv6Manager_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pb.Dhcpv6Manager",
+	HandlerType: (*Dhcpv6ManagerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "StartDHCPv6",
+			Handler:    _Dhcpv6Manager_StartDHCPv6_Handler,
+		},
+		{
+			MethodName: "StopDHCPv6",
+			Handler:    _Dhcpv6Manager_StopDHCPv6_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dhcp.proto",
 }
