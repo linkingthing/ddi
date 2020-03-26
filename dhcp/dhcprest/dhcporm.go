@@ -405,7 +405,7 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	pools := []*pb.Pools{}
 	pools = append(pools, &pool)
 	req := pb.CreateSubnetv4PoolReq{
-		Id:     r.Subnetv4Id,
+		Id:     subnetv4_id,
 		Subnet: s4Subnet,
 		Pool:   pools,
 	}
