@@ -490,13 +490,43 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 
 func (handler *PGDB) OrmDeletePool(id string) error {
 	log.Println("into dhcprest OrmDeletePool, id ", id)
-	dbId := ConvertStringToUint(id)
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Pool{})
+	var ormSubnetv4 dhcporm.OrmSubnetv4
+	var ormPool dhcporm.Pool
 
-	if query.Error != nil {
-		return fmt.Errorf("delete subnet Pool error, Reservation id: " + id)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormPool, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4pool with ID %s, %w", id, err)
 	}
+	log.Println("subnetv4 id: ", ormPool.Subnetv4ID)
+
+	if err := tx.First(&ormSubnetv4, ormPool.Subnetv4ID).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4 with ID %s, %w", ormPool.Subnetv4ID, err)
+	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormPool.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormPool).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4PoolReq{
+		Subnet: ormSubnetv4.Subnet,
+		Pool:   ormPool.BeginAddress + "-" + ormPool.EndAddress,
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Pool); err != nil {
+		log.Println("SendDhcpCmd error, ", err)
+		return err
+	}
+	tx.Commit()
 
 	return nil
 }

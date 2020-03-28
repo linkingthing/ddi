@@ -449,11 +449,13 @@ func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 	if err != nil {
 		return err
 	}
+
 	//todo,loop and found subnet id
 	tmp := conf.Arguments.Dhcp4.Subnet4
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
+		//log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
 		if v.Subnet == req.Subnet {
+
 			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
@@ -510,9 +512,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 				p.OptionData = []Option{}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
-			log.Println("begin subnet\n")
-			log.Println(conf.Arguments.Dhcp4)
-			log.Println("end subnet\n")
+			//log.Println("begin subnet\n")
+			//log.Println(conf.Arguments.Dhcp4)
+			//log.Println("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
@@ -536,6 +538,8 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 	//log.Println(conf.Arguments.Dhcp4.Subnet4)
 	//log.Println("end conf\n")
 
+	changeFlag := false
+
 	//find current pool, and replace it with new pool
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 
@@ -547,6 +551,7 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 			for _, p := range v.Pools {
 				log.Println("in range pools, pool name: ", p.Pool, ", req.oldPool: ", req.Oldpool)
 				if p.Pool == req.Oldpool {
+					changeFlag = true
 					log.Println("p.pool == req.pool")
 					p.Pool = req.Pool
 
@@ -566,18 +571,20 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 						}
 					}
 				}
-
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
 
-			log.Println("begin subnet pools")
-			log.Println(conf.Arguments.Dhcp4.Subnet4[k].Pools)
-			log.Println("end subne poolst")
+			//log.Println("begin subnet pools")
+			//log.Println(conf.Arguments.Dhcp4.Subnet4[k].Pools)
+			//log.Println("end subne poolst")
 
-			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
-			if err != nil {
-				return err
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
 			}
+
 			return nil
 		}
 	}
@@ -585,6 +592,38 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 	return nil
 }
 func (handler *KEAv4Handler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) error {
+	log.Println("into dhcp.go, DeleteSubnetv4Pool")
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	changeFlag := false
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		//log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v.Subnet: ", v.Subnet)
+		if v.Subnet == req.Subnet {
+			tmpPools := conf.Arguments.Dhcp4.Subnet4[k].Pools
+
+			for k2, p := range conf.Arguments.Dhcp4.Subnet4[k].Pools {
+				if p.Pool == req.Pool {
+					changeFlag = true
+					conf.Arguments.Dhcp4.Subnet4[k].Pools = append(tmpPools[:k2], tmpPools[k2+1])
+
+				}
+			}
+			//log.Println("new pools: ", conf.Arguments.Dhcp4.Subnet4[k].Pools)
+
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 
 	return nil
 }

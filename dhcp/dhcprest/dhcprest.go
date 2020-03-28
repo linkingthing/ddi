@@ -330,6 +330,8 @@ func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 	return nil
 }
 func (r *PoolHandler) DeletePool(pool *RestPool) error {
+	log.Println("into DeletePool, pool.ID: ", pool.ID)
+	//log.Println(pool)
 	r.lock.Lock()
 	defer r.lock.Unlock()
 

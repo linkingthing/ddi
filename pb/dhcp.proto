@@ -99,7 +99,7 @@ message UpdateSubnetv4PoolReq{
 
 message DeleteSubnetv4PoolReq{
     string  subnet  = 1;
-    repeated    Pools  pool = 2;
+    string  pool    = 2;
 }
 
 
