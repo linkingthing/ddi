@@ -464,6 +464,8 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	ormPool.BeginAddress = r.BeginAddress
 	ormPool.EndAddress = r.EndAddress
 	ormPool.Subnetv4ID = ConvertStringToUint(subnetv4_id)
+	ormPool.ValidLifetime = r.ValidLifetime
+	ormPool.MaxValidLifetime = r.MaxValidLifetime
 
 	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
 
@@ -474,10 +476,12 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	}
 	//todo send kafka msg
 	req := pb.UpdateSubnetv4PoolReq{
-		Oldpool: oldPoolName,
-		Subnet:  subnetName,
-		Pool:    ormPool.BeginAddress + "-" + ormPool.EndAddress,
-		Options: []*pb.Option{},
+		Oldpool:          oldPoolName,
+		Subnet:           subnetName,
+		Pool:             ormPool.BeginAddress + "-" + ormPool.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(ormPool.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(ormPool.MaxValidLifetime),
 	}
 	data, err := proto.Marshal(&req)
 	if err != nil {

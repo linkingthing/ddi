@@ -99,6 +99,8 @@ message UpdateSubnetv4PoolReq{
     string      pool = 3;
     string      subnet = 4;
     string      oldpool = 5;
+    string      validLifetime = 6;
+    string      maxValidLifetime = 7;
 }
 
 message DeleteSubnetv4PoolReq{

@@ -572,6 +572,23 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 		//log.Print("v.subnet: ", v.Subnet)
 		//log.Print("req.Subnet: ", req.Subnet)
 		if v.Subnet == req.Subnet {
+			log.Println("req.validlifetime: ", req.ValidLifetime)
+			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
+			if len(req.ValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
+
 			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{}
 
 			for _, p := range v.Pools {
