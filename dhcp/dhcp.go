@@ -456,7 +456,11 @@ func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 		//log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
 		if v.Subnet == req.Subnet {
 
-			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
+			if len(tmp) <= 1 {
+				conf.Arguments.Dhcp4.Subnet4 = []SubnetConfig{}
+			} else {
+				conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
+			}
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err
