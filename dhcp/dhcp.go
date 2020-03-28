@@ -606,20 +606,17 @@ func (handler *KEAv4Handler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) er
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		if v.Subnet == req.Subnet {
-			tmpPools := conf.Arguments.Dhcp4.Subnet4[k].Pools
-			log.Println("len(tmpPools): ", len(tmpPools))
+			tmp := []Pool{}
 
-			for k2, p := range conf.Arguments.Dhcp4.Subnet4[k].Pools {
+			for _, p := range conf.Arguments.Dhcp4.Subnet4[k].Pools {
+				if p.Pool != req.Pool {
+					tmp = append(tmp, p)
+				}
 				if p.Pool == req.Pool {
 					changeFlag = true
-					if len(tmpPools) == 1 {
-						conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{}
-					} else {
-						conf.Arguments.Dhcp4.Subnet4[k].Pools = append(tmpPools[:k2], tmpPools[k2+1])
-					}
 				}
 			}
-
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = tmp
 			if changeFlag {
 				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 				if err != nil {
