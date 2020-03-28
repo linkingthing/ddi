@@ -75,7 +75,7 @@ func TestCreateReservation(t *testing.T) {
 	rsv.BootFileName = "boot file 01"
 	rsv.IpAddress = "1.1.1.2"
 
-	_, err := PGDBConn.OrmCreateReservation(dhcpv4.db, subnetv4.ID, &rsv)
+	_, err := PGDBConn.OrmCreateReservation(subnetv4.ID, &rsv)
 
 	unittest.Assert(t, err == nil, "Reservation create error")
 }
@@ -95,7 +95,7 @@ func TestUpdateReservation(t *testing.T) {
 			rsv.Hostname = v.Hostname
 			rsv.BootFileName = "boot file 05"
 			rsv.IpAddress = "1.1.1.5"
-			err = PGDBConn.OrmUpdateReservation(dhcpv4.db, subnetv4.ID, &rsv)
+			err = PGDBConn.OrmUpdateReservation(subnetv4.ID, &rsv)
 			log.Println("rsv.ID: ", rsv.ID, ", subnetId: ", subnetv4.ID)
 		}
 	}
@@ -112,7 +112,7 @@ func TestDeleteReservation(t *testing.T) {
 	rsvs := rsvController.GetReservations(subnetv4.ID)
 	for _, v := range rsvs {
 		if v.Hostname == "hostname" {
-			err = PGDBConn.OrmDeleteReservation(dhcpv4.db, v.ID)
+			err = PGDBConn.OrmDeleteReservation(v.ID)
 			log.Println("v.ID: ", v.ID, ", subnetId: ", subnetv4.ID)
 		}
 	}

@@ -87,9 +87,11 @@ type Pool struct {
 	gorm.Model
 	OptionData []Option `json:"option-data"`
 	//Pool       string   `json:"pool"`
-	BeginAddress string `json:"begin-address"`
-	EndAddress   string `json:"end-address"`
-	Subnetv4ID   uint   `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	BeginAddress     string `json:"begin-address"`
+	EndAddress       string `json:"end-address"`
+	Subnetv4ID       uint   `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	MaxValidLifetime int    `json:"max-valid-lifetime"`
+	ValidLifetime    int    `json:"valid-lifetime"`
 }
 
 type OrmUser struct {

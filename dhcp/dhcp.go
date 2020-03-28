@@ -140,7 +140,8 @@ type SubnetConfig struct {
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime"`
+	ValidLifetime    json.Number `json:"valid-lifetime"`
+	MaxValidLifetime json.Number `json:"max-valid-lifetime"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
@@ -475,7 +476,7 @@ func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 
 func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
 
-	log.Println("into dhcp.go, CreateSubnetv4Pool")
+	log.Println("into dhcp.go, CreateSubnetv4Pool, req: ", req)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
@@ -490,9 +491,29 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
-		//log.Print("v.subnet: ", v.Subnet)
-		//log.Print("req.Subnet: ", req.Subnet)
+		log.Print("v.subnet: ", v.Subnet)
+		log.Print("req.Subnet: ", req.Subnet)
 		if v.Subnet == req.Subnet {
+			log.Println("req.validlifetime: ", req.ValidLifetime)
+			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
+			if len(req.ValidLifetime) > 0 {
+
+				if err != nil {
+					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+
+				conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+
+				if err != nil {
+					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+
+				conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
 			for _, pool := range req.Pool {
 
 				var ops = []Option{}

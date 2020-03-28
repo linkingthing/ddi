@@ -58,6 +58,8 @@ type RestPool struct {
 	OptionData            []RestOption `json:"option-data"`
 	BeginAddress          string       `json:"begin-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	EndAddress            string       `json:"end-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	MaxValidLifetime      int          `json:"max-valid-lifetime,omitempty"`
+	ValidLifetime         int          `json:"valid-lifetime,omitempty"`
 }
 
 //type Subnetv4 struct {

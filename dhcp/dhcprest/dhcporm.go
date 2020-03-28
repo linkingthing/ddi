@@ -291,11 +291,17 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 
 func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
 	log.Println("into OrmCreateReservation")
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
+	log.Println("in OrmCreateReservation, r.Subnetv4ID: ", r.IpAddress)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.ID)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.OptionData)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
 	var rsv = dhcporm.Reservation{
 		//Duid:         r.Duid,
 		BootFileName: r.BootFileName,
 		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
 		Hostname:     r.Hostname,
+		IpAddress:    r.IpAddress,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -386,14 +392,20 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	}
 	var ormPool dhcporm.Pool
 	ormPool = dhcporm.Pool{
-		Subnetv4ID:   uint(sid),
-		BeginAddress: r.BeginAddress,
-		EndAddress:   r.EndAddress,
-		OptionData:   []dhcporm.Option{},
+		Subnetv4ID:       uint(sid),
+		BeginAddress:     r.BeginAddress,
+		EndAddress:       r.EndAddress,
+		OptionData:       []dhcporm.Option{},
+		ValidLifetime:    r.ValidLifetime,
+		MaxValidLifetime: r.MaxValidLifetime,
 	}
+
 	var pool = pb.Pools{
-		Pool:    r.BeginAddress + "-" + r.EndAddress,
-		Options: []*pb.Option{},
+		Pool:             r.BeginAddress + "-" + r.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(r.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(r.MaxValidLifetime),
+
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -405,9 +417,11 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 	pools := []*pb.Pools{}
 	pools = append(pools, &pool)
 	req := pb.CreateSubnetv4PoolReq{
-		Id:     subnetv4_id,
-		Subnet: s4Subnet,
-		Pool:   pools,
+		Id:               subnetv4_id,
+		Subnet:           s4Subnet,
+		Pool:             pools,
+		ValidLifetime:    pool.ValidLifetime,
+		MaxValidLifetime: pool.MaxValidLifetime,
 	}
 	log.Println("OrmCreatePool, req: ", req)
 	data, err := proto.Marshal(&req)
