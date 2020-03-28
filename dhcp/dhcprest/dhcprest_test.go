@@ -121,8 +121,8 @@ func TestDeleteReservation(t *testing.T) {
 }
 
 func TestDeleteSubnetv4(t *testing.T) {
-	log.Print("---begin to delete Subnetv4")
-	var subnetv4 Subnetv4
+	log.Print("---begin to delete RestSubnetv4")
+	var subnetv4 RestSubnetv4
 	subnetv4.Subnet = "test01"
 	subnetv4.ID = dhcpv4.getSubnetv4BySubnet(subnetv4.Subnet).ID
 	err := dhcpv4.DeleteSubnetv4(&subnetv4)

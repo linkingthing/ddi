@@ -60,15 +60,15 @@ type RestPool struct {
 	EndAddress            string       `json:"end-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 }
 
-type Subnetv4 struct {
-	resource.ResourceBase `json:"embedded,inline"`
-	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	SubnetId              string `json:"subnet_id"`
-	ValidLifetime         string `json:"validLifetime"`
-	Reservations          []*RestReservation
-	Pools                 []*RestPool
-}
+//type Subnetv4 struct {
+//	resource.ResourceBase `json:"embedded,inline"`
+//	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+//	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+//	SubnetId              string `json:"subnet_id"`
+//	ValidLifetime         string `json:"validLifetime"`
+//	Reservations          []*RestReservation
+//	Pools                 []*RestPool
+//}
 type RestSubnetv4 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
