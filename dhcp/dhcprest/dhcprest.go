@@ -273,7 +273,7 @@ func (r *PoolHandler) Create(ctx *resource.Context) (resource.Resource, *goreste
 	return pool, nil
 }
 func (r *PoolHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
-	log.Println("into rest rsv Update")
+	log.Println("into rest pool Update")
 
 	pool := ctx.Resource.(*RestPool)
 	if err := r.UpdatePool(pool); err != nil {
@@ -419,7 +419,7 @@ func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 	defer r.lock.Unlock()
 
 	subnetId := rsv.GetParent().GetID()
-	log.Println("+++subnetId")
+	log.Println("UpdateReservation +++subnetId")
 	log.Println(subnetId)
 	err := PGDBConn.OrmUpdateReservation(subnetId, rsv)
 	if err != nil {

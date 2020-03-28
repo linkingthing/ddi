@@ -468,16 +468,16 @@ func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
 
 func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
 
-	log.Print("into dhcp.go, CreateSubnetv4Pool")
+	log.Println("into dhcp.go, CreateSubnetv4Pool")
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return err
 	}
-	log.Print("begin conf\n")
-	log.Print(conf)
-	log.Print("end conf\n")
+	//log.Println("begin conf\n")
+	//log.Println(conf)
+	//log.Println("end conf\n")
 
 	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
 
@@ -510,9 +510,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 				p.OptionData = []Option{}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
-			log.Print("begin subnet\n")
-			log.Print(conf.Arguments.Dhcp4)
-			log.Print("end subnet\n")
+			log.Println("begin subnet\n")
+			log.Println(conf.Arguments.Dhcp4)
+			log.Println("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
@@ -525,12 +525,61 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 	return fmt.Errorf("subnet do not exists, error")
 }
 func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
-	log.Print("into dhcp.go, UpdateSubnetv4Pool")
+	log.Println("into dhcp.go, UpdateSubnetv4Pool")
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return err
+	}
+	//log.Println("begin conf\n")
+	//log.Println(conf.Arguments.Dhcp4.Subnet4)
+	//log.Println("end conf\n")
+
+	//find current pool, and replace it with new pool
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{}
+
+			for _, p := range v.Pools {
+				log.Println("in range pools, pool name: ", p.Pool, ", req.oldPool: ", req.Oldpool)
+				if p.Pool == req.Oldpool {
+					log.Println("p.pool == req.pool")
+					p.Pool = req.Pool
+
+					var ops = []Option{}
+					if len(req.Options) > 0 {
+						for _, op := range req.Options {
+
+							var o Option
+							o.AlwaysSend = op.AlwaysSend
+							o.Code = op.Code
+							o.CsvFormat = op.CsvFormat
+							o.Data = op.Data
+							o.Name = op.Name
+							o.Space = op.Space
+
+							ops = append(ops, o)
+						}
+					}
+				}
+
+				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
+			}
+
+			log.Println("begin subnet pools")
+			log.Println(conf.Arguments.Dhcp4.Subnet4[k].Pools)
+			log.Println("end subne poolst")
+
+			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 	}
 
 	return nil

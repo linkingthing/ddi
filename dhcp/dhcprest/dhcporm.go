@@ -365,7 +365,7 @@ func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 }
 
 func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
-	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "rsv_id: ", pool_id)
+	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "pool_id: ", pool_id)
 	dbRsvId := ConvertStringToUint(pool_id)
 
 	pool := dhcporm.Pool{}
@@ -433,18 +433,57 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 
 	log.Println("into dhcporm, OrmUpdatePool, id: ", r.GetID())
 
+	//get subnetv4 name
+	s4 := handler.GetSubnetv4ById(subnetv4_id)
+	subnetName := s4.Subnet
+
+	//oldPoolName := r.BeginAddress + "-" + r.EndAddress
 	//search subnet, if not exist, return error
-	//subnet := handler.OrmGetReservation(subnetv4_id, r.GetID())
-	//if subnet == nil {
-	//	return fmt.Errorf(name + " not exists, return")
+	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
+	if oldPoolObj == nil {
+		return fmt.Errorf("Pool not exists, return")
+	}
+	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
+
+	ormPool := dhcporm.Pool{}
+	ormPool.ID = ConvertStringToUint(r.GetID())
+	ormPool.BeginAddress = r.BeginAddress
+	ormPool.EndAddress = r.EndAddress
+	ormPool.Subnetv4ID = ConvertStringToUint(subnetv4_id)
+
+	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormPool).Error; err != nil {
+		return err
+	}
+	//todo send kafka msg
+	req := pb.UpdateSubnetv4PoolReq{
+		Oldpool: oldPoolName,
+		Subnet:  subnetName,
+		Pool:    ormPool.BeginAddress + "-" + ormPool.EndAddress,
+		Options: []*pb.Option{},
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	log.Println("begin to call SendDhcpCmd, update subnetv4 pool, req: ", req)
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Pool); err != nil {
+		log.Println("SendDhcpCmd error, ", err)
+		return err
+	}
+
+	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
 	//}
+	//end of todo
+	//db.Model(subnet).Update(ormS4)
 
-	ormRsv := dhcporm.Pool{}
-	ormRsv.ID = ConvertStringToUint(r.GetID())
-	ormRsv.BeginAddress = r.BeginAddress
-	ormRsv.EndAddress = r.EndAddress
-
-	db.Model(&ormRsv).Updates(ormRsv)
+	tx.Commit()
+	return nil
+	//db.Model(&ormPool).Updates(&ormPool)
 
 	return nil
 }
