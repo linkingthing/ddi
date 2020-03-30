@@ -248,14 +248,15 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	//var s4s []*dhcporm.OrmSubnetv4
 	var restS4s []*RestSubnetv4
 
+	// compute how many new subnets should be created
+	newSubs := getSegs(s4.Subnet, newMask)
+	for _, v := range newSubs {
+		handler.CreateSubnetv4(v, v, "0")
+
+	}
+	//todo delte ormSubnet4
+
 	//todo
-
-	//todo compute how many new subnets should be created
-
-	//query := handler.db.Create(&s4)
-	//if query.Error != nil {
-	//	return restS4s, fmt.Errorf("create subnet error")
-	//}
 
 	//var last dhcporm.OrmSubnetv4
 	//query.Last(&last)
