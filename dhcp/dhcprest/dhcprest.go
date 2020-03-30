@@ -11,7 +11,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
-	"regexp"
+	"strings"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -90,6 +90,52 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *RestSubnetv4) error {
 	}
 
 	return nil
+}
+
+func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, error) {
+	log.Println("into SplitSubnetv4, s4: ", s4)
+	var s4s []*RestSubnetv4
+	var err error
+
+	ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
+	log.Println("ormS4.subnet: ", ormS4.Subnet)
+
+	out := strings.Split(ormS4.Subnet, "/")
+	log.Println("out: ", out)
+	curMask := 0
+	if len(out) > 0 {
+		ip := out[0]
+		log.Println("ip: ", ip)
+		ipLong := Ip2long(ip)
+		log.Println("ipLong: ", ipLong)
+
+		longIP := Long2ip(ipLong)
+		log.Println("longIP: ", longIP)
+
+		curMask = ConvertStringToInt(out[1])
+		log.Println("cur mask: ", curMask)
+	} else {
+		return s4s, fmt.Errorf("current subnet illegal, subnet name: ", ormS4.Subnet)
+	}
+
+	// newmask
+	if curMask > newMask {
+		return s4s, fmt.Errorf("error, new mask is smaller")
+	}
+
+	//create new subnetv4s, and delete current one
+	log.Println("in dhcp/dhcprest SplitSubnetv4, cur subnet: ", ormS4.Subnet)
+	s4s, err = PGDBConn.OrmSplitSubnetv4(ormS4, newMask)
+	if err != nil {
+		return s4s, err
+	}
+
+	return s4s, nil
+}
+func (s *Dhcpv4) MergeSubnetv4(s4 *RestSubnetv4, newMask uint) (*RestSubnetv4, error) {
+	var newS4 *RestSubnetv4
+
+	return newS4, nil
 }
 
 func (s *Dhcpv4) GetSubnetv4ById(id string) *RestSubnetv4 {
@@ -249,50 +295,43 @@ func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 }
 
 func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	var s4s []*RestSubnetv4
+	var retS4 *RestSubnetv4
+	var err error
+	log.Println("into Action, ctx.Resource: ", ctx.Resource)
+
 	r := ctx.Resource
 	var s4 *RestSubnetv4
 	s4 = ctx.Resource.(*RestSubnetv4)
 	mergesplitData, _ := r.GetAction().Input.(*MergeSplitData)
 
 	log.Println("in Action, name: ", r.GetAction().Name)
-
 	log.Println("in Action, oper: ", mergesplitData.Oper)
+
+	mask := ConvertStringToInt(mergesplitData.Mask)
+	log.Println("post mask: ", mask)
+
+	if mask < 1 || mask > 32 {
+		log.Println("mask error, mask: ", mask)
+		return nil, nil
+	}
 
 	switch r.GetAction().Name {
 	case "mergesplit":
 		if mergesplitData.Oper == "split" {
-			mask := ConvertStringToUint(mergesplitData.Mask)
-			log.Println("post mask: ", mask)
 
-			if mask < 1 || mask > 24 {
-				log.Println("mask error, mask: ", mask)
-				return nil, nil
+			if s4s, err = h.subnetv4s.SplitSubnetv4(s4, mask); err != nil {
+				return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
 			}
-			ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
-			log.Println("ormS4.subnet: ", ormS4.Subnet)
-
-			rex := regexp.MustCompile(`^[\d\.]+\/(\d+)`)
-			out := rex.FindAllStringSubmatch(ormS4.Subnet, -1)
-			log.Println("out: ", out)
-			curMask := 0
-			if len(out) > 0 {
-				curMask = ConvertStringToInt(out[0][1])
-			}
-			log.Println("cur mask: ", curMask)
 
 			//todo split subnetv4 into new mask
-
-			return ormS4, nil
+			return s4s, nil
 		}
 		if mergesplitData.Oper == "merge" {
-			mask := ConvertStringToUint(mergesplitData.Mask)
-			log.Println("post mask: ", mask)
-			if mask < 1 || mask > 24 {
-				log.Println("mask error, mask: ", mask)
-				return nil, nil
-			}
+
+			return retS4, nil
 		}
-		return mergesplitData, nil
+
 	}
 	return nil, nil
 }

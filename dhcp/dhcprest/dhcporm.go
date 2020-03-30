@@ -242,6 +242,42 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	return nil
 }
 
+//return (new inserted id, error)
+func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*RestSubnetv4, error) {
+	log.Println("into OrmSplitSubnetv4, s4.subnet: ", s4.Subnet)
+	//var s4s []*dhcporm.OrmSubnetv4
+	var restS4s []*RestSubnetv4
+
+	//todo
+
+	//todo compute how many new subnets should be created
+
+	//query := handler.db.Create(&s4)
+	//if query.Error != nil {
+	//	return restS4s, fmt.Errorf("create subnet error")
+	//}
+
+	//var last dhcporm.OrmSubnetv4
+	//query.Last(&last)
+	//log.Println("query.value: ", query.Value, ", id: ", last.ID)
+	//
+	////send msg to kafka queue, which is read by dhcp server
+	//req := pb.CreateSubnetv4Req{
+	//	Subnet:        subnet,
+	//	Id:            strconv.Itoa(int(last.ID)),
+	//	ValidLifetime: validLifetime,
+	//}
+	//log.Println("pb.CreateSubnetv4Req req: ", req)
+	//
+	//data, err := proto.Marshal(&req)
+	//if err != nil {
+	//	return last, err
+	//}
+	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
+
+	return restS4s, nil
+}
+
 func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
 	log.Println("in dhcprest, OrmReservationList, subnetId: ", subnetId)
 	var rsvs []dhcporm.Reservation
