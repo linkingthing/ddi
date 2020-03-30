@@ -11,6 +11,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
+	"regexp"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -245,6 +246,55 @@ func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
 func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
 	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID())
+}
+
+func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	r := ctx.Resource
+	var s4 *RestSubnetv4
+	s4 = ctx.Resource.(*RestSubnetv4)
+	mergesplitData, _ := r.GetAction().Input.(*MergeSplitData)
+
+	log.Println("in Action, name: ", r.GetAction().Name)
+
+	log.Println("in Action, oper: ", mergesplitData.Oper)
+
+	switch r.GetAction().Name {
+	case "mergesplit":
+		if mergesplitData.Oper == "split" {
+			mask := ConvertStringToUint(mergesplitData.Mask)
+			log.Println("post mask: ", mask)
+
+			if mask < 1 || mask > 24 {
+				log.Println("mask error, mask: ", mask)
+				return nil, nil
+			}
+			ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
+			log.Println("ormS4.subnet: ", ormS4.Subnet)
+
+			rex := regexp.MustCompile(`^[\d\.]+\/(\d+)`)
+			out := rex.FindAllStringSubmatch(ormS4.Subnet, -1)
+			log.Println("out: ", out)
+			curMask := 0
+			if len(out) > 0 {
+				curMask = ConvertStringToInt(out[0][1])
+			}
+			log.Println("cur mask: ", curMask)
+
+			//todo split subnetv4 into new mask
+
+			return ormS4, nil
+		}
+		if mergesplitData.Oper == "merge" {
+			mask := ConvertStringToUint(mergesplitData.Mask)
+			log.Println("post mask: ", mask)
+			if mask < 1 || mask > 24 {
+				log.Println("mask error, mask: ", mask)
+				return nil, nil
+			}
+		}
+		return mergesplitData, nil
+	}
+	return nil, nil
 }
 
 func (r *PoolHandler) List(ctx *resource.Context) interface{} {

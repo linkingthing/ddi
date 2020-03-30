@@ -83,6 +83,25 @@ type RestSubnetv4 struct {
 	SubnetUsage           string `json:"usage"`
 }
 
+func (s4 RestSubnetv4) CreateAction(name string) *resource.Action {
+	switch name {
+	case "mergesplit":
+		return &resource.Action{
+			Name:  "mergesplit",
+			Input: &MergeSplitData{},
+		}
+	default:
+		return nil
+	}
+}
+
+type MergeSplitData struct {
+	resource.ResourceBase `json:",inline"`
+	Oper                  string `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+	Mask                  string `json:"mask" rest:"required=true,minLen=1,maxLen=20"`
+	//IPs                   []string `json:"ips" rest:"required=true"`
+}
+
 type Subnetv4State struct {
 	Subnetv4s []*RestSubnetv4
 }
@@ -232,13 +251,22 @@ func (n RestPool) GetParents() []resource.ResourceKind {
 //	return rr
 //}
 func ConvertStringToUint(s string) uint {
-	dbId, err := strconv.Atoi(s)
+	i, err := strconv.Atoi(s)
 	if err != nil {
 		fmt.Errorf("convert string to uint error, s: %s", s)
 		return 0
 	}
 
-	return uint(dbId)
+	return uint(i)
+}
+func ConvertStringToInt(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		fmt.Errorf("convert string to int error, s: %s", s)
+		return 0
+	}
+
+	return i
 }
 
 func (r *ReservationHandler) GetReservations(subnetId string) []*RestReservation {
