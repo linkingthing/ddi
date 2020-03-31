@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"time"
 
-	"log"
-	"strconv"
-
 	goresterr "github.com/ben-han-cn/gorest/error"
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"log"
+	"strconv"
 	"strings"
 )
 
@@ -106,13 +105,6 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 	//log.Println("out: ", out)
 	curMask := 0
 	if len(out) > 0 {
-		//ip := out[0]
-		//log.Println("ip: ", ip)
-		//ipLong := Ip2long(ip)
-		//log.Println("ipLong: ", ipLong)
-
-		//longIP := Long2ip(ipLong)
-		//log.Println("longIP: ", longIP)
 
 		curMask = ConvertStringToInt(out[1])
 		log.Println("cur mask: ", curMask)
@@ -138,19 +130,28 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 
 	return s4s, nil
 }
-func (s *Dhcpv4) MergeSubnetv4(s4s []*RestSubnetv4, newMask uint) (*RestSubnetv4, error) {
-	log.Println("into MergeSubnetv4, s4s: ", s4s)
-
-	var ormS4s []*dhcporm.OrmSubnetv4
-	var err error
-
-	ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
-	log.Println("ormS4.subnet: ", ormS4.Subnet)
-
-	out := strings.Split(ormS4.Subnet, "/")
-
+func (s *Dhcpv4) MergeSubnetv4(s4s *RestSubnetv4, cidrs string) (*RestSubnetv4, error) {
+	log.Println("into MergeSubnetv4, s4s: ", s4s, ", cidrs: ", cidrs)
 	var newS4 *RestSubnetv4
 
+	//newSubnetName := pl.ParseIPv4AndCIDR(cidrs)
+	newSubnetName, err := GetMergedSubnetv4(cidrs)
+	if err != nil {
+		return newS4, err
+	}
+	log.Println("new subnet: ", newSubnetName)
+
+	//todo
+	// 1 delete every subnet in cidrs
+	// 2 create new subnet with subnet: newSubnet
+
+	//var ormS4s []*dhcporm.OrmSubnetv4
+	//var err error
+	//
+	//ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
+	//log.Println("ormS4.subnet: ", ormS4.Subnet)
+	//
+	//out := strings.Split(ormS4.Subnet, "/")
 	return newS4, nil
 }
 
@@ -312,7 +313,7 @@ func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
 
 func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	var s4s []*RestSubnetv4
-	var retS4 *RestSubnetv4
+	//var retS4 *RestSubnetv4
 	var err error
 	log.Println("into Action, ctx.Resource: ", ctx.Resource)
 
@@ -324,17 +325,16 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	log.Println("in Action, name: ", r.GetAction().Name)
 	log.Println("in Action, oper: ", mergesplitData.Oper)
 
-	mask := ConvertStringToInt(mergesplitData.Mask)
-	log.Println("post mask: ", mask)
-
-	if mask < 1 || mask > 32 {
-		log.Println("mask error, mask: ", mask)
-		return nil, nil
-	}
-
 	switch r.GetAction().Name {
 	case "mergesplit":
 		if mergesplitData.Oper == "split" {
+			mask := ConvertStringToInt(mergesplitData.Mask)
+			log.Println("post mask: ", mask)
+
+			if mask < 1 || mask > 32 {
+				log.Println("mask error, mask: ", mask)
+				return nil, nil
+			}
 
 			if s4s, err = h.subnetv4s.SplitSubnetv4(s4, mask); err != nil {
 				return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
@@ -345,8 +345,14 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 			return s4s, nil
 		}
 		if mergesplitData.Oper == "merge" {
+			var s *RestSubnetv4
+			ips := mergesplitData.IPs
+			log.Println("post ips: ", ips)
 
-			return retS4, nil
+			if s, err = h.subnetv4s.MergeSubnetv4(s4, ips); err != nil {
+				return s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+			}
+			return s, nil
 		}
 
 	}

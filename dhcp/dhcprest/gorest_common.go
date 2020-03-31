@@ -5,12 +5,15 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"github.com/nexus166/trimv4/ipv4"
+	pl "github.com/nexus166/trimv4/process_lists"
 	"log"
 	"math"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"unsafe"
 )
 
 var (
@@ -102,7 +105,7 @@ type MergeSplitData struct {
 	resource.ResourceBase `json:",inline"`
 	Oper                  string `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
 	Mask                  string `json:"mask" rest:"required=true,minLen=1,maxLen=20"`
-	//IPs                   []string `json:"ips" rest:"required=true"`
+	IPs                   string `json:"ips" rest:"required=true"`
 }
 
 type Subnetv4State struct {
@@ -450,4 +453,37 @@ func getSegs(cidr string, newMask int) []string {
 		retStr = append(retStr, currIPStr+"/"+strconv.Itoa(newMask))
 	}
 	return retStr
+}
+
+func String(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+//get
+func GetMergedSubnetv4(str string) (string, error) {
+	log.Println("str: ", str)
+
+	b := []byte(str)
+	newCidr, e := ipv4.MergeIPNets(pl.ParseIPv4AndCIDR(string(b)))
+	if e == nil {
+		fmt.Println("merged: ", newCidr)
+		//for ip := range merged {
+		//fmt.Println(merged[ip])
+		//}
+	} else {
+		fmt.Println("error: ", e)
+	}
+	if len(newCidr) > 1 {
+		errStr := "错误, 无法合并子网"
+		log.Println(errStr)
+		return "", fmt.Errorf(errStr)
+	}
+	//log.Println("=== merged: ", newCidr)
+
+	newIP := newCidr[0].IP.String()
+	newMaskSize, _ := newCidr[0].Mask.Size()
+	retStr := newIP + "/" + strconv.Itoa(newMaskSize)
+
+	//log.Println("retStr: ", retStr)
+	return retStr, nil
 }
