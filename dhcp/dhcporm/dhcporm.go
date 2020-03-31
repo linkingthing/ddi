@@ -28,6 +28,12 @@ type OrmSubnetv4 struct {
 	ManualAddresses []ManualAddress `gorm:"foreignkey:Subnetv4ID"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
+type OrmSubnetv4Front struct {
+	DbS4    OrmSubnetv4
+	S4Name  string
+	S4Total int
+	S4Usage float64
+}
 
 func (OrmSubnetv4) TableName() string {
 	return "subnetv4s"
@@ -81,9 +87,11 @@ type Pool struct {
 	gorm.Model
 	OptionData []Option `json:"option-data"`
 	//Pool       string   `json:"pool"`
-	BeginAddress string
-	EndAddress   string
-	Subnetv4ID   uint `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	BeginAddress     string `json:"begin-address"`
+	EndAddress       string `json:"end-address"`
+	Subnetv4ID       uint   `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	MaxValidLifetime int    `json:"max-valid-lifetime"`
+	ValidLifetime    int    `json:"valid-lifetime"`
 }
 
 type OrmUser struct {

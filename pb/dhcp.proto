@@ -49,6 +49,8 @@ message Reservation{
 message Pools{
     repeated    Option options  = 1;
                 string pool     = 2;
+                string validLifetime = 3;
+                string maxValidLifetime = 4;
 }
 
 message startDHCPv4Req{
@@ -88,18 +90,23 @@ message CreateSubnetv4PoolReq{
     string      subnet = 2;
     repeated    Option options = 3;
     repeated    Pools  pool = 4;
+    string      validLifetime = 5;
+    string      maxValidLifetime = 6;
 }
 
 message UpdateSubnetv4PoolReq{
-    string  id = 1;
-    repeated Option options = 2;
-    repeated    Pools  pool = 3;
+    string      id = 1;
+    repeated    Option options = 2;
+    string      pool = 3;
     string      subnet = 4;
+    string      oldpool = 5;
+    string      validLifetime = 6;
+    string      maxValidLifetime = 7;
 }
 
 message DeleteSubnetv4PoolReq{
     string  subnet  = 1;
-    repeated    Pools  pool = 2;
+    string  pool    = 2;
 }
 
 

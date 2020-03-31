@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,7 +11,7 @@ import (
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
-	server "github.com/linkingthing/ddi/dhcp/service"
+	"github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
@@ -85,7 +84,7 @@ func dhcpClient() {
 
 		l := "message at offset: " + strconv.FormatInt(message.Offset, 10) + " key: " + string(message.Key) +
 			" value: " + string(message.Value)
-		fmt.Print(l)
+		log.Println(l)
 
 		//store curOffset into KafkaOffsetFile
 		curOffset := kafkaReader.Stats().Offset

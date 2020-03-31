@@ -122,15 +122,16 @@ func main() {
 	schemas.Import(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
 
 	// start of dhcp model
-	//go dhcpv4agent.Dhcpv4Client()
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
 	go dhcprest.PGDBConn.KeepDetectAlive()
 	defer dhcprest.PGDBConn.Close()
 
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	schemas.Import(&version, dhcprest.Subnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
+
 	// end of dhcp model
 
 	router := gin.Default()

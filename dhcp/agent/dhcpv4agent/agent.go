@@ -90,7 +90,7 @@ func Dhcpv4Client() {
 			panic(err)
 			return
 		}
-		log.Printf("Dhcpv4Client v4 message at offset %d: key: %s, value: %s\n", message.Offset,
+		log.Println("Dhcpv4Client v4 message at offset %d: key: %s, value: %s\n", message.Offset,
 			string(message.Key), string(message.Value))
 
 		switch string(message.Key) {

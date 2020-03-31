@@ -71,12 +71,16 @@ func (handler *PGDB) Close() {
 
 func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
+
 	query := handler.db.Find(&subnetv4s)
 	if query.Error != nil {
 		log.Print(query.Error.Error())
 	}
 
 	for k, v := range subnetv4s {
+		//log.Println("k: ", k, ", v: ", v)
+		//log.Println("in Subnetv4List, v.ID: ", v.ID)
+
 		rsv := []dhcporm.Reservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
@@ -109,6 +113,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
+	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ", name, subnet, validLifetime)
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -128,8 +133,9 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
-		Subnet: subnet,
-		Id:     strconv.Itoa(int(last.ID)),
+		Subnet:        subnet,
+		Id:            strconv.Itoa(int(last.ID)),
+		ValidLifetime: validLifetime,
 	}
 	log.Println("pb.CreateSubnetv4Req req: ", req)
 
@@ -139,10 +145,11 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	}
 	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
+	log.Println(" in CreateSubnetv4, last: ", last)
 	return last, nil
 }
 
-func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
+func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", subnetv4.Subnet)
 
 	dbS4 := dhcporm.OrmSubnetv4{}
@@ -174,7 +181,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *Subnetv4) error {
 		log.Println("proto.Marshal error, ", err)
 		return err
 	}
-	log.Println("begin to call sendcmddhcpv4, update subnetv4")
+	log.Println("begin to call SendDhcpCmd, update subnetv4")
 	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
@@ -236,6 +243,58 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	return nil
 }
 
+//return (new inserted id, error)
+func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*dhcporm.OrmSubnetv4, error) {
+	log.Println("into OrmSplitSubnetv4, s4.subnet: ", s4.Subnet)
+
+	var ormS4s []*dhcporm.OrmSubnetv4
+	var err error
+
+	// compute how many new subnets should be created
+	newSubs := getSegs(s4.Subnet, newMask)
+	for _, v := range newSubs {
+		log.Println("in for loop, v: ", v)
+
+		var newS4 dhcporm.OrmSubnetv4
+		newS4, err = handler.CreateSubnetv4(v, v, "0")
+		if err != nil {
+			log.Println("create subnetv4 error, ", err)
+			return ormS4s, err
+		}
+		ormS4s = append(ormS4s, &newS4)
+	}
+	log.Println("in OrmSplitSubnetv4, ormS4s: ", ormS4s)
+	//todo delte ormSubnet4
+	s4ID := strconv.Itoa(int(s4.ID))
+	if err := handler.DeleteSubnetv4(s4ID); err != nil {
+		log.Println("delete subnetv4 error, ", err)
+		return ormS4s, err
+	}
+	log.Println("in OrmSplitSubnetv4, after delete ormS4s: ", ormS4s)
+	return ormS4s, nil
+	//todo
+
+	//var last dhcporm.OrmSubnetv4
+	//query.Last(&last)
+	//log.Println("query.value: ", query.Value, ", id: ", last.ID)
+	//
+	////send msg to kafka queue, which is read by dhcp server
+	//req := pb.CreateSubnetv4Req{
+	//	Subnet:        subnet,
+	//	Id:            strconv.Itoa(int(last.ID)),
+	//	ValidLifetime: validLifetime,
+	//}
+	//log.Println("pb.CreateSubnetv4Req req: ", req)
+	//
+	//data, err := proto.Marshal(&req)
+	//if err != nil {
+	//	return last, err
+	//}
+	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
+
+	//return restS4s, nil
+}
+
 func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
 	log.Println("in dhcprest, OrmReservationList, subnetId: ", subnetId)
 	var rsvs []dhcporm.Reservation
@@ -283,13 +342,19 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 	return &rsv
 }
 
-func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
+func (handler *PGDB) OrmCreateReservation(id string, r *RestReservation) (dhcporm.Reservation, error) {
 	log.Println("into OrmCreateReservation")
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
+	log.Println("in OrmCreateReservation, r.Subnetv4ID: ", r.IpAddress)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.ID)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.OptionData)
+	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
 	var rsv = dhcporm.Reservation{
 		//Duid:         r.Duid,
 		BootFileName: r.BootFileName,
-		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
+		Subnetv4ID:   ConvertStringToUint(id),
 		Hostname:     r.Hostname,
+		IpAddress:    r.IpAddress,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -359,7 +424,7 @@ func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 }
 
 func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
-	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "rsv_id: ", pool_id)
+	log.Println("into rest OrmGetPool, subnetId: ", subnetId, "pool_id: ", pool_id)
 	dbRsvId := ConvertStringToUint(pool_id)
 
 	pool := dhcporm.Pool{}
@@ -372,50 +437,167 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 }
 
 func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
-	log.Println("into OrmCreatePool")
-	var rsv = dhcporm.Pool{
-		BeginAddress: r.BeginAddress,
-		EndAddress:   r.EndAddress,
+	log.Println("into OrmCreatePool, r: ", r, ", subnetv4_id: ", subnetv4_id)
+
+	sid, err := strconv.Atoi(subnetv4_id)
+	if err != nil {
+		log.Println("OrmCreatePool, sid error: ", subnetv4_id)
+	}
+	var ormPool dhcporm.Pool
+	ormPool = dhcporm.Pool{
+		Subnetv4ID:       uint(sid),
+		BeginAddress:     r.BeginAddress,
+		EndAddress:       r.EndAddress,
+		OptionData:       []dhcporm.Option{},
+		ValidLifetime:    r.ValidLifetime,
+		MaxValidLifetime: r.MaxValidLifetime,
+	}
+
+	var pool = pb.Pools{
+		Pool:             r.BeginAddress + "-" + r.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(r.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(r.MaxValidLifetime),
+
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
-	query := handler.db.Create(&rsv)
+	//get subnet by subnetv4_id
+	ormSubnetv4 := handler.GetSubnetv4ById(subnetv4_id)
+	s4Subnet := ormSubnetv4.Subnet
+
+	//todo: post kafka msg to dhcp agent
+	pools := []*pb.Pools{}
+	pools = append(pools, &pool)
+	req := pb.CreateSubnetv4PoolReq{
+		Id:               subnetv4_id,
+		Subnet:           s4Subnet,
+		Pool:             pools,
+		ValidLifetime:    pool.ValidLifetime,
+		MaxValidLifetime: pool.MaxValidLifetime,
+	}
+	log.Println("OrmCreatePool, req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return ormPool, err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Pool); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
+		return ormPool, err
+	}
+	//end of todo
+
+	query := handler.db.Create(&ormPool)
 	if query.Error != nil {
-		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " + r.EndAddress)
+		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " +
+			r.BeginAddress + ", end adderss: " + r.EndAddress)
 	}
 
-	return rsv, nil
+	return ormPool, nil
 }
 
 func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 
 	log.Println("into dhcporm, OrmUpdatePool, id: ", r.GetID())
 
+	//get subnetv4 name
+	s4 := handler.GetSubnetv4ById(subnetv4_id)
+	subnetName := s4.Subnet
+
+	//oldPoolName := r.BeginAddress + "-" + r.EndAddress
 	//search subnet, if not exist, return error
-	//subnet := handler.OrmGetReservation(subnetv4_id, r.GetID())
-	//if subnet == nil {
-	//	return fmt.Errorf(name + " not exists, return")
+	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
+	if oldPoolObj == nil {
+		return fmt.Errorf("Pool not exists, return")
+	}
+	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
+
+	ormPool := dhcporm.Pool{}
+	ormPool.ID = ConvertStringToUint(r.GetID())
+	ormPool.BeginAddress = r.BeginAddress
+	ormPool.EndAddress = r.EndAddress
+	ormPool.Subnetv4ID = ConvertStringToUint(subnetv4_id)
+	ormPool.ValidLifetime = r.ValidLifetime
+	ormPool.MaxValidLifetime = r.MaxValidLifetime
+
+	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormPool).Error; err != nil {
+		return err
+	}
+	//todo send kafka msg
+	req := pb.UpdateSubnetv4PoolReq{
+		Oldpool:          oldPoolName,
+		Subnet:           subnetName,
+		Pool:             ormPool.BeginAddress + "-" + ormPool.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(ormPool.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(ormPool.MaxValidLifetime),
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	log.Println("begin to call SendDhcpCmd, update subnetv4 pool, req: ", req)
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Pool); err != nil {
+		log.Println("SendDhcpCmd error, ", err)
+		return err
+	}
+
+	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
 	//}
+	//end of todo
+	//db.Model(subnet).Update(ormS4)
 
-	ormRsv := dhcporm.Pool{}
-	ormRsv.ID = ConvertStringToUint(r.GetID())
-	ormRsv.BeginAddress = r.BeginAddress
-	ormRsv.EndAddress = r.EndAddress
-
-	db.Model(&ormRsv).Updates(ormRsv)
+	tx.Commit()
+	return nil
+	//db.Model(&ormPool).Updates(&ormPool)
 
 	return nil
 }
 
 func (handler *PGDB) OrmDeletePool(id string) error {
 	log.Println("into dhcprest OrmDeletePool, id ", id)
-	dbId := ConvertStringToUint(id)
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Pool{})
+	var ormSubnetv4 dhcporm.OrmSubnetv4
+	var ormPool dhcporm.Pool
 
-	if query.Error != nil {
-		return fmt.Errorf("delete subnet Pool error, Reservation id: " + id)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormPool, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4pool with ID %s, %w", id, err)
 	}
+	log.Println("subnetv4 id: ", ormPool.Subnetv4ID)
+
+	if err := tx.First(&ormSubnetv4, ormPool.Subnetv4ID).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4 with ID %s, %w", ormPool.Subnetv4ID, err)
+	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormPool.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormPool).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4PoolReq{
+		Subnet: ormSubnetv4.Subnet,
+		Pool:   ormPool.BeginAddress + "-" + ormPool.EndAddress,
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Pool); err != nil {
+		log.Println("SendDhcpCmd error, ", err)
+		return err
+	}
+	tx.Commit()
 
 	return nil
 }

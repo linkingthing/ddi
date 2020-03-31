@@ -139,7 +139,8 @@ type SubnetConfig struct {
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime"`
+	ValidLifetime    json.Number `json:"valid-lifetime"`
+	MaxValidLifetime json.Number `json:"max-valid-lifetime"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
@@ -351,6 +352,7 @@ func (handler *KEAv4Handler) getv4Config(conf *ParseDhcpv4Config) error {
 			return err
 		}
 	}
+	log.Println("in getv4Config, conf: ", conf)
 	return nil
 }
 
@@ -388,6 +390,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
+		ValidLifetime:   json.Number(req.ValidLifetime),
 		Id:              json.Number(strconv.Itoa(maxId)),
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},
@@ -439,53 +442,80 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 }
 
 func (handler *KEAv4Handler) DeleteSubnetv4(req pb.DeleteSubnetv4Req) error {
-	log.Println("into dhcp/DeleteSubnetv4, req.id: ", req.Id)
+	//log.Println("into dhcp/DeleteSubnetv4, req.id: ", req.Id)
+	log.Println("into dhcp/DeleteSubnetv4, req.Subnet: ", req.Subnet)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
 		return err
 	}
+
 	//todo,loop and found subnet id
-	tmp := conf.Arguments.Dhcp4.Subnet4
-	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
-		if v.Subnet == req.Subnet {
-			conf.Arguments.Dhcp4.Subnet4 = append(tmp[:k], tmp[k+1:]...)
-			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
-			if err != nil {
-				return err
-			}
-			return nil
+	//tmp := conf.Arguments.Dhcp4.Subnet4
+	tmp := []SubnetConfig{}
+	flag := false
+	for _, v := range conf.Arguments.Dhcp4.Subnet4 {
+		//log.Println("dhcp/DeleteSubnetv4, k: ", k, ", v: ", v)
+		if v.Subnet != req.Subnet {
+			tmp = append(tmp, v)
+		} else {
+			flag = true
 		}
 	}
 
+	if flag {
+		conf.Arguments.Dhcp4.Subnet4 = tmp
+		err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) error {
 
-	log.Print("into dhcp.go, CreateSubnetv4Pool")
+	log.Println("into dhcp.go, CreateSubnetv4Pool, req: ", req)
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return err
 	}
-	log.Print("begin conf\n")
-	log.Print(conf)
-	log.Print("end conf\n")
+	//log.Println("begin conf\n")
+	//log.Println(conf)
+	//log.Println("end conf\n")
 
 	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
-		log.Print("in for loop")
-		log.Print(v.Subnet)
-		log.Print(req.Subnet)
+		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
+		log.Print("v.subnet: ", v.Subnet)
+		log.Print("req.Subnet: ", req.Subnet)
 		if v.Subnet == req.Subnet {
+			log.Println("req.validlifetime: ", req.ValidLifetime)
+			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
+			if len(req.ValidLifetime) > 0 {
+
+				if err != nil {
+					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+
+				conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+
+				if err != nil {
+					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+
+				conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
 			for _, pool := range req.Pool {
 
 				var ops = []Option{}
-
 				if len(pool.Options) > 0 {
 					for _, op := range pool.Options {
 
@@ -507,9 +537,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 				p.OptionData = []Option{}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
-			//log.Print("begin subnet\n")
-			//log.Print(conf.Arguments.Dhcp4)
-			//log.Print("end subnet\n")
+			//log.Println("begin subnet\n")
+			//log.Println(conf.Arguments.Dhcp4)
+			//log.Println("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
@@ -522,17 +552,118 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 	return fmt.Errorf("subnet do not exists, error")
 }
 func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) error {
-	log.Print("into dhcp.go, UpdateSubnetv4Pool")
+	log.Println("into dhcp.go, UpdateSubnetv4Pool")
 	var conf ParseDhcpv4Config
 	err := handler.getv4Config(&conf)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		return err
+	}
+	//log.Println("begin conf\n")
+	//log.Println(conf.Arguments.Dhcp4.Subnet4)
+	//log.Println("end conf\n")
+
+	changeFlag := false
+
+	//find current pool, and replace it with new pool
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+			log.Println("req.validlifetime: ", req.ValidLifetime)
+			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
+			if len(req.ValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv4Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
+
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{}
+
+			for _, p := range v.Pools {
+				log.Println("in range pools, pool name: ", p.Pool, ", req.oldPool: ", req.Oldpool)
+				if p.Pool == req.Oldpool {
+					changeFlag = true
+					log.Println("p.pool == req.pool")
+					p.Pool = req.Pool
+
+					var ops = []Option{}
+					if len(req.Options) > 0 {
+						for _, op := range req.Options {
+
+							var o Option
+							o.AlwaysSend = op.AlwaysSend
+							o.Code = op.Code
+							o.CsvFormat = op.CsvFormat
+							o.Data = op.Data
+							o.Name = op.Name
+							o.Space = op.Space
+
+							ops = append(ops, o)
+						}
+					}
+				}
+				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
+			}
+
+			//log.Println("begin subnet pools")
+			//log.Println(conf.Arguments.Dhcp4.Subnet4[k].Pools)
+			//log.Println("end subne poolst")
+
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
 	}
 
 	return nil
 }
 func (handler *KEAv4Handler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) error {
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	changeFlag := false
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		if v.Subnet == req.Subnet {
+			tmp := []Pool{}
+
+			for _, p := range conf.Arguments.Dhcp4.Subnet4[k].Pools {
+				if p.Pool != req.Pool {
+					tmp = append(tmp, p)
+				}
+				if p.Pool == req.Pool {
+					changeFlag = true
+				}
+			}
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = tmp
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 
 	return nil
 }
