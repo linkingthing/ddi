@@ -1,12 +1,12 @@
 package dhcporm
 
 import (
-	"log"
 	"testing"
 
 	ut "github.com/ben-han-cn/cement/unittest"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
+	"github.com/linkingthing/ddi/utils"
 )
 
 //func TestListSubnetv4(t *testing.T) {
@@ -27,13 +27,12 @@ import (
 //}
 func TestCreateSubnetv4(t *testing.T) {
 
-	//const addr = "postgresql://maxroach@localhost:26257/postgres?ssl=true&sslmode=require&sslrootcert=/root/download/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/download/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/download/cockroach-v19.2.0/certs/client.maxroach.crt"
-	db, err := gorm.Open("postgres", dhcprest.CRDBAddr)
+	db, err := gorm.Open("postgres", utils.DBAddr)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer db.Close()
-	dhcpv4 := dhcprest.NewDhcpv4(dhcprest.NewPGDB().DB)
+	dhcpv4 := dhcprest.NewDhcpv4(db)
 
 	s4 := dhcprest.RestSubnetv4{
 		Name:          "subnetname2",

@@ -326,7 +326,7 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 	return &rsv
 }
 
-func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.Reservation, error) {
+func (handler *PGDB) OrmCreateReservation(id string, r *RestReservation) (dhcporm.Reservation, error) {
 	log.Println("into OrmCreateReservation")
 	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
 	log.Println("in OrmCreateReservation, r.Subnetv4ID: ", r.IpAddress)
@@ -336,7 +336,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 	var rsv = dhcporm.Reservation{
 		//Duid:         r.Duid,
 		BootFileName: r.BootFileName,
-		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
+		Subnetv4ID:   ConvertStringToUint(id),
 		Hostname:     r.Hostname,
 		IpAddress:    r.IpAddress,
 		//DhcpVer:       Dhcpv4Ver,
@@ -473,8 +473,8 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 
 	query := handler.db.Create(&ormPool)
 	if query.Error != nil {
-		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " + r.BeginAddress + ", end adderss: " +
-			r.EndAddress)
+		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " +
+			r.BeginAddress + ", end adderss: " + r.EndAddress)
 	}
 
 	return ormPool, nil
