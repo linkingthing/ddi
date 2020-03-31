@@ -8,7 +8,7 @@ type Lease4 struct {
 	Address       int
 	Hwaddr        []byte
 	ClientId      []byte
-	ValidLifetime int64
+	ValidLifetime int32
 	Expire        time.Time
 	SubnetId      int64
 	FqdnFwd       bool

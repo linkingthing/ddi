@@ -40,6 +40,8 @@ const (
 	ipBlackHolePath    = "/ipBlackHole/"
 	ipBlackHoleEndPath = "/ipBlackHole"
 	recurConcurEndPath = "/recurConcur"
+	sortListPath       = "/sortList/"
+	sortListEndPath    = "/sortList"
 	namedTpl           = "named.tpl"
 	zoneTpl            = "zone.tpl"
 	aCLTpl             = "acl.tpl"
@@ -181,6 +183,7 @@ type namedData struct {
 	Forward     *forward
 	DNS64s      []dns64
 	IPBlackHole *ipBlackHole
+	SortList    []string
 	Concu       *recursiveConcurrent
 }
 
@@ -521,8 +524,11 @@ func (handler *BindHandler) CreateRR(req pb.CreateRRReq) error {
 		return err
 	}
 	var data string
-	data = req.Name + " " + req.TTL + " IN " + req.Type + " " + req.Value
+	data = req.Name + "." + string(names["name"]) + " " + req.TTL + " IN " + req.Type + " " + req.Value
 	if err := rrupdate.UpdateRR(rrKey, rrSecret, data, string(names["name"]), true); err != nil {
+		return err
+	}
+	if err := handler.rndcDumpJNLFile(); err != nil {
 		return err
 	}
 	return nil
@@ -534,23 +540,49 @@ func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID); err != nil {
 		return err
 	}
-	oldData := string(rrsMap["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
-	newData := req.Name + " " + req.TTL + " IN " + req.Type + " " + req.Value
 	var names map[string][]byte
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
+	oldData := string(rrsMap["name"]) + "." + string(names["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
+	newData := req.Name + "." + string(names["name"]) + " " + req.TTL + " IN " + req.Type + " " + req.Value
 	if err := rrupdate.UpdateRR(rrKey, rrSecret, oldData, string(names["name"]), false); err != nil {
 		return err
 	}
 	if err := rrupdate.UpdateRR(rrKey, rrSecret, newData, string(names["name"]), true); err != nil {
 		return err
 	}
+	//add the old data by rrupdate cause the delete function of the rrupdate had deleted all the rrs.
+	var tables []string
+	if tables, err = handler.tables(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsEndPath); err != nil {
+		return err
+	}
+	for _, t := range tables {
+		if t == req.RRID {
+			continue
+		}
+		var data map[string][]byte
+		if data, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + t); err != nil {
+			return err
+		}
+		if req.Type != string(data["type"]) {
+			continue
+		}
+		var updateData string
+		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
+		fmt.Println(data)
+		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
+			return err
+		}
+	}
 	rrsMap["name"] = []byte(req.Name)
 	rrsMap["type"] = []byte(req.Type)
 	rrsMap["value"] = []byte(req.Value)
 	rrsMap["TTL"] = []byte(req.TTL)
 	if err := handler.updateKVs(viewsPath+req.ViewID+zonesPath+req.ZoneID+rRsPath+req.RRID, rrsMap); err != nil {
+		return err
+	}
+	if err := handler.rndcDumpJNLFile(); err != nil {
 		return err
 	}
 	return nil
@@ -562,17 +594,41 @@ func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 	if rrsMap, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID); err != nil {
 		return err
 	}
-	rrData := string(rrsMap["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
 	var names map[string][]byte
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
+	rrData := string(rrsMap["name"]) + "." + string(names["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
 	if err := rrupdate.UpdateRR(rrKey, rrSecret, rrData, string(names["name"]), false); err != nil { //string(rrData[:])
 		return err
 	}
 	if err := handler.db.DeleteTable(kv.TableName(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID)); err != nil {
 		return err
 	}
+	//add the old data by rrupdate cause the delete function of the rrupdate had deleted all the rrs.
+	var tables []string
+	if tables, err = handler.tables(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsEndPath); err != nil {
+		return err
+	}
+	for _, t := range tables {
+		var data map[string][]byte
+		if data, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + t); err != nil {
+			return err
+		}
+		if string(rrsMap["type"]) != string(data["type"]) {
+			continue
+		}
+		var updateData string
+		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
+		fmt.Println(data)
+		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
+			return err
+		}
+	}
+	if err := handler.rndcDumpJNLFile(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -599,55 +655,8 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 			data.ACLNames = append(data.ACLNames, string(nameKVs["name"]))
 		}
 	}
-	//get the default forward data
-	var forwardKVs map[string][]byte
-	forwardKVs, err = handler.tableKVs(forwardEndPath)
-	if err != nil {
-		return data, err
-	}
-	isforward := forwardKVs["isforward"]
-	if string(isforward) == "1" {
-		var tmp forward
-		forwardType := forwardKVs["type"]
-		tmp.ForwardType = string(forwardType)
-		ipsKVs, err := handler.tableKVs(forwardPath + iPsEndPath)
-		if err != nil {
-			return data, err
-		}
-		for k, _ := range ipsKVs {
-			tmp.IPs = append(tmp.IPs, string(k))
-		}
-		data.Forward = &tmp
-	}
-	//get the default dns64 data
-	var tables []string
-	tables, err = handler.tables(dns64sEndPath)
-	if err != nil {
-		return data, err
-	}
-	for _, dns64id := range tables {
-		var tmp dns64
-		var dns64KVs map[string][]byte
-		dns64KVs, err = handler.tableKVs(dns64sPath + dns64id)
-		if err != nil {
-			return data, err
-		}
-		tmp.Prefix = string(dns64KVs["prefix"])
-		aCLNames, err := handler.tableKVs(aCLsPath + string(dns64KVs["clientacl"]))
-		if err != nil {
-			return data, err
-		}
-		tmp.ClientACLName = string(aCLNames["name"])
-		aCLNames, err = handler.tableKVs(aCLsPath + string(dns64KVs["aaddress"]))
-		if err != nil {
-			return data, err
-		}
-		tmp.AAddressACLName = string(aCLNames["name"])
-		data.DNS64s = append(data.DNS64s, tmp)
-	}
-
 	//get the ip black hole data
-	tables = tables[0:0]
+	var tables []string
 	tables, err = handler.tables(ipBlackHoleEndPath)
 	if err != nil {
 		return data, err
@@ -693,6 +702,31 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 			}
 			data.Concu.FetchesPerZone = &num
 		}
+	}
+	//get the sortlist
+	var sortkvs map[string][]byte
+	sortkvs, err = handler.tableKVs(sortListEndPath)
+	if err != nil {
+		return data, err
+	}
+	aclid := string(sortkvs["next"])
+	for {
+		if aclid == "" {
+			break
+		}
+		//get acl name
+		var aclName map[string][]byte
+		aclName, err = handler.tableKVs(aCLsPath + aclid)
+		if err != nil {
+			return data, err
+		}
+		data.SortList = append(data.SortList, string(aclName["name"]))
+		var kvs map[string][]byte
+		kvs, err = handler.tableKVs(sortListPath + aclid)
+		if err != nil {
+			return data, err
+		}
+		aclid = string(kvs["next"])
 	}
 	//get the data under the views
 	var kvs map[string][]byte
@@ -1405,6 +1439,20 @@ func (handler *BindHandler) rndcDelZone(name string, zoneFile string, viewName s
 	return nil
 }
 
+func (handler *BindHandler) rndcDumpJNLFile() error {
+	//update bind
+	var para1 string = "-c" + handler.dnsConfPath + "rndc.conf"
+	var para2 string = "-s" + "localhost"
+	var para3 string = "-p" + rndcPort
+	var para4 string = "sync"
+	var para5 string = "-clean"
+	if _, err := shell.Shell("rndc", para1, para2, para3, para4, para5); err != nil {
+		panic(err)
+		return err
+	}
+	return nil
+}
+
 func (handler *BindHandler) keepDNSAlive() {
 	for {
 		select {
@@ -1827,5 +1875,71 @@ func (handler *BindHandler) UpdateRecursiveConcurrent(req pb.UpdateRecurConcuReq
 		return err
 	}
 
+	return nil
+}
+func (handler *BindHandler) CreateSortList(req pb.CreateSortListReq) error {
+	//input the data into the data base.
+	kvs := map[string][]byte{}
+	if len(req.ACLIDs) == 0 {
+		return nil
+	}
+	kvs["next"] = []byte(req.ACLIDs[0])
+	if err := handler.addKVs(sortListEndPath, kvs); err != nil {
+		return err
+	}
+	for k, v := range req.ACLIDs {
+		kvs := map[string][]byte{}
+		if k == 0 {
+			kvs["prev"] = []byte("")
+		} else {
+			kvs["prev"] = []byte(req.ACLIDs[k-1])
+		}
+		if k == len(req.ACLIDs)-1 {
+			kvs["next"] = []byte("")
+		} else {
+			kvs["next"] = []byte(req.ACLIDs[k+1])
+		}
+		if err := handler.addKVs(sortListPath+v, kvs); err != nil {
+			return err
+		}
+	}
+	//rewrite the named.conf file.
+	if err := handler.rewriteNamedFile(); err != nil {
+		return err
+	}
+	//update bind.
+	if err := handler.rndcReconfig(); err != nil {
+		return err
+	}
+	return nil
+}
+func (handler *BindHandler) UpdateSortList(req pb.UpdateSortListReq) error {
+	//update the data into the data base.
+	delReq := pb.DeleteSortListReq{ACLIDs: req.ACLIDs}
+	handler.DeleteSortList(delReq)
+	createReq := pb.CreateSortListReq{ACLIDs: req.ACLIDs}
+	handler.CreateSortList(createReq)
+	return nil
+}
+func (handler *BindHandler) DeleteSortList(req pb.DeleteSortListReq) error {
+	//delete the data in the data base.
+	var acls []string
+	var err error
+	acls, err = handler.tables(sortListEndPath)
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range acls {
+		handler.db.DeleteTable(kv.TableName(sortListPath + v))
+	}
+	handler.db.DeleteTable(kv.TableName(sortListEndPath))
+	//rewrite the named.conf file.
+	if err := handler.rewriteNamedFile(); err != nil {
+		return err
+	}
+	//update bind.
+	if err := handler.rndcReconfig(); err != nil {
+		return err
+	}
 	return nil
 }

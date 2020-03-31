@@ -121,8 +121,8 @@ func (service *DHCPv4Service) DeleteSubnetv4Reservation(context context.Context,
 	}
 }
 
-func (service *DHCPv4Service) GetLeaseAddress(context context.Context, req *pb.GetLeaseAddressReq) (*pb.GetLeaseAddressResp, error) {
-	resp, err := service.handler.GetLeaseAddress(*req)
+func (service *DHCPv4Service) GetLeases(context context.Context, req *pb.GetLeasesReq) (*pb.GetLeasesResp, error) {
+	resp, err := service.handler.GetLeases(*req)
 	if err != nil {
 		return nil, err
 	} else {

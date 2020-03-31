@@ -99,7 +99,7 @@ type Redirection struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
-	DataType              string `json:"datatype" rest:"required=true,options=A|AAAA|CNAME"`
+	DataType              string `json:"type" rest:"required=true,options=A|AAAA|CNAME"`
 	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpz|redirect"`
 	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=40"`
 }
@@ -820,9 +820,12 @@ func (h *sortListHandler) Update(ctx *resource.Context) (resource.Resource, *gor
 
 func (h *sortListHandler) Get(ctx *resource.Context) resource.Resource {
 	var err error
-	var sortList *SortList
+	sortList := &SortList{}
+	sortList.SetID("1")
+	tmp := &SortList{}
+	tmp.SetID("1")
 	if sortList, err = DBCon.GetSortList(); err != nil {
-		return nil
+		return tmp
 	}
 	return sortList
 }

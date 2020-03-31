@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package pb;
 import "util.proto";
+//import "google/protobuf/timestamp.proto";
 service Dhcpv4Manager {
 
     rpc StartDHCPv4(startDHCPv4Req) returns (OperResult){}
@@ -19,7 +20,7 @@ service Dhcpv4Manager {
     rpc UpdateSubnetv4Reservation(UpdateSubnetv4ReservationReq)   returns (OperResult){}
     rpc DeleteSubnetv4Reservation(DeleteSubnetv4ReservationReq)   returns (OperResult){}
 
-    rpc GetLeaseAddress(GetLeaseAddressReq) returns (GetLeaseAddressResp){}
+    rpc GetLeases(GetLeasesReq) returns (GetLeasesResp){}
 }
 
 service Dhcpv6Manager {
@@ -211,16 +212,18 @@ message DeleteSubnetv6ReservationReq{
     string serverHostname = 4;
 }
 
-message GetLeaseAddressReq{
+message GetLeasesReq{
         string subnetid = 1;
 }
 
 message Lease{
 string ipAddress = 1;
 bytes hwAddress = 2;
+int32 validLifetime = 3;
+int64 expire = 4;
 }
 
-message GetLeaseAddressResp{
+message GetLeasesResp{
         repeated Lease leases = 1;
 }
 

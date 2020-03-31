@@ -12,6 +12,9 @@ const (
 )
 
 func UpdateRR(key string, secret string, rr string, zone string, isAdd bool) error {
+	if rr[0] == '@' && rr[1] == '.' {
+		rr = rr[2:]
+	}
 	serverAddr, err := net.ResolveUDPAddr("udp", rrAddr)
 	if err != nil {
 		return err

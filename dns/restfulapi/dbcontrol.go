@@ -41,6 +41,9 @@ const (
 	UPDATEIPBLACKHOLE         = "UpdateIPBlackHole"
 	DELETEIPBLACKHOLE         = "DeleteIPBlackHole"
 	UPDATERECURSIVECONCURRENT = "UpdateRecursiveConcurrent"
+	CREATESORTLIST            = "CreateSortList"
+	UPDATESORTLIST            = "UpdateSortList"
+	DELETESORTLIST            = "DeleteSortList"
 )
 
 var DBCon *DBController
@@ -642,7 +645,7 @@ func (controller *DBController) GetViews() []*View {
 	var viewDBs []tb.View
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Find(&viewDBs).Error; err != nil {
+	if err := tx.Order("priority").Find(&viewDBs).Error; err != nil {
 		return nil
 	}
 	var err error
@@ -1917,16 +1920,18 @@ func (controller *DBController) CreateSortList(sorts *SortList) (*tb.SortListEle
 		} else {
 			one.NextACLID = "0"
 		}
-		var num int
-		var err error
-		if num, err = strconv.Atoi(id); err != nil {
-			return nil, err
-		}
-		one.ACLID = uint(num)
 		one.ID = 0
 		if err := tx.Create(&one).Error; err != nil {
 			return nil, err
 		}
+	}
+	req := pb.CreateSortListReq{ACLIDs: sorts.ACLIDs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := SendCmd(data, CREATESORTLIST); err != nil {
+		return nil, err
 	}
 	tx.Commit()
 	return &one, nil
@@ -1940,6 +1945,15 @@ func (controller *DBController) DeleteSortList() error {
 	if err := tx.Unscoped().Delete(&tmp).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteSortListReq{}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, DELETESORTLIST); err != nil {
+		return err
+	}
+
 	tx.Commit()
 	return nil
 }
@@ -1999,5 +2013,14 @@ func (controller *DBController) UpdateSortList(sortList *SortList) error {
 	if _, err := controller.CreateSortList(sortList); err != nil {
 		return err
 	}
+	req := pb.UpdateSortListReq{ACLIDs: sortList.ACLIDs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := SendCmd(data, UPDATESORTLIST); err != nil {
+		return err
+	}
+
 	return nil
 }
