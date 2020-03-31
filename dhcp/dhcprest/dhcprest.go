@@ -138,7 +138,17 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 
 	return s4s, nil
 }
-func (s *Dhcpv4) MergeSubnetv4(s4 *RestSubnetv4, newMask uint) (*RestSubnetv4, error) {
+func (s *Dhcpv4) MergeSubnetv4(s4s []*RestSubnetv4, newMask uint) (*RestSubnetv4, error) {
+	log.Println("into MergeSubnetv4, s4s: ", s4s)
+
+	var ormS4s []*dhcporm.OrmSubnetv4
+	var err error
+
+	ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
+	log.Println("ormS4.subnet: ", ormS4.Subnet)
+
+	out := strings.Split(ormS4.Subnet, "/")
+
 	var newS4 *RestSubnetv4
 
 	return newS4, nil
