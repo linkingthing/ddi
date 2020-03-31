@@ -113,7 +113,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
-	log.Println("into CreateSubnetv4, name: %s, subnet: %s, validLifetime: %s", name, subnet, validLifetime)
+	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ", name, subnet, validLifetime)
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
 		Name:          name,
@@ -145,6 +145,7 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 	}
 	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
+	log.Println(" in CreateSubnetv4, last: ", last)
 	return last, nil
 }
 
@@ -243,19 +244,34 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 }
 
 //return (new inserted id, error)
-func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*RestSubnetv4, error) {
+func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*dhcporm.OrmSubnetv4, error) {
 	log.Println("into OrmSplitSubnetv4, s4.subnet: ", s4.Subnet)
-	//var s4s []*dhcporm.OrmSubnetv4
-	var restS4s []*RestSubnetv4
+
+	var ormS4s []*dhcporm.OrmSubnetv4
+	var err error
 
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
 	for _, v := range newSubs {
-		handler.CreateSubnetv4(v, v, "0")
+		log.Println("in for loop, v: ", v)
 
+		var newS4 dhcporm.OrmSubnetv4
+		newS4, err = handler.CreateSubnetv4(v, v, "0")
+		if err != nil {
+			log.Println("create subnetv4 error, ", err)
+			return ormS4s, err
+		}
+		ormS4s = append(ormS4s, &newS4)
 	}
+	log.Println("in OrmSplitSubnetv4, ormS4s: ", ormS4s)
 	//todo delte ormSubnet4
-
+	s4ID := strconv.Itoa(int(s4.ID))
+	if err := handler.DeleteSubnetv4(s4ID); err != nil {
+		log.Println("delete subnetv4 error, ", err)
+		return ormS4s, err
+	}
+	log.Println("in OrmSplitSubnetv4, after delete ormS4s: ", ormS4s)
+	return ormS4s, nil
 	//todo
 
 	//var last dhcporm.OrmSubnetv4
@@ -276,7 +292,7 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	//}
 	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
-	return restS4s, nil
+	//return restS4s, nil
 }
 
 func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {

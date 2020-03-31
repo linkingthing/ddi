@@ -11,6 +11,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
+	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	"strings"
 )
 
@@ -95,22 +96,23 @@ func (s *Dhcpv4) DeleteSubnetv4(subnetv4 *RestSubnetv4) error {
 func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, error) {
 	log.Println("into SplitSubnetv4, s4: ", s4)
 	var s4s []*RestSubnetv4
+	var ormS4s []*dhcporm.OrmSubnetv4
 	var err error
 
 	ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
 	log.Println("ormS4.subnet: ", ormS4.Subnet)
 
 	out := strings.Split(ormS4.Subnet, "/")
-	log.Println("out: ", out)
+	//log.Println("out: ", out)
 	curMask := 0
 	if len(out) > 0 {
-		ip := out[0]
-		log.Println("ip: ", ip)
-		ipLong := Ip2long(ip)
-		log.Println("ipLong: ", ipLong)
+		//ip := out[0]
+		//log.Println("ip: ", ip)
+		//ipLong := Ip2long(ip)
+		//log.Println("ipLong: ", ipLong)
 
-		longIP := Long2ip(ipLong)
-		log.Println("longIP: ", longIP)
+		//longIP := Long2ip(ipLong)
+		//log.Println("longIP: ", longIP)
 
 		curMask = ConvertStringToInt(out[1])
 		log.Println("cur mask: ", curMask)
@@ -125,9 +127,13 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 
 	//create new subnetv4s, and delete current one
 	log.Println("in dhcp/dhcprest SplitSubnetv4, cur subnet: ", ormS4.Subnet)
-	s4s, err = PGDBConn.OrmSplitSubnetv4(ormS4, newMask)
+	ormS4s, err = PGDBConn.OrmSplitSubnetv4(ormS4, newMask)
 	if err != nil {
 		return s4s, err
+	}
+	for _, v := range ormS4s {
+		r := s.ConvertSubnetv4FromOrmToRest(v)
+		s4s = append(s4s, r)
 	}
 
 	return s4s, nil
@@ -152,7 +158,7 @@ func (s *Dhcpv4) getSubnetv4ById(id string) *RestSubnetv4 {
 		return nil
 	}
 
-	v4 := s.convertSubnetv4FromOrmToRest(v)
+	v4 := s.ConvertSubnetv4FromOrmToRest(v)
 	return v4
 }
 
@@ -163,7 +169,7 @@ func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *RestSubnetv4 {
 	if v.ID == 0 {
 		return nil
 	}
-	v4 := s.convertSubnetv4FromOrmToRest(v)
+	v4 := s.ConvertSubnetv4FromOrmToRest(v)
 
 	return v4
 }
@@ -196,7 +202,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 		//log.Println("v.CreatedAt: ", v.CreatedAt)
 
 		var subnet *RestSubnetv4
-		subnet = s.convertSubnetv4FromOrmToRest(&v)
+		subnet = s.ConvertSubnetv4FromOrmToRest(&v)
 
 		subnet.SubnetTotal = "0"
 		subnet.SubnetUsage = "0.0"
@@ -324,6 +330,7 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 				return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
 			}
 
+			fmt.Println("Action, in mergesplit, s4s: ", s4s)
 			//todo split subnetv4 into new mask
 			return s4s, nil
 		}

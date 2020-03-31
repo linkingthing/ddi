@@ -199,7 +199,7 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 	return restPs
 }
 
-func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubnetv4 {
+func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubnetv4 {
 
 	v4 := &RestSubnetv4{}
 	v4.SetID(strconv.Itoa(int(v.ID)))
@@ -208,6 +208,7 @@ func (s *Dhcpv4) convertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.SubnetId = strconv.Itoa(int(v.ID))
 	v4.ValidLifetime = v.ValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
+	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	return v4
 }
 func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
@@ -331,24 +332,14 @@ func Long2ip(ip uint32) string {
 func getCidrIpRange(cidr string) (string, string) {
 	ip := strings.Split(cidr, "/")[0]
 	ipSegs := strings.Split(ip, ".")
-	fmt.Println("ipsegs: ", ipSegs)
+	//fmt.Println("ipsegs: ", ipSegs)
 
 	maskLen, _ := strconv.Atoi(strings.Split(cidr, "/")[1])
 
 	seg1MinIp, seg1MaxIp := getIpSeg1Range(ipSegs, maskLen)
-	fmt.Println("seg1MinIp: ", seg1MinIp)
-	fmt.Println("seg1MaxIp: ", seg1MaxIp)
-
 	seg2MinIp, seg2MaxIp := getIpSeg2Range(ipSegs, maskLen)
-	fmt.Println("seg2MinIP: ", seg2MinIp)
-	fmt.Println("seg2MaxIP: ", seg2MaxIp)
-
 	seg3MinIp, seg3MaxIp := getIpSeg3Range(ipSegs, maskLen)
-	fmt.Println("seg3MinIP: ", seg3MinIp)
-	fmt.Println("seg3MaxIP: ", seg3MaxIp)
 	seg4MinIp, seg4MaxIp := getIpSeg4Range(ipSegs, maskLen)
-	fmt.Println("seg4MinIP: ", seg4MinIp)
-	fmt.Println("seg4MaxIP: ", seg4MaxIp)
 
 	//ipPrefix := ipSegs[0] + "." + ipSegs[1] + "."
 	ipPrefixMin := strconv.Itoa(seg1MinIp) + "." + strconv.Itoa(seg2MinIp) + "."
@@ -374,7 +365,7 @@ func getCidrIpMask(maskLen int) string {
 
 	// ^uint32(0)二进制为32个比特1，通过向左位移，得到CIDR掩码的二进制
 	cidrMask := ^uint32(0) << uint(32-maskLen)
-	fmt.Println(fmt.Sprintf("%b \n", cidrMask))
+	//fmt.Println(fmt.Sprintf("%b \n", cidrMask))
 	//计算CIDR掩码的四个片段，将想要得到的片段移动到内存最低8位后，将其强转为8位整型，从而得到
 	cidrMaskSeg1 := uint8(cidrMask >> 24)
 	cidrMaskSeg2 := uint8(cidrMask >> 16)
@@ -382,15 +373,14 @@ func getCidrIpMask(maskLen int) string {
 	cidrMaskSeg4 := uint8(cidrMask & uint32(255))
 
 	mask := fmt.Sprint(cidrMaskSeg1) + "." + fmt.Sprint(cidrMaskSeg2) + "." + fmt.Sprint(cidrMaskSeg3) + "." + fmt.Sprint(cidrMaskSeg4)
-	fmt.Println("in getCidrIpMask, mask: ", mask)
+	//fmt.Println("in getCidrIpMask, mask: ", mask)
 
 	return mask
 }
 
 //得到第1段IP的区间（第一片段.第二片段.第三片段.第四片段）
 func getIpSeg1Range(ipSegs []string, maskLen int) (int, int) {
-	log.Println("into getIpSeg1Range, ipSegs: ", ipSegs)
-	log.Println("into getIpSeg1Range, maskLen: ", maskLen)
+
 	if maskLen > 8 {
 		segIp, _ := strconv.Atoi(ipSegs[0])
 		return segIp, segIp
@@ -441,14 +431,14 @@ func getSegs(cidr string, newMask int) []string {
 	minIp, _ := getCidrIpRange(cidr)
 
 	curMask, _ := strconv.Atoi(strings.Split(cidr, "/")[1])
-	curTotal := math.Exp2(float64(32 - curMask))
-	fmt.Println("maskLen: ", curMask, ", curTotal: ", curTotal)
+	//curTotal := math.Exp2(float64(32 - curMask))
+	//fmt.Println("maskLen: ", curMask, ", curTotal: ", curTotal)
 	//newMask := 25
 	total := int(math.Exp2(float64(32 - newMask)))
-	fmt.Println("new total: ", total)
+	//fmt.Println("new total: ", total)
 
 	number := int(math.Exp2(float64(newMask - curMask)))
-	fmt.Println("number: ", number)
+	//fmt.Println("number: ", number)
 
 	var retStr []string
 	for i := 0; i < number; i = i + 1 {
