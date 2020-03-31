@@ -49,7 +49,7 @@ type View struct {
 
 type Zone struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string  `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	Name                  string  `json:"name" rest:"required=true,minLen=1,maxLen=254"`
 	rRs                   []*RR   `json:"-"`
 	forwards              Forward `json:"-"`
 	RRSize                int     `json:"rrsize"`

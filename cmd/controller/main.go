@@ -20,6 +20,7 @@ import (
 
 	//"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
+	kfkcli "github.com/linkingthing/ddi/utils/kafkaclient"
 	//"google.golang.org/grpc"
 	"html/template"
 	"io/ioutil"
@@ -92,6 +93,7 @@ func main() {
 	}
 
 	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
+	kfkcli.KafkaClient = kfkcli.NewKafkaCliHandler("dns", "dhcpv4", "dhcpv6", utils.KafkaServerProm)
 	go getKafkaMsg()
 	go node.RegisterNode("/etc/vanguard/vanguard.conf", "controller")
 	go physicalMetrics.NodeExporter()
