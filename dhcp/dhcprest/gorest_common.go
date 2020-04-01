@@ -60,12 +60,12 @@ type RestReservation struct {
 
 type RestPool struct {
 	resource.ResourceBase `json:"embedded,inline"`
-	Subnetv4Id            string       `json:"subnetv4_id"`
-	OptionData            []RestOption `json:"option-data"`
-	BeginAddress          string       `json:"begin-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	EndAddress            string       `json:"end-address,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	MaxValidLifetime      int          `json:"max-valid-lifetime,omitempty"`
-	ValidLifetime         int          `json:"valid-lifetime,omitempty"`
+	Subnetv4Id            string       `json:"subnetv4Id"`
+	OptionData            []RestOption `json:"optionData"`
+	BeginAddress          string       `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	EndAddress            string       `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	MaxValidLifetime      int          `json:"maxValidLifetime,omitempty"`
+	ValidLifetime         int          `json:"validLifetime,omitempty"`
 }
 
 //type Subnetv4 struct {

@@ -85,15 +85,15 @@ type DHCPv4Conf struct {
 }
 type Dhcpv4Config struct {
 	Authoritative bool   `json:"authoritative"`
-	BootFileName  string `json:"boot-file-name"`
+	BootFileName  string `json:"bootFileName"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"control-socket"`
-	OptionData    []Option       `json:"option-data"`
+	ControlSocket ControlSocket  `json:"controlSocket"`
+	OptionData    []Option       `json:"optionData"`
 	Subnet4       []SubnetConfig `json:"subnet4"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime"`
+	ValidLifetime json.Number `json:"validLifetime"`
 }
 
 type ParseDhcpv6Config struct {
@@ -108,7 +108,7 @@ type Dhcpv6Config struct {
 	BootFileName  string `json:"boot-file-name"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
 	ControlSocket ControlSocket  `json:"control-socket"`
-	OptionData    []Option       `json:"option-data"`
+	OptionData    []Option       `json:"optionData"`
 	Subnet6       []SubnetConfig `json:"subnet6"`
 
 	//T1Percent json.Number `json:"t1-percent"`
@@ -130,7 +130,7 @@ type SubnetConfig struct {
 	Id json.Number `json:"id"`
 	//MatchClientId   bool          `json:"match-client-id"`
 	//NextServer      string        `json:"next-server"`
-	OptionData []Option `json:"option-data"`
+	OptionData []Option `json:"optionData"`
 	Pools      []Pool   `json:"pools"`
 	//RebindTimer     json.Number   `json:"rebind-timer"`
 	//Relay           SubnetRelay   `json:"relay"`
@@ -141,35 +141,35 @@ type SubnetConfig struct {
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime    json.Number `json:"valid-lifetime"`
-	MaxValidLifetime json.Number `json:"max-valid-lifetime"`
+	ValidLifetime    json.Number `json:"validLifetime"`
+	MaxValidLifetime json.Number `json:"maxValidLifetime"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
 }
 
 type Option struct {
-	AlwaysSend bool   `json:"always-send"`
+	AlwaysSend bool   `json:"alwaysSend"`
 	Code       uint64 `json:"code"`
-	CsvFormat  bool   `json:"csv-format"`
+	CsvFormat  bool   `json:"csvFormat"`
 	Data       string `json:"data"`
 	Name       string `json:"name"`
 	Space      string `json:"space"`
 }
 type Pool struct {
-	OptionData []Option `json:"option-data"`
+	OptionData []Option `json:"optionData"`
 	Pool       string   `json:"pool"`
 }
 type Reservation struct {
-	BootFileName string `json:"boot-file-name"`
+	BootFileName string `json:"bootFileName"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
 	Duid           string   `json:"duid"`
 	Hostname       string   `json:"hostname"`
-	IpAddress      string   `json:"ip-address"`
-	NextServer     string   `json:"next-server"`
-	OptionData     []Option `json:"option-data"`
-	ServerHostname string   `json:"server-hostname"`
+	IpAddress      string   `json:"ipAddress"`
+	NextServer     string   `json:"nextServer"`
+	OptionData     []Option `json:"optionData"`
+	ServerHostname string   `json:"serverHostname"`
 }
 
 type KEAv4Handler struct {
@@ -498,8 +498,8 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
-		log.Print("v.subnet: ", v.Subnet)
-		log.Print("req.Subnet: ", req.Subnet)
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
 		if v.Subnet == req.Subnet {
 			log.Println("req.validlifetime: ", req.ValidLifetime)
 			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
