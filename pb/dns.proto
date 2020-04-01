@@ -33,6 +33,9 @@ rpc CreateIPBlackHole(CreateIPBlackHoleReq) returns (OperResult){}
 rpc UpdateIPBlackHole(UpdateIPBlackHoleReq) returns (OperResult){}
 rpc DeleteIPBlackHole(DeleteIPBlackHoleReq) returns (OperResult){}
 rpc UpdateRecursiveConcurrent(UpdateRecurConcuReq) returns (OperResult){}
+rpc CreateSortList(CreateSortListReq) returns (OperResult){}
+rpc UpdateSortList(UpdateSortListReq) returns (OperResult){}
+rpc DeleteSortList(DeleteSortListReq) returns (OperResult){}
 }
 
 message DNSStartReq{
@@ -217,5 +220,17 @@ string ID = 1;
 message UpdateRecurConcuReq{
 string RecursiveClients = 1;
 string FetchesPerZone = 2;
+}
+
+message CreateSortListReq{
+repeated string ACLIDs = 1;
+}
+
+message UpdateSortListReq{
+repeated string ACLIDs = 1;
+}
+
+message DeleteSortListReq{
+repeated string ACLIDs = 1;
 }
 

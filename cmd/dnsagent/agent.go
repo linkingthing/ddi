@@ -49,6 +49,9 @@ const (
 	UPDATEIPBLACKHOLE         = "UpdateIPBlackHole"
 	DELETEIPBLACKHOLE         = "DeleteIPBlackHole"
 	UPDATERECURSIVECONCURRENT = "UpdateRecursiveConcurrent"
+	CREATESORTLIST            = "CreateSortList"
+	UPDATESORTLIST            = "UpdateSortList"
+	DELETESORTLIST            = "DeleteSortList"
 )
 const (
 	StartDHCPv4               = "StartDHCPv4"
@@ -276,6 +279,22 @@ func dnsClient(conn *grpc.ClientConn, kafkaServer string) {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.UpdateRecursiveConcurrent(context.Background(), &target)
+		case CREATESORTLIST:
+			var target pb.CreateSortListReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.CreateSortList(context.Background(), &target)
+		case UPDATESORTLIST:
+			var target pb.UpdateSortListReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.UpdateSortList(context.Background(), &target)
+		case DELETESORTLIST:
+			var target pb.DeleteSortListReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.DeleteSortList(context.Background(), &target)
+
 		}
 	}
 }
@@ -284,7 +303,7 @@ func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 	cliv4 := pb.NewDhcpv4ManagerClient(conn)
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
-		Brokers: []string{utils.KafkaServerProm},
+		Brokers: []string{kafkaServer},
 		Topic:   dhcp.Dhcpv4Topic,
 	})
 	var message kg.Message

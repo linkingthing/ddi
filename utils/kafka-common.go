@@ -21,11 +21,12 @@ const (
 )
 
 const (
-	RoleController  = "controller"
-	RoleDB          = "db"
-	RoleKafka       = "kafka"
-	KafkaServerProm = HostIP + ":" + KafkaPort
+	RoleController = "controller"
+	RoleDB         = "db"
+	RoleKafka      = "kafka"
 )
+
+var KafkaServerProm string
 
 type PromRole struct {
 	Hostname string `json:"hostname"`

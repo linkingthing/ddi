@@ -15,7 +15,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
 	"github.com/linkingthing/ddi/pb"
-	"github.com/linkingthing/ddi/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,7 +40,7 @@ const (
 	IntfCreateSubnetv4
 	IntfUpdateSubnetv4
 	IntfDeleteSubnetv4
-	//postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
+	postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
 )
 
 var KeaDhcpv4Conf []byte // global var, stores config content of dhcpv4 in json format
@@ -191,7 +190,7 @@ type KEAv6Handler struct {
 func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 	instance := &KEAv4Handler{ver: ver, ConfigPath: ConfPath}
 	var err error
-	instance.db, err = gorm.Open("postgres", utils.DBAddr)
+	instance.db, err = gorm.Open("postgres", postgresqlAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -681,18 +680,20 @@ func (handler *KEAv4Handler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4Rese
 
 	return nil
 }
-func (handler *KEAv4Handler) GetLeaseAddress(req pb.GetLeaseAddressReq) (*pb.GetLeaseAddressResp, error) {
+func (handler *KEAv4Handler) GetLeases(req pb.GetLeasesReq) (*pb.GetLeasesResp, error) {
 	var ls []postgres.Lease4
 	if err := handler.db.Where("subnet_id = ?", req.Subnetid).Find(&ls).Error; err != nil {
 		return nil, err
 	}
-	var resp pb.GetLeaseAddressResp
+	var resp pb.GetLeasesResp
 	for _, l := range ls {
 		var address string
 		address = strconv.Itoa(l.Address&0xff000000>>24&0xff) + "." + strconv.Itoa(l.Address&0x00ff0000>>16&0xff) + "." + strconv.Itoa(l.Address&0x0000ff00>>8&0xff) + "." + strconv.Itoa(l.Address&0x000000ff&0xff)
 		tmp := pb.Lease{}
 		tmp.IpAddress = address
 		tmp.HwAddress = l.Hwaddr
+		tmp.ValidLifetime = l.ValidLifetime
+		tmp.Expire = l.Expire.Unix()
 		resp.Leases = append(resp.Leases, &tmp)
 	}
 	return &resp, nil

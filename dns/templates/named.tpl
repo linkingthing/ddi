@@ -5,21 +5,27 @@ options {
 	allow-query {any;};
 	dnssec-enable no;
 	dnssec-validation no;
-	{{if .Forward}}forward {{.Forward.ForwardType}};
-	forwarders{ {{range $k, $ip := .Forward.IPs}}{{$ip}};{{end}} };{{end}}{{range $k, $dns64:= .DNS64s}}
-        dns64 {{$dns64.Prefix}} {
-        clients { {{$dns64.ClientACLName}}; };
-        mapped { {{$dns64.AAddressACLName}}; };
-        exclude { {{$dns64.Prefix}}; };
-        suffix ::;
-        };{{end}}{{if .IPBlackHole}}
+	querylog no;{{if .IPBlackHole}}
 	BlackHole{ {{range $k,$v := .IPBlackHole.ACLNames}}{{$v}}; {{end}}};{{end}}{{if .Concu}}
 	recursive-clients {{.Concu.RecursiveClients}};
-	fetches-per-zone {{.Concu.FetchesPerZone}};{{end}}
+	fetches-per-zone {{.Concu.FetchesPerZone}};{{end}}{{if .SortList}}
+	sortlist{ {{range $k, $s := .SortList}}{{$s}};{{end}} };{{end}}
 };
 key key1 {
     algorithm hmac-md5;
     secret "bGlua2luZ19lbmNy";
+};
+
+logging{
+	channel query_log{
+	file "query.log" versions 5 size 20m;
+	print-time yes;
+	print-category yes;
+        severity dynamic;
+	};
+	category queries{
+	query_log;
+	};
 };
 
 {{range $k, $view := .Views}}

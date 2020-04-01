@@ -7,6 +7,7 @@ import (
 	tb "github.com/linkingthing/ddi/dns/cockroachtables"
 	"github.com/linkingthing/ddi/pb"
 	myaes "github.com/linkingthing/ddi/utils/aes"
+	kfkcli "github.com/linkingthing/ddi/utils/kafkaclient"
 	"strconv"
 )
 
@@ -41,6 +42,9 @@ const (
 	UPDATEIPBLACKHOLE         = "UpdateIPBlackHole"
 	DELETEIPBLACKHOLE         = "DeleteIPBlackHole"
 	UPDATERECURSIVECONCURRENT = "UpdateRecursiveConcurrent"
+	CREATESORTLIST            = "CreateSortList"
+	UPDATESORTLIST            = "UpdateSortList"
+	DELETESORTLIST            = "DeleteSortList"
 )
 
 var DBCon *DBController
@@ -184,7 +188,7 @@ func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
 	if err != nil {
 		return last, err
 	}
-	if err := SendCmd(data, CREATEACL); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEACL); err != nil {
 		return last, err
 	}
 	tx.Commit()
@@ -231,7 +235,7 @@ func (controller *DBController) DeleteACL(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEACL); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEACL); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -314,7 +318,7 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEACL); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEACL); err != nil {
 		return err
 	}
 
@@ -412,7 +416,7 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 	if err != nil {
 		return tb.View{}, err
 	}
-	if err := SendCmd(data, CREATEVIEW); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEVIEW); err != nil {
 		return tb.View{}, err
 	}
 	tx.Commit()
@@ -464,7 +468,7 @@ func (controller *DBController) DeleteView(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEVIEW); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEVIEW); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -570,7 +574,7 @@ func (controller *DBController) UpdateView(view *View) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEVIEW); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEVIEW); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -642,7 +646,7 @@ func (controller *DBController) GetViews() []*View {
 	var viewDBs []tb.View
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Find(&viewDBs).Error; err != nil {
+	if err := tx.Order("priority").Find(&viewDBs).Error; err != nil {
 		return nil
 	}
 	var err error
@@ -693,7 +697,7 @@ func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.Zone, 
 	if err != nil {
 		return last, err
 	}
-	if err := SendCmd(data, CREATEZONE); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEZONE); err != nil {
 		return last, err
 	}
 	tx.Commit()
@@ -722,7 +726,7 @@ func (controller *DBController) DeleteZone(id string, viewID string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEZONE); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEZONE); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -840,7 +844,7 @@ func (controller *DBController) CreateRR(rr *RR, zoneID string, viewID string) (
 	if err != nil {
 		return last, err
 	}
-	if err := SendCmd(data, CREATERR); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATERR); err != nil {
 		return last, err
 	}
 	tx.Commit()
@@ -886,7 +890,7 @@ func (controller *DBController) DeleteRR(id string, zoneID string, viewID string
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETERR); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETERR); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -957,7 +961,7 @@ func (controller *DBController) UpdateRR(rr *RR, zoneID string, viewID string) e
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATERR); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATERR); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1038,7 +1042,7 @@ func (controller *DBController) DeleteDefaultForward(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEDEFAULTFORWARD); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEDEFAULTFORWARD); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1081,7 +1085,7 @@ func (controller *DBController) UpdateDefaultForward(forward *Forward) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEDEFAULTFORWARD); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEDEFAULTFORWARD); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1205,7 +1209,7 @@ func (controller *DBController) UpdateForward(forward *ForwardData, zoneID strin
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEFORWARD); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEFORWARD); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1234,7 +1238,7 @@ func (controller *DBController) DeleteForward(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEFORWARD); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEFORWARD); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1268,7 +1272,7 @@ func (controller *DBController) CreateRedirection(rd *Redirection, viewID string
 	if err != nil {
 		return nil, err
 	}
-	if err := SendCmd(data, CREATEREDIRECTION); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEREDIRECTION); err != nil {
 		return nil, err
 	}
 	tx.Commit()
@@ -1296,7 +1300,7 @@ func (controller *DBController) DeleteRedirection(id string, viewID string) erro
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEREDIRECTION); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEREDIRECTION); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1335,7 +1339,7 @@ func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEREDIRECTION); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEREDIRECTION); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1416,7 +1420,7 @@ func (controller *DBController) CreateDefaultDNS64(dns64 *DefaultDNS64) (*tb.Def
 	if err != nil {
 		return nil, err
 	}
-	if err := SendCmd(data, CREATEDEFAULTDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEDEFAULTDNS64); err != nil {
 		return nil, err
 	}
 	tx.Commit()
@@ -1441,7 +1445,7 @@ func (controller *DBController) DeleteDefaultDNS64(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEDEFAULTDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEDEFAULTDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1481,7 +1485,7 @@ func (controller *DBController) UpdateDefaultDNS64(dns64 *DefaultDNS64) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEDEFAULTDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEDEFAULTDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1575,7 +1579,7 @@ func (controller *DBController) CreateDNS64(dns64 *DNS64, viewID string) (*tb.DN
 	if err != nil {
 		return nil, err
 	}
-	if err := SendCmd(data, CREATEDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEDNS64); err != nil {
 		return nil, err
 	}
 	tx.Commit()
@@ -1600,7 +1604,7 @@ func (controller *DBController) DeleteDNS64(id string, viewID string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1643,7 +1647,7 @@ func (controller *DBController) UpdateDNS64(dns64 *DNS64, viewID string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEDNS64); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEDNS64); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1714,7 +1718,7 @@ func (controller *DBController) CreateIPBlackHole(blackHole *IPBlackHole) (*tb.I
 	if err != nil {
 		return nil, err
 	}
-	if err := SendCmd(data, CREATEIPBLACKHOLE); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEIPBLACKHOLE); err != nil {
 		return nil, err
 	}
 	tx.Commit()
@@ -1740,7 +1744,7 @@ func (controller *DBController) DeleteIPBlackHole(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, DELETEIPBLACKHOLE); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEIPBLACKHOLE); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1769,7 +1773,7 @@ func (controller *DBController) UpdateIPBlackHole(blackHole *IPBlackHole) error 
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATEIPBLACKHOLE); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEIPBLACKHOLE); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1854,7 +1858,7 @@ func (controller *DBController) UpdateRecursiveConcurrent(max *RecursiveConcurre
 	if err != nil {
 		return err
 	}
-	if err := SendCmd(data, UPDATERECURSIVECONCURRENT); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATERECURSIVECONCURRENT); err != nil {
 		return err
 	}
 	tx.Commit()
@@ -1917,16 +1921,18 @@ func (controller *DBController) CreateSortList(sorts *SortList) (*tb.SortListEle
 		} else {
 			one.NextACLID = "0"
 		}
-		var num int
-		var err error
-		if num, err = strconv.Atoi(id); err != nil {
-			return nil, err
-		}
-		one.ACLID = uint(num)
 		one.ID = 0
 		if err := tx.Create(&one).Error; err != nil {
 			return nil, err
 		}
+	}
+	req := pb.CreateSortListReq{ACLIDs: sorts.ACLIDs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return nil, err
+	}
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATESORTLIST); err != nil {
+		return nil, err
 	}
 	tx.Commit()
 	return &one, nil
@@ -1940,6 +1946,15 @@ func (controller *DBController) DeleteSortList() error {
 	if err := tx.Unscoped().Delete(&tmp).Error; err != nil {
 		return err
 	}
+	req := pb.DeleteSortListReq{}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETESORTLIST); err != nil {
+		return err
+	}
+
 	tx.Commit()
 	return nil
 }
@@ -1999,5 +2014,14 @@ func (controller *DBController) UpdateSortList(sortList *SortList) error {
 	if _, err := controller.CreateSortList(sortList); err != nil {
 		return err
 	}
+	req := pb.UpdateSortListReq{ACLIDs: sortList.ACLIDs}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := kfkcli.KafkaClient.SendCmd(data, UPDATESORTLIST); err != nil {
+		return err
+	}
+
 	return nil
 }

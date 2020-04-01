@@ -107,7 +107,8 @@ type ManualAddress struct {
 }
 
 type AliveAddress struct {
-	IPAddress  string `gorm:"primary_key"`
-	AliveTime  int64
-	Subnetv4ID uint `sql:"type:integer REFERENCES subnetv4s(id)"`
+	IPAddress     string `gorm:"primary_key"`
+	LastAliveTime int64
+	ScanTime      int64
+	Subnetv4ID    uint `sql:"type:integer REFERENCES subnetv4s(id)"`
 }

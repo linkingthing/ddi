@@ -261,6 +261,31 @@ func (service *DNSService) UpdateRecursiveConcurrent(context context.Context, re
 		return &pb.OperResult{RetCode: opSuccess}, nil
 	}
 }
+func (service *DNSService) CreateSortList(context context.Context, req *pb.CreateSortListReq) (*pb.OperResult, error) {
+	err := service.handler.CreateSortList(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DNSService) UpdateSortList(context context.Context, req *pb.UpdateSortListReq) (*pb.OperResult, error) {
+	err := service.handler.UpdateSortList(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DNSService) DeleteSortList(context context.Context, req *pb.DeleteSortListReq) (*pb.OperResult, error) {
+	err := service.handler.DeleteSortList(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
 func (service *DNSService) Close() {
 	service.handler.Close()
 }

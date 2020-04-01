@@ -607,13 +607,17 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 	one := ipam.DividedAddress{}
 	one.SetID(subNetID)
 	//get the reservation address
-	data := handler.OrmReservationList(subNetID)
-	for _, a := range data {
+	reservData := handler.OrmReservationList(subNetID)
+	one.Data = make(map[string]ipam.StatusAddress, 255)
+	allData := make(map[string]ipam.StatusAddress, 255)
+	for _, a := range reservData {
 		if a.ReservType == "hw-address" || a.ReservType == "client-id" {
 			//get the stable address
-			one.Stable = append(one.Stable, a.IpAddress)
+			tmp := ipam.StatusAddress{AddressType: "stable"}
+			allData[a.IpAddress] = tmp
 		} else {
-			one.Reserved = append(one.Reserved, a.IpAddress)
+			tmp := ipam.StatusAddress{AddressType: "reserved"}
+			allData[a.IpAddress] = tmp
 		}
 	}
 	//get the pools under the subnet
@@ -640,14 +644,15 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 	found := false
 	for _, ip := range dynamicAddress {
 		found = false
-		for _, a := range data {
+		for _, a := range reservData {
 			if ip == a.IpAddress {
 				found = true
 				break
 			}
 		}
 		if !found {
-			one.Dynamic = append(one.Dynamic, ip)
+			tmp := ipam.StatusAddress{AddressType: "dynamic"}
+			allData[ip] = tmp
 		}
 	}
 	//get manual address
@@ -656,12 +661,30 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 		return nil, err
 	}
 	for _, v := range manuals {
-		one.Manual = append(one.Manual, v.IpAddress)
+		tmp := ipam.StatusAddress{AddressType: "manual"}
+		allData[v.IpAddress] = tmp
 	}
 	//get the release address for the subnet
 	leases := dhcpgrpc.GetLeases(subNetID)
 	for _, l := range leases {
-		one.Lease = append(one.Lease, l.IpAddress)
+		var macAddr string
+		for i := 0; i < len(l.HwAddress); i++ {
+			tmp := fmt.Sprintf("%d", l.HwAddress[i])
+			macAddr += tmp
+		}
+
+		tmp := ipam.StatusAddress{MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
+		allData[l.IpAddress] = tmp
+	}
+	beginNums := strings.Split(pools[0].BeginAddress, ".")
+	prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
+	for i := 1; i < 256; i++ {
+		if allData[prefix+strconv.Itoa(i)].AddressType == "" {
+			tmp := ipam.StatusAddress{AddressType: "unused"}
+			one.Data[prefix+strconv.Itoa(i)] = tmp
+		} else {
+			one.Data[prefix+strconv.Itoa(i)] = allData[prefix+strconv.Itoa(i)]
+		}
 	}
 	return &one, nil
 }
@@ -670,6 +693,7 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 	leases := dhcpgrpc.GetLeases(id)
 	var retData ipam.ScanAddress
 	retData.SetID(id)
+	retData.Data = make(map[string]ipam.StatusAddress, 255)
 	var subnet dhcporm.OrmSubnetv4
 	if err := handler.db.First(&subnet, id).Error; err != nil {
 		return nil, err
@@ -713,7 +737,8 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 			log.Println(err)
 			continue
 		}
-		retData.Collision = append(retData.Collision, ip)
+		tmp := ipam.StatusAddress{AddressType: "collision"}
+		retData.Data[ip] = tmp
 	}
 	//for used ip addresses
 	usedIP := map[string]string{}
@@ -743,7 +768,8 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 			continue
 		}
 		if retMac.String() != mac {
-			retData.Collision = append(retData.Collision, ip)
+			tmp := ipam.StatusAddress{AddressType: "collision"}
+			retData.Data[ip] = tmp
 		}
 	}
 	//get the dead ip
@@ -752,8 +778,9 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 		return nil, err
 	}
 	for _, a := range alives {
-		if time.Now().Unix()-a.AliveTime > 60*60*24 {
-			retData.Dead = append(retData.Dead, a.IPAddress)
+		if time.Now().Unix()-a.LastAliveTime > 60*60*24 {
+			tmp := ipam.StatusAddress{AddressType: "dead", ScanTime: a.ScanTime, LastAliveTime: a.LastAliveTime}
+			retData.Data[a.IPAddress] = tmp
 		}
 	}
 	return &retData, nil
@@ -787,35 +814,41 @@ func (handler *PGDB) DetectAliveAddress() error {
 			stables = append(stables, tmp)
 		}
 	}
-	type alive struct {
-		ScanTime   int64
+	/*type alive struct {
 		IP         string
+		ScanTime   int64
 		Subnetv4ID uint
-	}
-	var alives []alive
+	}*/
+	//var alives []alive
+	var alives []dhcporm.AliveAddress
 	for _, s := range stables {
 		if ping.Ping(s.IP, 2) {
-			tmp := alive{ScanTime: time.Now().Unix(), IP: s.IP, Subnetv4ID: s.Subnetv4ID}
+			tmp := dhcporm.AliveAddress{ScanTime: time.Now().Unix(), LastAliveTime: time.Now().Unix(), IPAddress: s.IP, Subnetv4ID: s.Subnetv4ID}
 			alives = append(alives, tmp)
 		} else {
-			tmp := alive{ScanTime: 0, IP: s.IP, Subnetv4ID: s.Subnetv4ID}
+			tmp := dhcporm.AliveAddress{ScanTime: time.Now().Unix(), LastAliveTime: 0, IPAddress: s.IP, Subnetv4ID: s.Subnetv4ID}
 			alives = append(alives, tmp)
 		}
 	}
-	var aliveAdd []dhcporm.AliveAddress
-	for _, one := range alives {
-		var tmp dhcporm.AliveAddress
-		tmp.IPAddress = one.IP
-		tmp.AliveTime = one.ScanTime
-		tmp.Subnetv4ID = one.Subnetv4ID
-		aliveAdd = append(aliveAdd, tmp)
-	}
 	tx := handler.db.Begin()
 	defer tx.Rollback()
-	for _, a := range aliveAdd {
-		fmt.Println("alive one:", a)
-		if err := tx.Save(&a).Error; err != nil {
-			return err
+	for _, a := range alives {
+		if a.LastAliveTime == 0 {
+			tmp := dhcporm.AliveAddress{IPAddress: a.IPAddress}
+			if err := tx.First(&tmp).Error; err != nil {
+				if err := tx.Save(&a).Error; err != nil {
+					return err
+				}
+			} else {
+				a.LastAliveTime = tmp.LastAliveTime
+				if err := tx.Save(&a).Error; err != nil {
+					return err
+				}
+			}
+		} else {
+			if err := tx.Save(&a).Error; err != nil {
+				return err
+			}
 		}
 	}
 	tx.Commit()
