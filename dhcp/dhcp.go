@@ -15,6 +15,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -190,9 +192,15 @@ type KEAv6Handler struct {
 func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 	instance := &KEAv4Handler{ver: ver, ConfigPath: ConfPath}
 	var err error
+
 	instance.db, err = gorm.Open("postgres", postgresqlAddress)
-	if err != nil {
-		log.Fatal(err)
+	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	if yamlConfig.Localhost.IP == "10.0.0.55" || yamlConfig.Localhost.IP == "10.0.0.101" {
+		log.Println("in NewKEAv4Handler, use db:  utils.DBAddr")
+		instance.db, err = gorm.Open("postgres", utils.DBAddr)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	return instance

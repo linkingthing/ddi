@@ -218,6 +218,7 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 		return err
 	}
 	req := pb.DeleteSubnetv4Req{Id: id, Subnet: ormS4.Subnet}
+	log.Println("DeleteSubnetv4() req: ", req)
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err
@@ -293,6 +294,40 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
 	//return restS4s, nil
+}
+
+/*
+ * param: s4s, some subnet ids
+ * param: newSubnet, new subnet cidr
+ */
+func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcporm.OrmSubnetv4, error) {
+	log.Println("into OrmMergeSubnetv4, newSubnet: ", newSubnet, ", s4IDs: ", s4IDs)
+	var s4Objs []*dhcporm.OrmSubnetv4
+	var ormS4 dhcporm.OrmSubnetv4
+	var err error
+
+	//get subnets which will be merged
+	for _, s4ID := range s4IDs {
+		s4Obj := handler.GetSubnetv4ById(s4ID)
+		s4Objs = append(s4Objs, s4Obj)
+
+		// 1 delete every subnet which will be merged
+		if err = handler.DeleteSubnetv4(s4ID); err != nil {
+			log.Println("delete subnetv4 error, error: ", err)
+			return &ormS4, err
+		}
+		log.Println("delete subnetv4 ok, s4id: ", s4ID)
+	}
+	log.Println("-- s4Objs: ", s4Objs)
+
+	// 2 create new subnet with subnet: newSubnet, if some properties will be heritated further, fill them
+	ormS4, err = handler.CreateSubnetv4(newSubnet, newSubnet, "0")
+	if err != nil {
+		log.Println("create subnetv4 error, ", err)
+		return &ormS4, err
+	}
+	log.Println("create subnetv4 ok, newSubnet: ", newSubnet)
+	return &ormS4, err
 }
 
 func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {

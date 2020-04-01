@@ -130,28 +130,44 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 
 	return s4s, nil
 }
-func (s *Dhcpv4) MergeSubnetv4(s4s *RestSubnetv4, cidrs string) (*RestSubnetv4, error) {
-	log.Println("into MergeSubnetv4, s4s: ", s4s, ", cidrs: ", cidrs)
-	var newS4 *RestSubnetv4
+func (s *Dhcpv4) MergeSubnetv4(ids string) (*RestSubnetv4, error) {
+	log.Println("into MergeSubnetv4, cidrs: ", ids)
 
-	//newSubnetName := pl.ParseIPv4AndCIDR(cidrs)
-	newSubnetName, err := GetMergedSubnetv4(cidrs)
+	var newS4 *RestSubnetv4
+	var ormS4 *dhcporm.OrmSubnetv4
+	var subnetArr []string
+	var cidrs string
+
+	idArr := strings.Split(ids, ",")
+	for _, id := range idArr {
+		subnet := s.getSubnetv4ById(id).Subnet
+		subnetArr = append(subnetArr, subnet)
+	}
+	cidrs = strings.TrimSpace(strings.Join(subnetArr, "\n"))
+	//log.Println("cidrs:", cidrs, "__")
+
+	newSubnetName, err := GetMergedSubnetv4Name(cidrs)
 	if err != nil {
 		return newS4, err
 	}
 	log.Println("new subnet: ", newSubnetName)
 
+	//return newS4, nil
+
 	//todo
 	// 1 delete every subnet in cidrs
 	// 2 create new subnet with subnet: newSubnet
 
-	//var ormS4s []*dhcporm.OrmSubnetv4
-	//var err error
-	//
-	//ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
-	//log.Println("ormS4.subnet: ", ormS4.Subnet)
-	//
-	//out := strings.Split(ormS4.Subnet, "/")
+	//create new subnetv4s, and delete current one
+	log.Println("in dhcp/dhcprest MergeSubnetv4, begin to merge subnetv4s")
+
+	ormS4, err = PGDBConn.OrmMergeSubnetv4(idArr, newSubnetName)
+	if err != nil {
+		return newS4, err
+	}
+	newS4 = s.ConvertSubnetv4FromOrmToRest(ormS4)
+	log.Println("after ormMergeSubnetv4, newS4: ", newS4)
+
 	return newS4, nil
 }
 
@@ -318,8 +334,6 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	log.Println("into Action, ctx.Resource: ", ctx.Resource)
 
 	r := ctx.Resource
-	var s4 *RestSubnetv4
-	s4 = ctx.Resource.(*RestSubnetv4)
 	mergesplitData, _ := r.GetAction().Input.(*MergeSplitData)
 
 	log.Println("in Action, name: ", r.GetAction().Name)
@@ -328,6 +342,7 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	switch r.GetAction().Name {
 	case "mergesplit":
 		if mergesplitData.Oper == "split" {
+
 			mask := ConvertStringToInt(mergesplitData.Mask)
 			log.Println("post mask: ", mask)
 
@@ -336,6 +351,8 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 				return nil, nil
 			}
 
+			var s4 *RestSubnetv4
+			s4 = ctx.Resource.(*RestSubnetv4)
 			if s4s, err = h.subnetv4s.SplitSubnetv4(s4, mask); err != nil {
 				return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
 			}
@@ -346,10 +363,11 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 		}
 		if mergesplitData.Oper == "merge" {
 			var s *RestSubnetv4
+
 			ips := mergesplitData.IPs
 			log.Println("post ips: ", ips)
 
-			if s, err = h.subnetv4s.MergeSubnetv4(s4, ips); err != nil {
+			if s, err = h.subnetv4s.MergeSubnetv4(ips); err != nil {
 				return s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
 			}
 			return s, nil

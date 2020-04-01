@@ -460,8 +460,8 @@ func String(b []byte) string {
 }
 
 //get
-func GetMergedSubnetv4(str string) (string, error) {
-	log.Println("str: ", str)
+func GetMergedSubnetv4Name(str string) (string, error) {
+	log.Println("GetMergedSubnetv4Name str:", str)
 
 	b := []byte(str)
 	newCidr, e := ipv4.MergeIPNets(pl.ParseIPv4AndCIDR(string(b)))
@@ -473,7 +473,7 @@ func GetMergedSubnetv4(str string) (string, error) {
 	} else {
 		fmt.Println("error: ", e)
 	}
-	if len(newCidr) > 1 {
+	if len(newCidr) != 1 {
 		errStr := "错误, 无法合并子网"
 		log.Println(errStr)
 		return "", fmt.Errorf(errStr)
