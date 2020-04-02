@@ -200,24 +200,40 @@ func NewPoolHandler(s *Subnetv4s) *PoolHandler {
 	}
 }
 
+type OptionNameStatistics struct {
+	OptionVer string `json:"optionVer"`
+	Total     int    `json:"total"`
+}
+type OptionNameStatisticsRet struct {
+	V4Num int `json:"v4Num"`
+	V6Num int `json:"v6Num"`
+}
+
 // added for option list v4 or v6
-type optionNameHandler struct {
-	optionNames *OptionNamesState
-}
-
-type OptionNamesState struct {
-	OptionNames []*RestOptionName
-}
-
-func NewOptionNamesState() *OptionNamesState {
-	log.Println("into NewOptionNamesState")
-	return &OptionNamesState{}
-}
-
-func NewOptionNameHandler(s *OptionNamesState) *optionNameHandler {
+//type optionNameHandler struct {
+//	optionNames *OptionNamesState
+//}
+//
+//type OptionNamesState struct {
+//	OptionNames []*RestOptionName
+//}
+//
+//func NewOptionNamesState() *OptionNamesState {
+//	log.Println("into NewOptionNamesState")
+//	return &OptionNamesState{}
+//}
+//
+func NewOptionNameHandler(s *Subnetv4s) *optionNameHandler {
 	return &optionNameHandler{
-		optionNames: s,
+		subnetv4s: s,
+		db:        s.db,
 	}
+}
+
+type optionNameHandler struct {
+	subnetv4s *Subnetv4s
+	db        *gorm.DB
+	lock      sync.Mutex
 }
 
 type OptionHandler struct {

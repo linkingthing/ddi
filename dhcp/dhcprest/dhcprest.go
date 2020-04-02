@@ -400,14 +400,13 @@ func (r *optionNameHandler) Create(ctx *resource.Context) (resource.Resource, *g
 }
 
 func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptionName, error) {
-	log.Println("into CreateSubnetv4, subnetv4: ", opName)
+	log.Println("into CreateOptionName: ", opName)
 
 	//s.lock.Lock()
 	//defer s.lock.Unlock()
 
 	//todo check whether opName has been created
 
-	log.Println("in dhcp/dhcprest CreateOptionName, subnetv4: ", opName)
 	op, err := PGDBConn.OrmCreateOptionName(opName)
 	if err != nil {
 		return opName, err
@@ -425,52 +424,20 @@ func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptio
 	return opName, nil
 }
 func (h *optionNameHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
-	//var s4s []*RestOptionName
-	//var retS4 *RestSubnetv4
-	//var err error
-	log.Println("into optionNameHandler Action, ctx.Resource: ", ctx.Resource)
-
 	r := ctx.Resource
-	mergesplitData, _ := r.GetAction().Input.(*OptionNameData)
 
-	log.Println("in optionName Action, name: ", r.GetAction().Name)
-	log.Println("in optionName Action, oper: ", mergesplitData.Oper)
+	//log.Println("in optionName Action, name: ", r.GetAction().Name)
+	//log.Println("in optionName Action, oper: ", mergesplitData.Oper)
 
-	//switch r.GetAction().Name {
-	//case "mergesplit":
-	//	if mergesplitData.Oper == "split" {
-	//
-	//		mask := ConvertStringToInt(mergesplitData.Mask)
-	//		log.Println("post mask: ", mask)
-	//
-	//		if mask < 1 || mask > 32 {
-	//			log.Println("mask error, mask: ", mask)
-	//			return nil, nil
-	//		}
-	//
-	//		var s4 *RestSubnetv4
-	//		s4 = ctx.Resource.(*RestSubnetv4)
-	//		if s4s, err = h.subnetv4s.SplitSubnetv4(s4, mask); err != nil {
-	//			return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
-	//		}
-	//
-	//		fmt.Println("Action, in mergesplit, s4s: ", s4s)
-	//		//todo split subnetv4 into new mask
-	//		return s4s, nil
-	//	}
-	//	if mergesplitData.Oper == "merge" {
-	//		var s *RestSubnetv4
-	//
-	//		ips := mergesplitData.IPs
-	//		log.Println("post ips: ", ips)
-	//
-	//		if s, err = h.subnetv4s.MergeSubnetv4(ips); err != nil {
-	//			return s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
-	//		}
-	//		return s, nil
-	//	}
-	//
-	//}
+	switch r.GetAction().Name {
+	case "list":
+		// list v4 and v6 option numbers
+		ret := PGDBConn.GetOptionNameStatistics()
+		log.Println("ret: ", ret)
+
+		return ret, nil
+	}
+
 	return nil, nil
 }
 

@@ -952,3 +952,33 @@ func (handler *PGDB) getOptionNamebyNameVer(r *RestOptionName) *dhcporm.OrmOptio
 
 	return &ormOpName
 }
+
+// get statistics group by v4/v6
+func (handler *PGDB) GetOptionNameStatistics() *OptionNameStatisticsRet {
+	//log.Println("in getOptionNameStatistics")
+
+	rows, err := handler.db.Table("orm_option_names").Select("option_ver, count(*) as total").Group("option_ver").Rows()
+	if err != nil {
+		log.Println("group by error: ", err)
+	}
+	var retArr OptionNameStatisticsRet
+	for rows.Next() {
+		//log.Println("--- rows : ", rows)
+
+		var ret OptionNameStatistics
+		if err := rows.Scan(&ret.OptionVer, &ret.Total); err != nil {
+			log.Println("get from db error, err: ", err)
+		}
+		//log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
+
+		if ret.OptionVer == "v4" {
+			retArr.V4Num = ret.Total
+		}
+		if ret.OptionVer == "v6" {
+			retArr.V6Num = ret.Total
+		}
+
+	}
+
+	return &retArr
+}
