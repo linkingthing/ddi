@@ -377,10 +377,62 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	return nil, nil
 }
 
-func (r *OptionNameHandler) List(ctx *resource.Context) interface{} {
-	log.Println("into dhcprest.go OptionNameHandler List")
+func (h *optionNameHandler) List(ctx *resource.Context) interface{} {
+	log.Println("into dhcprest.go optionNameHandler List")
 	//option := ctx.Resource.(*RestOptionName)
-	return r.GetOptionNames()
+	//action := option.GetAction()
+	//log.Println("action: ", action)
+	return h.GetOptionNames()
+}
+
+func (h *optionNameHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	//var s4s []*RestOptionName
+	//var retS4 *RestSubnetv4
+	//var err error
+	log.Println("into optionNameHandler Action, ctx.Resource: ", ctx.Resource)
+
+	r := ctx.Resource
+	mergesplitData, _ := r.GetAction().Input.(*OptionNameData)
+
+	log.Println("in optionName Action, name: ", r.GetAction().Name)
+	log.Println("in optionName Action, oper: ", mergesplitData.Oper)
+
+	//switch r.GetAction().Name {
+	//case "mergesplit":
+	//	if mergesplitData.Oper == "split" {
+	//
+	//		mask := ConvertStringToInt(mergesplitData.Mask)
+	//		log.Println("post mask: ", mask)
+	//
+	//		if mask < 1 || mask > 32 {
+	//			log.Println("mask error, mask: ", mask)
+	//			return nil, nil
+	//		}
+	//
+	//		var s4 *RestSubnetv4
+	//		s4 = ctx.Resource.(*RestSubnetv4)
+	//		if s4s, err = h.subnetv4s.SplitSubnetv4(s4, mask); err != nil {
+	//			return s4s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	//		}
+	//
+	//		fmt.Println("Action, in mergesplit, s4s: ", s4s)
+	//		//todo split subnetv4 into new mask
+	//		return s4s, nil
+	//	}
+	//	if mergesplitData.Oper == "merge" {
+	//		var s *RestSubnetv4
+	//
+	//		ips := mergesplitData.IPs
+	//		log.Println("post ips: ", ips)
+	//
+	//		if s, err = h.subnetv4s.MergeSubnetv4(ips); err != nil {
+	//			return s, goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	//		}
+	//		return s, nil
+	//	}
+	//
+	//}
+	return nil, nil
 }
 
 func (r *PoolHandler) List(ctx *resource.Context) interface{} {

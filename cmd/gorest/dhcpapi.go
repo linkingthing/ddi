@@ -43,11 +43,18 @@ func main() {
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	err = schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	if err != nil {
+		log.Println("schemas import err: ", err)
+	}
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
-	schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
+	state := dhcprest.NewOptionNamesState()
+	err = schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(state))
+	if err != nil {
+		log.Println("schemas import err: ", err)
+	}
 	// end of dhcp model
 
 	//dhcpv6 := dhcprest.NewDhcpv6(dhcprest.NewPGDB().DB)

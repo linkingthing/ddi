@@ -29,6 +29,7 @@ var (
 	ReservationKind = resource.DefaultKindName(RestReservation{})
 	PoolKind        = resource.DefaultKindName(RestPool{})
 	OptionKind      = resource.DefaultKindName(RestOption{})
+	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
 
 	db *gorm.DB
 )
@@ -46,6 +47,25 @@ type RestOptionName struct {
 	OptionName            string `json:"optionName"`
 	OptionType            string `json:"optionType"`
 }
+
+type OptionNameData struct {
+	resource.ResourceBase `json:",inline"`
+	Oper                  string `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+}
+
+func (r RestOptionName) CreateAction(name string) *resource.Action {
+	log.Println("into RestOptionName, create action")
+	switch name {
+	case "list":
+		return &resource.Action{
+			Name:  "list",
+			Input: &OptionNameData{},
+		}
+	default:
+		return nil
+	}
+}
+
 type RestOption struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	AlwaysSend            bool   `gorm:"column:always-send"`
@@ -101,6 +121,7 @@ type RestSubnetv4 struct {
 }
 
 func (s4 RestSubnetv4) CreateAction(name string) *resource.Action {
+	log.Println("into RestSubnetv4, create action")
 	switch name {
 	case "mergesplit":
 		return &resource.Action{
@@ -180,16 +201,22 @@ func NewPoolHandler(s *Subnetv4s) *PoolHandler {
 }
 
 // added for option list v4 or v6
-type OptionNameHandler struct {
-	subnetv4s *Subnetv4s
-	db        *gorm.DB
-	lock      sync.Mutex
+type optionNameHandler struct {
+	optionNames *OptionNamesState
 }
 
-func NewOptionNameHandler(s *Subnetv4s) *OptionNameHandler {
-	return &OptionNameHandler{
-		subnetv4s: s,
-		db:        s.db,
+type OptionNamesState struct {
+	OptionNames []*RestOptionName
+}
+
+func NewOptionNamesState() *OptionNamesState {
+	log.Println("into NewOptionNamesState")
+	return &OptionNamesState{}
+}
+
+func NewOptionNameHandler(s *OptionNamesState) *optionNameHandler {
+	return &optionNameHandler{
+		optionNames: s,
 	}
 }
 
@@ -359,7 +386,7 @@ func (r *ReservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id stri
 	return rsv
 }
 
-func (r *OptionNameHandler) GetOptionNames() []*RestOptionName {
+func (r *optionNameHandler) GetOptionNames() []*RestOptionName {
 	list := PGDBConn.OrmOptionNameList()
 	option := ConvertOptionNamesFromOrmToRest(list)
 
