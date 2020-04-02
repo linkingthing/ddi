@@ -915,3 +915,40 @@ func (handler *PGDB) DetectAliveAddress() error {
 	tx.Commit()
 	return nil
 }
+
+func (handler *PGDB) OrmCreateOptionName(r *RestOptionName) (dhcporm.OrmOptionName, error) {
+	log.Println("into OrmCreatePool, r: ", r)
+
+	var ormOpName dhcporm.OrmOptionName
+	ormOpName = dhcporm.OrmOptionName{
+		OptionName: r.OptionName,
+		OptionId:   r.OptionId,
+		OptionVer:  r.OptionVer,
+		OptionType: r.OptionType,
+	}
+
+	o := handler.getOptionNamebyNameVer(r)
+	if o.ID > 0 {
+		return ormOpName, fmt.Errorf("error, Option exists")
+	}
+	//get subnet by subnetv4_id
+	//ormSubnetv4 := handler.GetSubnetv4ById(subnetv4_id)
+	//s4Subnet := ormSubnetv4.Subnet
+
+	query := handler.db.Create(&ormOpName)
+	if query.Error != nil {
+		return dhcporm.OrmOptionName{}, fmt.Errorf("CreateOptionName error: ")
+	}
+
+	return ormOpName, nil
+}
+
+// get option name by name and ver
+func (handler *PGDB) getOptionNamebyNameVer(r *RestOptionName) *dhcporm.OrmOptionName {
+	log.Println("in getOptionNamebyNameVer, OptionName: ", r.OptionName, ", ver: ", r.OptionVer)
+
+	var ormOpName dhcporm.OrmOptionName
+	handler.db.Where(&dhcporm.OrmOptionName{OptionName: r.OptionName, OptionVer: r.OptionVer}).Find(&ormOpName)
+
+	return &ormOpName
+}

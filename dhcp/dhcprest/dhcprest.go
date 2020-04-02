@@ -385,6 +385,45 @@ func (h *optionNameHandler) List(ctx *resource.Context) interface{} {
 	return h.GetOptionNames()
 }
 
+func (r *optionNameHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into dhcprest.go optionNameHandler Create")
+
+	opName := ctx.Resource.(*RestOptionName)
+
+	log.Println("dhcp/dhcprest. optionName: ", opName.OptionName)
+	if _, err := r.CreateOptionName(opName); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+	//log.Println("dhcp/dhcprest. pool.id: ", pool.ID)
+
+	return opName, nil
+}
+
+func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptionName, error) {
+	log.Println("into CreateSubnetv4, subnetv4: ", opName)
+
+	//s.lock.Lock()
+	//defer s.lock.Unlock()
+
+	//todo check whether opName has been created
+
+	log.Println("in dhcp/dhcprest CreateOptionName, subnetv4: ", opName)
+	op, err := PGDBConn.OrmCreateOptionName(opName)
+	if err != nil {
+		return opName, err
+	}
+
+	// set newly inserted id
+	opName.ID = strconv.Itoa(int(op.ID))
+	opName.OptionType = op.OptionType
+	opName.OptionVer = op.OptionVer
+	opName.OptionId = op.OptionId
+	opName.OptionName = op.OptionName
+	opName.SetCreationTimestamp(op.CreatedAt)
+	log.Println("newly inserted op id: ", op.ID)
+
+	return opName, nil
+}
 func (h *optionNameHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	//var s4s []*RestOptionName
 	//var retS4 *RestSubnetv4
