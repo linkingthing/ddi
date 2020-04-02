@@ -48,6 +48,7 @@ var KafkaOffsetDhcpv4 int64 = 0
 
 func dhcpClient() {
 
+	log.Println("in dhcpv4agent/agent.go, utils.KafkaServerProm: ", utils.KafkaServerProm)
 	conn, err := grpc.Dial(dhcp.Dhcpv4AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return

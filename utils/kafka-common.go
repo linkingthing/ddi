@@ -12,21 +12,10 @@ import (
 )
 
 const (
-	KafkaPort      = "9092"
 	KafkaTopicProm = "prom"
 	//checkDuration   = 24 * time.Hour
-	Hostname        = "ip-55"
-	HostIP          = "10.0.0.55"
-	PromMetricsPort = "9100"
+	Hostname = "ip-55"
 )
-
-const (
-	RoleController = "controller"
-	RoleDB         = "db"
-	RoleKafka      = "kafka"
-)
-
-var KafkaServerProm string
 
 type PromRole struct {
 	Hostname string `json:"hostname"`
