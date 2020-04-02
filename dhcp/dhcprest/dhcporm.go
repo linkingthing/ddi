@@ -51,6 +51,7 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.Option{})
 	p.db.AutoMigrate(&dhcporm.Pool{})
 	p.db.AutoMigrate(&dhcporm.ManualAddress{})
+	p.db.AutoMigrate(&dhcporm.OrmOptionName{})
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv6{})
 	p.db.AutoMigrate(&dhcporm.Reservationv6{})
@@ -433,6 +434,31 @@ func (handler *PGDB) OrmDeleteReservation(id string) error {
 	}
 
 	return nil
+}
+
+func (handler *PGDB) OrmOptionNameList() []*dhcporm.OrmOptionName {
+	log.Println("in dhcprest, OrmOptionNameList,  ")
+	var optionNames []*dhcporm.OrmOptionName
+	var ps []dhcporm.OrmOptionName
+
+	//subnetIdUint := ConvertStringToUint(subnetId)
+	if err := handler.db.Find(&ps).Error; err != nil {
+		return nil
+	}
+
+	for _, p := range ps {
+		p2 := p
+		p2.ID = p.ID
+		p2.OptionName = p.OptionName
+		p2.OptionType = p.OptionType
+		p2.OptionId = p.OptionId
+		p2.OptionVer = p.OptionVer
+
+		optionNames = append(optionNames, &p2)
+	}
+
+	log.Println("in OrmOptionNameList, optionNames: ", optionNames)
+	return optionNames
 }
 
 func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {

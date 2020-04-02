@@ -377,6 +377,12 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	return nil, nil
 }
 
+func (r *OptionNameHandler) List(ctx *resource.Context) interface{} {
+	log.Println("into dhcprest.go OptionNameHandler List")
+	//option := ctx.Resource.(*RestOptionName)
+	return r.GetOptionNames()
+}
+
 func (r *PoolHandler) List(ctx *resource.Context) interface{} {
 	log.Println("into dhcprest.go subnetv4PoolHandler List")
 	pool := ctx.Resource.(*RestPool)

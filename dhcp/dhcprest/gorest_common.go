@@ -38,6 +38,14 @@ var (
 //	ConfigJson            string `json:"configJson" rest:"required=true,minLen=1,maxLen=1000000"`
 //}
 
+// added for option list v4 or v6
+type RestOptionName struct {
+	resource.ResourceBase `json:"embedded,inline"`
+	OptionVer             string `json:"optionVer"` // v4 or v6
+	OptionId              int    `json:"optionId"`
+	OptionName            string `json:"optionName"`
+	OptionType            string `json:"optionType"`
+}
 type RestOption struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	AlwaysSend            bool   `gorm:"column:always-send"`
@@ -171,6 +179,33 @@ func NewPoolHandler(s *Subnetv4s) *PoolHandler {
 	}
 }
 
+// added for option list v4 or v6
+type OptionNameHandler struct {
+	subnetv4s *Subnetv4s
+	db        *gorm.DB
+	lock      sync.Mutex
+}
+
+func NewOptionNameHandler(s *Subnetv4s) *OptionNameHandler {
+	return &OptionNameHandler{
+		subnetv4s: s,
+		db:        s.db,
+	}
+}
+
+type OptionHandler struct {
+	subnetv4s *Subnetv4s
+	db        *gorm.DB
+	lock      sync.Mutex
+}
+
+func NewOptionHandler(s *Subnetv4s) *OptionHandler {
+	return &OptionHandler{
+		subnetv4s: s,
+		db:        s.db,
+	}
+}
+
 //tools func
 func ConvertReservationsFromOrmToRest(rs []dhcporm.Reservation) []*RestReservation {
 
@@ -186,6 +221,38 @@ func ConvertReservationsFromOrmToRest(rs []dhcporm.Reservation) []*RestReservati
 	}
 
 	return restRs
+}
+
+func ConvertOptionNamesFromOrmToRest(ps []*dhcporm.OrmOptionName) []*RestOptionName {
+	log.Println("into ConvertOptionsFromOrmToRest")
+
+	var restOPs []*RestOptionName
+	for _, v := range ps {
+		restOP := RestOptionName{
+			OptionId:   v.OptionId,
+			OptionVer:  v.OptionVer,
+			OptionType: v.OptionType,
+		}
+		restOP.ID = strconv.Itoa(int(v.ID))
+		restOPs = append(restOPs, &restOP)
+	}
+
+	return restOPs
+}
+
+func ConvertOptionsFromOrmToRest(ps []*dhcporm.Option) []*RestOption {
+	log.Println("into ConvertOptionsFromOrmToRest")
+
+	var restOPs []*RestOption
+	for _, v := range ps {
+		restOP := RestOption{
+			Code: v.Code,
+		}
+		restOP.ID = strconv.Itoa(int(v.ID))
+		restOPs = append(restOPs, &restOP)
+	}
+
+	return restOPs
 }
 
 //tools func
@@ -291,6 +358,20 @@ func (r *ReservationHandler) GetSubnetv4Reservation(subnetId string, rsv_id stri
 
 	return rsv
 }
+
+func (r *OptionNameHandler) GetOptionNames() []*RestOptionName {
+	list := PGDBConn.OrmOptionNameList()
+	option := ConvertOptionNamesFromOrmToRest(list)
+
+	return option
+}
+
+//func (r *OptionHandler) GetOptions(subnetId string) []*RestOption {
+//	list := PGDBConn.OrmOptionList(subnetId)
+//	option := ConvertOptionsFromOrmToRest(list)
+//
+//	return option
+//}
 
 func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
 	list := PGDBConn.OrmPoolList(subnetId)

@@ -73,6 +73,13 @@ func (Reservation) TableName() string {
 	return "reservations"
 }
 
+type OrmOptionName struct {
+	gorm.Model
+	OptionName string `json:optionName`
+	OptionId   int    `json:optionId`
+	OptionType string `json:optionType`
+	OptionVer  string `json:optionVer` // v4 or v6
+}
 type Option struct {
 	gorm.Model
 	AlwaysSend    bool   `gorm:"column:always-send"`
@@ -83,6 +90,7 @@ type Option struct {
 	Space         string `json:"space"`
 	ReservationID uint   `sql:"type:integer REFERENCES reservations(id) on update cascade on delete cascade"`
 }
+
 type Pool struct {
 	gorm.Model
 	OptionData []Option `json:"option-data"`
