@@ -10,6 +10,7 @@ import (
 
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
+	"github.com/linkingthing/ddi/cmd/node"
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
@@ -202,6 +203,11 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 
 func main() {
 	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
+
+	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	if yamlConfig.Localhost.IsDHCP {
+		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
+	}
 
 	//ver string, ConfPath string, addr string
 	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)

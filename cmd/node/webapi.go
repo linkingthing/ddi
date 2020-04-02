@@ -18,7 +18,7 @@ func RegisterNode(confPath string, role string) {
 
 	var conf *config.VanguardConf
 	conf = config.GetConfig(confPath)
-	log.Println("in agent.go, localhost ip: ", conf.Localhost.IP)
+	log.Println("in cmd/node, localhost ip: ", conf.Localhost.IP)
 
 	hostname := conf.Localhost.Hostname
 	hostIP := conf.Localhost.IP
@@ -41,7 +41,7 @@ func RegisterNode(confPath string, role string) {
 		return
 	}
 
-	fmt.Println("+++ PromJson")
+	fmt.Println("in cmd/node +++ PromJson")
 	fmt.Println(PromJson)
 	fmt.Println("--- PromJson")
 	//go func() {

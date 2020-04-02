@@ -36,6 +36,7 @@ var KafkaOffsetFile = "/tmp/kafka-offset.txt" // store kafka offset num into thi
 
 // produceProm node uses kafka to report it's alive state
 func ProduceProm(msg kafka.Message) {
+	log.Println("in utils/kafka-common, KafkaServerProm: ", KafkaServerProm)
 	w := kafka.NewWriter(kafka.WriterConfig{
 		Brokers: []string{KafkaServerProm},
 		Topic:   KafkaTopicProm,
