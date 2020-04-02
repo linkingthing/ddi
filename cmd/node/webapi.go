@@ -41,9 +41,9 @@ func RegisterNode(confPath string, role string) {
 		return
 	}
 
-	fmt.Println("in cmd/node +++ PromJson")
-	fmt.Println(PromJson)
-	fmt.Println("--- PromJson")
+	//fmt.Println("in cmd/node +++ PromJson")
+	//fmt.Println(PromJson)
+	//fmt.Println("--- PromJson")
 	//go func() {
 	key := "prom"
 	value := PromJson
@@ -52,7 +52,7 @@ func RegisterNode(confPath string, role string) {
 		Key:   []byte(key),
 		Value: []byte(value),
 	}
-	log.Println("kafka.Message: ", msg)
+	//log.Println("kafka.Message: ", msg)
 	utils.ProduceProm(msg)
-	log.Println("produceProm msg ok")
+	//log.Println("produceProm msg ok")
 }
