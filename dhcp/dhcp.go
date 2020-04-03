@@ -195,7 +195,7 @@ func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 
 	instance.db, err = gorm.Open("postgres", postgresqlAddress)
 	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
-	if yamlConfig.Localhost.IP == "10.0.0.55" || yamlConfig.Localhost.IP == "10.0.0.101" {
+	if yamlConfig.Localhost.IP == "10.0.0.55" {
 		log.Println("in NewKEAv4Handler, use db:  utils.DBAddr")
 		instance.db, err = gorm.Open("postgres", utils.DBAddr)
 		if err != nil {
