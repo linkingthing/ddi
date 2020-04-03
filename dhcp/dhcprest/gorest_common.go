@@ -30,6 +30,7 @@ var (
 	PoolKind        = resource.DefaultKindName(RestPool{})
 	OptionKind      = resource.DefaultKindName(RestOption{})
 	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
+	//OptionNameConfigKind = resource.DefaultKindName(RestOptionNameConfig{})
 
 	db *gorm.DB
 )
@@ -213,6 +214,18 @@ type OptionNameConfigRet struct {
 	Type  string `json:"type"`
 	Num   int    `json:"num"`
 	Notes string `json:"notes"`
+}
+type OptionNameConfigsRet struct {
+	resource.ResourceBase `json:"embedded,inline"`
+	V4                    RestOptionNameConfig `json:"v4"`
+	V6                    RestOptionNameConfig `json:"v4"`
+}
+type RestOptionNameConfig struct {
+	//resource.ResourceBase `json:"embedded,inline"`
+	OptionNotes string `json:"optionNotes"` // v4 or v6
+	OptionNum   int    `json:"optionNum"`
+	OptionName  string `json:"optionName"`
+	OptionType  string `json:"optionType"`
 }
 
 // added for option list v4 or v6

@@ -1015,17 +1015,27 @@ func (handler *PGDB) getOptionNamebyID(id string) *dhcporm.OrmOptionName {
 	return &ormOpName
 }
 
+type BaseJsonOptionName struct {
+	Status  string                  `json:"status"`
+	Message string                  `json:"message"`
+	Data    []*RestOptionNameConfig `json:"data"`
+}
+
 // get statistics group by v4/v6
-func (handler *PGDB) GetOptionNameStatistics() []*OptionNameConfigRet {
+func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 	//log.Println("in getOptionNameStatistics")
 
 	rows, err := handler.db.Table("orm_option_names").Select("option_ver, count(*) as total").Group("option_ver").Rows()
 	if err != nil {
 		log.Println("group by error: ", err)
 	}
-	var retArr OptionNameStatisticsRet
-	var retArr2 []*OptionNameConfigRet
-	var retOne *OptionNameConfigRet
+	//var retArr OptionNameStatisticsRet
+	var newRet BaseJsonOptionName
+	//var retArr2 []*RestOptionNameConfig
+	var restOpName RestOptionNameConfig
+	newRet.Status = "200"
+	newRet.Message = "ok"
+
 	for rows.Next() {
 		//log.Println("--- rows : ", rows)
 
@@ -1033,27 +1043,32 @@ func (handler *PGDB) GetOptionNameStatistics() []*OptionNameConfigRet {
 		if err := rows.Scan(&ret.OptionVer, &ret.Total); err != nil {
 			log.Println("get from db error, err: ", err)
 		}
-		//log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
+		log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
 
 		if ret.OptionVer == "v4" {
-			retArr.V4Num = ret.Total
+			//retArr.V4Num = ret.Total
 
-			retOne.Name = "DHCP"
-			retOne.Num = ret.Total
-			retOne.Type = "IPv4"
-			retOne.Notes = ""
+			restOpName.OptionName = "DHCP"
+			restOpName.OptionNum = ret.Total
+			restOpName.OptionType = "IPv4"
+			restOpName.OptionNotes = ""
+
+			newRet.Data = append(newRet.Data, &restOpName)
 		}
 		if ret.OptionVer == "v6" {
-			retArr.V6Num = ret.Total
+			//retArr.V6Num = ret.Total
 
-			retOne.Name = "DHCPv6"
-			retOne.Num = ret.Total
-			retOne.Type = "IPv6"
-			retOne.Notes = ""
+			restOpName.OptionName = "DHCPv6"
+			restOpName.OptionNum = ret.Total
+			restOpName.OptionType = "IPv6"
+			restOpName.OptionNotes = ""
+
+			newRet.Data = append(newRet.Data, &restOpName)
 		}
 
-		retArr2 = append(retArr2, retOne)
 	}
+	//newRet.Data = retArr2
 
-	return retArr2
+	log.Println("newRet.Data: ", newRet.Data)
+	return &newRet
 }
