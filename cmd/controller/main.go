@@ -133,7 +133,7 @@ func main() {
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
-
+	schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
 	// end of dhcp model
 
 	router := gin.Default()

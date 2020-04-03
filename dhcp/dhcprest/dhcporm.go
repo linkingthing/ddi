@@ -1016,7 +1016,7 @@ func (handler *PGDB) getOptionNamebyID(id string) *dhcporm.OrmOptionName {
 }
 
 // get statistics group by v4/v6
-func (handler *PGDB) GetOptionNameStatistics() *OptionNameStatisticsRet {
+func (handler *PGDB) GetOptionNameStatistics() []*OptionNameConfigRet {
 	//log.Println("in getOptionNameStatistics")
 
 	rows, err := handler.db.Table("orm_option_names").Select("option_ver, count(*) as total").Group("option_ver").Rows()
@@ -1024,6 +1024,8 @@ func (handler *PGDB) GetOptionNameStatistics() *OptionNameStatisticsRet {
 		log.Println("group by error: ", err)
 	}
 	var retArr OptionNameStatisticsRet
+	var retArr2 []*OptionNameConfigRet
+	var retOne *OptionNameConfigRet
 	for rows.Next() {
 		//log.Println("--- rows : ", rows)
 
@@ -1035,12 +1037,23 @@ func (handler *PGDB) GetOptionNameStatistics() *OptionNameStatisticsRet {
 
 		if ret.OptionVer == "v4" {
 			retArr.V4Num = ret.Total
+
+			retOne.Name = "DHCP"
+			retOne.Num = ret.Total
+			retOne.Type = "IPv4"
+			retOne.Notes = ""
 		}
 		if ret.OptionVer == "v6" {
 			retArr.V6Num = ret.Total
+
+			retOne.Name = "DHCPv6"
+			retOne.Num = ret.Total
+			retOne.Type = "IPv6"
+			retOne.Notes = ""
 		}
 
+		retArr2 = append(retArr2, retOne)
 	}
 
-	return &retArr
+	return retArr2
 }

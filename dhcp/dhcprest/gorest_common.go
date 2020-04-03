@@ -208,6 +208,12 @@ type OptionNameStatisticsRet struct {
 	V4Num int `json:"v4Num"`
 	V6Num int `json:"v6Num"`
 }
+type OptionNameConfigRet struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Num   int    `json:"num"`
+	Notes string `json:"notes"`
+}
 
 // added for option list v4 or v6
 //type optionNameHandler struct {
