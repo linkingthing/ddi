@@ -1032,7 +1032,7 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 	//var retArr OptionNameStatisticsRet
 	var newRet BaseJsonOptionName
 	//var retArr2 []*RestOptionNameConfig
-	var restOpName RestOptionNameConfig
+
 	newRet.Status = "200"
 	newRet.Message = "ok"
 
@@ -1044,7 +1044,7 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 			log.Println("get from db error, err: ", err)
 		}
 		log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
-
+		var restOpName RestOptionNameConfig
 		if ret.OptionVer == "v4" {
 			//retArr.V4Num = ret.Total
 
