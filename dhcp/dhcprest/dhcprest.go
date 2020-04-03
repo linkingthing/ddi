@@ -398,12 +398,22 @@ func (r *optionNameHandler) Create(ctx *resource.Context) (resource.Resource, *g
 
 	return opName, nil
 }
+func (r *optionNameHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into rest optionName Update")
+
+	opName := ctx.Resource.(*RestOptionName)
+	if err := r.UpdateOptionName(opName); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	return opName, nil
+}
 
 func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptionName, error) {
 	log.Println("into CreateOptionName: ", opName)
 
-	//s.lock.Lock()
-	//defer s.lock.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	//todo check whether opName has been created
 
@@ -423,6 +433,26 @@ func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptio
 
 	return opName, nil
 }
+
+func (s *optionNameHandler) UpdateOptionName(opName *RestOptionName) error {
+	log.Println("into dhcp/dhcprest/UpdateOptionName")
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	ormOpName := PGDBConn.getOptionNamebyID(opName.ID)
+	if ormOpName.OptionName == "" {
+		return fmt.Errorf("OptionName %s not exist", opName.ID)
+	}
+
+	err := PGDBConn.OrmUpdateOptionName(opName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (h *optionNameHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	r := ctx.Resource
 

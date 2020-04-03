@@ -275,8 +275,10 @@ func ConvertOptionNamesFromOrmToRest(ps []*dhcporm.OrmOptionName) []*RestOptionN
 			OptionId:   v.OptionId,
 			OptionVer:  v.OptionVer,
 			OptionType: v.OptionType,
+			OptionName: v.OptionName,
 		}
 		restOP.ID = strconv.Itoa(int(v.ID))
+		restOP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 		restOPs = append(restOPs, &restOP)
 	}
 

@@ -461,6 +461,29 @@ func (handler *PGDB) OrmOptionNameList() []*dhcporm.OrmOptionName {
 	return optionNames
 }
 
+func (handler *PGDB) OrmUpdateOptionName(opName *RestOptionName) error {
+	log.Println("into dhcporm, OrmUpdateOptionName, OptionName: ", opName.OptionName)
+
+	dbOpName := dhcporm.OrmOptionName{}
+	dbOpName.OptionName = opName.OptionName
+	dbOpName.OptionVer = opName.OptionVer
+	dbOpName.OptionId = opName.OptionId
+	dbOpName.OptionType = opName.OptionType
+	dbOpName.ID = ConvertStringToUint(opName.ID)
+
+	log.Println("begin to save db, dbOpName.ID: ", dbOpName.ID)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&dbOpName).Error; err != nil {
+		log.Println("update option name error: ", err)
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 	log.Println("in dhcprest, OrmPoolList, subnetId: ", subnetId)
 	var pools []*dhcporm.Pool
@@ -950,6 +973,18 @@ func (handler *PGDB) getOptionNamebyNameVer(r *RestOptionName) *dhcporm.OrmOptio
 	var ormOpName dhcporm.OrmOptionName
 	handler.db.Where(&dhcporm.OrmOptionName{OptionName: r.OptionName, OptionVer: r.OptionVer}).Find(&ormOpName)
 
+	return &ormOpName
+}
+
+// get option name by name and ver
+func (handler *PGDB) getOptionNamebyID(id string) *dhcporm.OrmOptionName {
+	log.Println("in getOptionNamebyNameVer, id: ", id)
+
+	var ormOpName dhcporm.OrmOptionName
+	ormOpName.ID = ConvertStringToUint(id)
+	handler.db.First(&ormOpName)
+
+	log.Println("ormOpName: ", ormOpName)
 	return &ormOpName
 }
 
