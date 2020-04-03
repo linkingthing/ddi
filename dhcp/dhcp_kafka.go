@@ -23,7 +23,7 @@ var KafkaOffsetDhcpv4 int64 = 0
 func SendDhcpCmd(data []byte, cmd string) error {
 	log.Println("into SendDhcpCmd(), cmd: ", cmd)
 
-	//KafkaServer = utils.KafkaServerProm
+	KafkaServer = utils.KafkaServerProm
 	log.Println("after kafkaServer: ", KafkaServer)
 	var DhcpkafkaWriter *kg.Writer
 	DhcpkafkaWriter = kg.NewWriter(kg.WriterConfig{
