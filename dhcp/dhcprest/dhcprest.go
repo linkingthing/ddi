@@ -408,6 +408,16 @@ func (r *optionNameHandler) Update(ctx *resource.Context) (resource.Resource, *g
 
 	return opName, nil
 }
+func (r *optionNameHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	log.Println("into dhcprest.go optionNameHandler Delete")
+	opName := ctx.Resource.(*RestOptionName)
+
+	if err := r.DeleteOptionName(opName); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+
+}
 
 func (s *optionNameHandler) CreateOptionName(opName *RestOptionName) (*RestOptionName, error) {
 	log.Println("into CreateOptionName: ", opName)
@@ -446,6 +456,20 @@ func (s *optionNameHandler) UpdateOptionName(opName *RestOptionName) error {
 	}
 
 	err := PGDBConn.OrmUpdateOptionName(opName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *optionNameHandler) DeleteOptionName(opName *RestOptionName) error {
+	log.Println("into DeleteOptionName, opName.ID: ", opName.ID)
+	//log.Println(pool)
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err := PGDBConn.OrmDeleteOptionName(opName.ID)
 	if err != nil {
 		return err
 	}

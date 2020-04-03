@@ -484,6 +484,33 @@ func (handler *PGDB) OrmUpdateOptionName(opName *RestOptionName) error {
 	return nil
 }
 
+func (handler *PGDB) OrmDeleteOptionName(id string) error {
+	log.Println("into dhcprest OrmDeleteOptionName, id ", id)
+
+	var ormOpName dhcporm.OrmOptionName
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormOpName, id).Error; err != nil {
+		return fmt.Errorf("unknown OptionName with ID %s, %w", id, err)
+	}
+
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormOpName.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormOpName).Error; err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 	log.Println("in dhcprest, OrmPoolList, subnetId: ", subnetId)
 	var pools []*dhcporm.Pool
