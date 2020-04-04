@@ -84,10 +84,10 @@ type RestReservation struct {
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
 	Duid           string       `json:"duid"`
 	Hostname       string       `json:"hostname"`
-	IpAddress      string       `json:"ip-address"`
-	NextServer     string       `json:"next-server"`
-	OptionData     []RestOption `json:"option-data"`
-	ServerHostname string       `json:"server-hostname"`
+	IpAddress      string       `json:"ipAddress"`
+	NextServer     string       `json:"nextServer"`
+	OptionData     []RestOption `json:"optionData"`
+	ServerHostname string       `json:"serverHostname"`
 }
 
 type RestPool struct {
@@ -269,14 +269,15 @@ func NewOptionHandler(s *Subnetv4s) *OptionHandler {
 }
 
 //tools func
-func ConvertReservationsFromOrmToRest(rs []dhcporm.Reservation) []*RestReservation {
+func ConvertReservationsFromOrmToRest(rs []dhcporm.OrmReservation) []*RestReservation {
 
 	var restRs []*RestReservation
 	for _, v := range rs {
 		restR := RestReservation{
-			//Duid:         v.Duid,
+			Duid:         v.Duid,
 			BootFileName: v.BootFileName,
 			Hostname:     v.Hostname,
+			IpAddress:    v.IpAddress,
 		}
 		restR.ID = strconv.Itoa(int(v.ID))
 		restRs = append(restRs, &restR)
@@ -348,7 +349,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	return v4
 }
-func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.Reservation) *RestReservation {
+func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
 	rsv := &RestReservation{}
 
 	if v == nil {
@@ -357,7 +358,8 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 
 	rsv.SetID(strconv.Itoa(int(v.ID)))
 	rsv.BootFileName = v.BootFileName
-	//rsv.Duid = v.Duid
+	rsv.Duid = v.Duid
+	rsv.IpAddress = v.IpAddress
 
 	return rsv
 }

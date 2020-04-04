@@ -48,7 +48,7 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db = db
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv4{})
-	p.db.AutoMigrate(&dhcporm.Reservation{})
+	p.db.AutoMigrate(&dhcporm.OrmReservation{})
 	p.db.AutoMigrate(&dhcporm.Option{})
 	p.db.AutoMigrate(&dhcporm.Pool{})
 	p.db.AutoMigrate(&dhcporm.ManualAddress{})
@@ -85,7 +85,7 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 		//log.Println("k: ", k, ", v: ", v)
 		//log.Println("in Subnetv4List, v.ID: ", v.ID)
 
-		rsv := []dhcporm.Reservation{}
+		rsv := []dhcporm.OrmReservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
 		}
@@ -334,9 +334,9 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 	return &ormS4, err
 }
 
-func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
+func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.OrmReservation {
 	log.Println("in dhcprest, OrmReservationList, subnetId: ", subnetId)
-	var rsvs []dhcporm.Reservation
+	var rsvs []dhcporm.OrmReservation
 
 	subnetIdUint := ConvertStringToUint(subnetId)
 	if err := handler.db.Where("subnetv4_id = ?", subnetIdUint).Find(&rsvs).Error; err != nil {
@@ -368,11 +368,11 @@ func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
 	return rsvs
 }
 
-func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.Reservation {
+func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.OrmReservation {
 	log.Println("into rest OrmGetReservation, subnetId: ", subnetId, "rsv_id: ", rsv_id)
 	dbRsvId := ConvertStringToUint(rsv_id)
 
-	rsv := dhcporm.Reservation{}
+	rsv := dhcporm.OrmReservation{}
 	if err := handler.db.First(&rsv, int(dbRsvId)).Error; err != nil {
 		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
 		return nil
@@ -381,28 +381,69 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 	return &rsv
 }
 
-func (handler *PGDB) OrmCreateReservation(id string, r *RestReservation) (dhcporm.Reservation, error) {
-	log.Println("into OrmCreateReservation")
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
-	log.Println("in OrmCreateReservation, r.Subnetv4ID: ", r.IpAddress)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.ID)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.OptionData)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
-	var rsv = dhcporm.Reservation{
-		//Duid:         r.Duid,
+func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.OrmReservation, error) {
+	log.Println("into OrmCreateReservation, r: ", r, ", subnetv4_id: ", subnetv4_id)
+
+	ormRsv := dhcporm.OrmReservation{
+		Duid:         r.Duid,
 		BootFileName: r.BootFileName,
-		Subnetv4ID:   ConvertStringToUint(id),
+		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
 		Hostname:     r.Hostname,
 		IpAddress:    r.IpAddress,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
-	query := handler.db.Create(&rsv)
-	if query.Error != nil {
-		return dhcporm.Reservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
+	pbRsv := pb.Reservation{
+		Duid:        r.Duid,
+		Hostname:    r.Hostname,
+		IpAddresses: r.IpAddress,
+		NextServer:  r.NextServer,
 	}
 
-	return rsv, nil
+	//check whether subnet id exists
+	s4Obj := handler.GetSubnetv4ById(subnetv4_id)
+	if s4Obj.Subnet == "" {
+		log.Println("subnet not exist")
+		return ormRsv, fmt.Errorf("subnet not exist")
+	}
+
+	log.Println("begin to save db, ormRsv.IpAddress: ", ormRsv.IpAddress)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormRsv).Error; err != nil {
+		log.Println("save ormRsv error: ", err)
+		return ormRsv, err
+	}
+
+	//todo: post kafka msg to dhcp agent
+	rsvs := []*pb.Reservation{}
+	rsvs = append(rsvs, &pbRsv)
+	req := pb.CreateSubnetv4ReservationReq{
+		Subnet:     s4Obj.Subnet,
+		IpAddr:     pbRsv.IpAddresses,
+		Duid:       pbRsv.Duid,
+		Hostname:   pbRsv.Hostname,
+		NextServer: pbRsv.NextServer,
+	}
+	log.Println("OrmCreateReservation, req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return ormRsv, err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Reservation); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
+		return ormRsv, err
+	}
+	//end of todo
+
+	//rsv := dhcporm.OrmReservation{}
+
+	//query := handler.db.Create(&rsv)
+	//if query.Error != nil {
+	//	return dhcporm.OrmReservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
+	//}
+	tx.Commit()
+
+	return ormRsv, nil
 }
 
 func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation) error {
@@ -415,7 +456,7 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 	//	return fmt.Errorf(name + " not exists, return")
 	//}
 
-	ormRsv := dhcporm.Reservation{}
+	ormRsv := dhcporm.OrmReservation{}
 	ormRsv.ID = ConvertStringToUint(r.GetID())
 	ormRsv.Hostname = r.Hostname
 	//ormRsv.Duid = r.Duid
@@ -430,7 +471,7 @@ func (handler *PGDB) OrmDeleteReservation(id string) error {
 	log.Println("into dhcprest OrmDeleteReservation, id ", id)
 	dbId := ConvertStringToUint(id)
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Reservation{})
+	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmReservation{})
 
 	if query.Error != nil {
 		return fmt.Errorf("delete subnet Reservation error, Reservation id: " + id)
@@ -856,7 +897,7 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 	}
 	//for used ip addresses
 	usedIP := map[string]string{}
-	var reservs []dhcporm.Reservation
+	var reservs []dhcporm.OrmReservation
 	if err := handler.db.Where("subnetv4_id = ?", id).Find(&reservs).Error; err != nil {
 		return nil, err
 	}
@@ -913,7 +954,7 @@ func (handler *PGDB) KeepDetectAlive() {
 
 func (handler *PGDB) DetectAliveAddress() error {
 	//get all the resevation address where reserv_type equal "hw-address" or "client-id"
-	var reservs []dhcporm.Reservation
+	var reservs []dhcporm.OrmReservation
 	if err := handler.db.Find(&reservs).Error; err != nil {
 		return err
 	}
@@ -1046,7 +1087,7 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 		if err := rows.Scan(&ret.OptionVer, &ret.Total); err != nil {
 			log.Println("get from db error, err: ", err)
 		}
-		log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
+		//log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
 		var restOpName RestOptionNameConfig
 		if ret.OptionVer == "v4" {
 			//retArr.V4Num = ret.Total
