@@ -120,3 +120,19 @@ type AliveAddress struct {
 	ScanTime      int64
 	Subnetv4ID    uint `sql:"type:integer REFERENCES subnetv4s(id)"`
 }
+
+type Ipv6PlanedAddrTree struct {
+	gorm.Model
+	Depth    int
+	Name     string
+	ParentID uint
+	Subnet   string
+	NodeCode int
+	MaxCode  int
+	IsLeaf   bool
+}
+
+type BitsUseFor struct {
+	Parentid uint
+	UsedFor  string
+}

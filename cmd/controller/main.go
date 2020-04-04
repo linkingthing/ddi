@@ -27,7 +27,6 @@ import (
 	"log"
 	"net/http"
 
-	//"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -216,7 +215,6 @@ func main() {
 	}
 
 	router.POST("/apis/linkingthing.com/example/v1/login", authMiddleware.LoginHandler)
-
 	router.GET("/apis/linkingthing.com/example/v1/checkvalue", CheckValue)
 	auth := router.Group("/")
 	auth.Use(authMiddleware.MiddlewareFunc())
@@ -231,6 +229,10 @@ func main() {
 		auth.GET("/apis/linkingthing.com/example/v1/dashdhcpassign", nodeDashDhcpAssign)
 		auth.GET("/apis/linkingthing.com/example/v1/retcode", retCodeHandler)
 		auth.GET("/apis/linkingthing.com/example/v1/memhit", memHitHandler)
+		auth.POST("/apis/linkingthing.com/example/v1/checkipv6prefix", ipamapi.CheckPrefix)
+		auth.POST("/apis/linkingthing.com/example/v1/createsubtree", ipamapi.CreateSubtree)
+		auth.POST("/apis/linkingthing.com/example/v1/deletesubtree", ipamapi.DeleteSubtree)
+		auth.POST("/apis/linkingthing.com/example/v1/getsubtree", ipamapi.GetSubtree)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()

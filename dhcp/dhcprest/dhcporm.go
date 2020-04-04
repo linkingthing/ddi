@@ -16,6 +16,7 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/arp"
 	"github.com/paulstuart/ping"
+	"math"
 	"net"
 	"time"
 )
@@ -57,6 +58,8 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.Reservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
 	p.db.AutoMigrate(&dhcporm.AliveAddress{})
+	p.db.AutoMigrate(&dhcporm.Ipv6PlanedAddrTree{})
+	p.db.AutoMigrate(&dhcporm.BitsUseFor{})
 	p.ticker = time.NewTicker(checkPeriod * time.Second)
 	return p
 }
@@ -1071,4 +1074,179 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 
 	log.Println("newRet.Data: ", newRet.Data)
 	return &newRet
+}
+
+func (handler *PGDB) CreateSubtree(data *ipam.AlloPrefix) error {
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if data.Depth == 1 {
+		home := dhcporm.Ipv6PlanedAddrTree{}
+		home.Depth = 0
+		home.Subnet = data.ParentIPv6 + "/" + strconv.Itoa(int(data.PrefixLength))
+		home.IsLeaf = false
+		if err := tx.Create(&home).Error; err != nil {
+			return err
+		}
+		data.ParentID = strconv.Itoa(int(home.ID))
+	}
+	for i, v := range data.Nodes {
+		one := dhcporm.Ipv6PlanedAddrTree{}
+		one.Depth = data.Depth
+		one.Name = v.NodeName
+		var err error
+		var num int
+		if num, err = strconv.Atoi(data.ParentID); err != nil {
+			return err
+		}
+		one.ParentID = uint(num)
+		one.Subnet = v.Subnet
+		one.NodeCode = int(v.NodeCode)
+		one.MaxCode = int(math.Pow(2, float64(data.BitNum)))
+		one.IsLeaf = true
+		if err := tx.Create(&one).Error; err != nil {
+			return err
+		}
+		parent := dhcporm.Ipv6PlanedAddrTree{}
+		if err := tx.First(&parent, data.ParentID).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&parent).UpdateColumn("is_leaf", false).Error; err != nil {
+			return err
+		}
+		data.Nodes[i].ID = strconv.Itoa(int(one.ID))
+	}
+	generation := dhcporm.BitsUseFor{}
+	var err error
+	var num int
+	if num, err = strconv.Atoi(data.ParentID); err != nil {
+		return err
+	}
+	generation.Parentid = uint(num)
+	generation.UsedFor = data.BitsUsedFor
+	if err := tx.Create(&generation).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (handler *PGDB) DeleteSubtree(id string) error {
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := tx.First(&one, id).Error; err != nil {
+		return err
+	}
+	if !one.IsLeaf {
+		var childs []dhcporm.Ipv6PlanedAddrTree
+		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
+			return err
+		}
+		for _, c := range childs {
+			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
+				return err
+			}
+		}
+	}
+	if one.ParentID != 0 {
+		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+			return err
+		}
+	}
+	if err := tx.Unscoped().Delete(&one).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+func (handler *PGDB) DeleteOne(id string, tx *gorm.DB) error {
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := tx.First(&one, id).Error; err != nil {
+		return err
+	}
+	if !one.IsLeaf {
+		var childs []dhcporm.Ipv6PlanedAddrTree
+		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
+			return err
+		}
+		for _, c := range childs {
+			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
+				return err
+			}
+		}
+	}
+	if one.ParentID != 0 {
+		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+			return err
+		}
+	}
+	if err := tx.Unscoped().Delete(&one).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (handler *PGDB) GetSubtree(id string) (*ipam.NodesTree, error) {
+	data := ipam.NodesTree{}
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := handler.db.First(&one, id).Error; err != nil {
+		return nil, err
+	}
+	data.Nodes.ID = id
+	data.Nodes.Name = one.Name
+	data.Nodes.Subnet = one.Subnet
+	data.Nodes.NodeCode = byte(one.NodeCode)
+	data.Nodes.SubtreeBitNum = 0
+	data.Nodes.Depth = one.Depth
+	usedFor := dhcporm.BitsUseFor{}
+	if err := handler.db.Where("parentid = ?", one.ID).First(&usedFor).Error; err != nil {
+		return nil, err
+	}
+	data.Nodes.SubtreeUseDFor = usedFor.UsedFor
+	var bitNum int
+	var err error
+	if !one.IsLeaf {
+		if bitNum, err = handler.GetNextTree(&data.Nodes.Nodes, one.ID); err != nil {
+			return nil, err
+		}
+	}
+	data.Nodes.SubtreeBitNum = byte(bitNum)
+	return &data, nil
+}
+
+func (handler *PGDB) GetNextTree(p *[]ipam.GenerationNodes, parentid uint) (int, error) {
+	var many []dhcporm.Ipv6PlanedAddrTree
+	if err := handler.db.Where("parent_id = ?", parentid).Find(&many).Error; err != nil {
+		return 0, err
+	}
+	for _, one := range many {
+		data := ipam.GenerationNodes{}
+		data.ID = strconv.Itoa(int(one.ID))
+		data.Name = one.Name
+		data.Subnet = one.Subnet
+		data.NodeCode = byte(one.NodeCode)
+		data.SubtreeBitNum = 0
+		data.Depth = one.Depth
+		var usedFors []dhcporm.BitsUseFor
+		if err := handler.db.Where("parentid = ?", one.ID).Find(&usedFors).Error; err != nil {
+			return 0, err
+		}
+		if len(usedFors) == 1 {
+			data.SubtreeUseDFor = usedFors[0].UsedFor
+		}
+		var bitNum int
+		var err error
+		if !one.IsLeaf {
+			if bitNum, err = handler.GetNextTree(&data.Nodes, one.ID); err != nil {
+				return 0, err
+			}
+		}
+		data.SubtreeBitNum = byte(bitNum)
+		*p = append(*p, data)
+	}
+	if len(many) > 0 {
+		return int(math.Log2(float64(many[0].MaxCode))), nil
+	} else {
+		return 0, nil
+	}
 }
