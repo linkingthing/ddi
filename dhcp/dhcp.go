@@ -86,15 +86,15 @@ type DHCPv4Conf struct {
 }
 type Dhcpv4Config struct {
 	Authoritative bool   `json:"authoritative"`
-	BootFileName  string `json:"bootFileName"`
+	BootFileName  string `json:"boot-file-name"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"controlSocket"`
-	OptionData    []Option       `json:"optionData"`
+	ControlSocket ControlSocket  `json:"control-socket"`
+	OptionData    []Option       `json:"option-data"`
 	Subnet4       []SubnetConfig `json:"subnet4"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"validLifetime"`
+	ValidLifetime json.Number `json:"valid-lifetime"`
 }
 
 type ParseDhcpv6Config struct {
@@ -109,7 +109,7 @@ type Dhcpv6Config struct {
 	BootFileName  string `json:"boot-file-name"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
 	ControlSocket ControlSocket  `json:"control-socket"`
-	OptionData    []Option       `json:"optionData"`
+	OptionData    []Option       `json:"option-data"`
 	Subnet6       []SubnetConfig `json:"subnet6"`
 
 	//T1Percent json.Number `json:"t1-percent"`
@@ -131,7 +131,7 @@ type SubnetConfig struct {
 	Id json.Number `json:"id"`
 	//MatchClientId   bool          `json:"match-client-id"`
 	//NextServer      string        `json:"next-server"`
-	OptionData []Option `json:"optionData"`
+	OptionData []Option `json:"option-data"`
 	Pools      []Pool   `json:"pools"`
 	//RebindTimer     json.Number   `json:"rebind-timer"`
 	//Relay           SubnetRelay   `json:"relay"`
@@ -142,35 +142,35 @@ type SubnetConfig struct {
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime    json.Number `json:"validLifetime"`
-	MaxValidLifetime json.Number `json:"maxValidLifetime"`
+	ValidLifetime    json.Number `json:"valid-lifetime"`
+	MaxValidLifetime json.Number `json:"max-valid-lifetime"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
 }
 
 type Option struct {
-	AlwaysSend bool   `json:"alwaysSend"`
+	AlwaysSend bool   `json:"always-send"`
 	Code       uint64 `json:"code"`
-	CsvFormat  bool   `json:"csvFormat"`
+	CsvFormat  bool   `json:"csv-format"`
 	Data       string `json:"data"`
 	Name       string `json:"name"`
 	Space      string `json:"space"`
 }
 type Pool struct {
-	OptionData []Option `json:"optionData"`
-	Pool       string   `json:"pool"`
+	OptionData []*Option `json:"option-data"`
+	Pool       string    `json:"pool"`
 }
 type Reservation struct {
-	BootFileName string `json:"bootFileName"`
+	BootFileName string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
-	Duid           string   `json:"duid"`
-	Hostname       string   `json:"hostname"`
-	IpAddress      string   `json:"ipAddress"`
-	NextServer     string   `json:"nextServer"`
-	OptionData     []Option `json:"optionData"`
-	ServerHostname string   `json:"serverHostname"`
+	Duid           string    `json:"duid"`
+	Hostname       string    `json:"hostname"`
+	IpAddress      string    `json:"ip-address"`
+	NextServer     string    `json:"next-server"`
+	OptionData     []*Option `json:"option-data"`
+	ServerHostname string    `json:"server-hostname"`
 }
 
 type KEAv4Handler struct {
@@ -434,8 +434,8 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 			if len(req.Pool) > 0 {
 				log.Println("req.pool: ", req.Pool)
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
-					{
-						[]Option{},
+					{ //p.OptionData = ops
+						[]*Option{},
 						req.Pool[0].Pool,
 					},
 				}
@@ -524,26 +524,18 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 			}
 			for _, pool := range req.Pool {
 
-				var ops = []Option{}
-				if len(pool.Options) > 0 {
-					for _, op := range pool.Options {
-
-						var o Option
-						o.AlwaysSend = op.AlwaysSend
-						o.Code = op.Code
-						o.CsvFormat = op.CsvFormat
-						o.Data = op.Data
-						o.Name = op.Name
-						o.Space = op.Space
-
-						ops = append(ops, o)
-					}
-				}
-
 				var p Pool
 				p.Pool = pool.Pool
+				p.OptionData = []*Option{}
+
 				//p.OptionData = ops
-				p.OptionData = []Option{}
+				var ops []*Option
+				if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+					log.Println("ConvertOptionsFromPb error: ", err)
+					return err
+				}
+				p.OptionData = ops
+
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
 			//log.Println("begin subnet\n")
@@ -606,21 +598,12 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 					log.Println("p.pool == req.pool")
 					p.Pool = req.Pool
 
-					var ops = []Option{}
-					if len(req.Options) > 0 {
-						for _, op := range req.Options {
-
-							var o Option
-							o.AlwaysSend = op.AlwaysSend
-							o.Code = op.Code
-							o.CsvFormat = op.CsvFormat
-							o.Data = op.Data
-							o.Name = op.Name
-							o.Space = op.Space
-
-							ops = append(ops, o)
-						}
+					var ops []*Option
+					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+						log.Println("ConvertOptionsFromPb error: ", err)
+						return err
 					}
+					p.OptionData = ops
 				}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
@@ -722,19 +705,11 @@ func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4Rese
 						log.Println("req.NextServer: ", req.NextServer)
 						newRsv.NextServer = req.NextServer
 					}
-					//OptionData:req.Options,
-					var ops = []Option{}
-					for _, op := range req.Options {
-						var o Option
-						o.AlwaysSend = op.AlwaysSend
-						o.Code = op.Code
-						o.CsvFormat = op.CsvFormat
-						o.Data = op.Data
-						o.Name = op.Name
-						o.Space = op.Space
 
-						ops = append(ops, o)
-
+					var ops []*Option
+					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+						log.Println("ConvertOptionsFromPb error: ", err)
+						return err
 					}
 					newRsv.OptionData = ops
 
