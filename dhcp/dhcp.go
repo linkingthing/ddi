@@ -18,6 +18,7 @@ import (
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 const (
@@ -157,19 +158,19 @@ type Option struct {
 	Space      string `json:"space"`
 }
 type Pool struct {
-	OptionData []Option `json:"option-data"`
-	Pool       string   `json:"pool"`
+	OptionData []*Option `json:"option-data"`
+	Pool       string    `json:"pool"`
 }
 type Reservation struct {
 	BootFileName string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
-	Duid           string   `json:"duid"`
-	Hostname       string   `json:"hostname"`
-	IpAddress      string   `json:"ip-address"`
-	NextServer     string   `json:"next-server"`
-	OptionData     []Option `json:"option-data"`
-	ServerHostname string   `json:"server-hostname"`
+	Duid           string    `json:"duid"`
+	Hostname       string    `json:"hostname"`
+	IpAddress      string    `json:"ip-address"`
+	NextServer     string    `json:"next-server"`
+	OptionData     []*Option `json:"option-data"`
+	ServerHostname string    `json:"server-hostname"`
 }
 
 type KEAv4Handler struct {
@@ -433,8 +434,8 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 			if len(req.Pool) > 0 {
 				log.Println("req.pool: ", req.Pool)
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
-					{
-						[]Option{},
+					{ //p.OptionData = ops
+						[]*Option{},
 						req.Pool[0].Pool,
 					},
 				}
@@ -523,26 +524,18 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 			}
 			for _, pool := range req.Pool {
 
-				var ops = []Option{}
-				if len(pool.Options) > 0 {
-					for _, op := range pool.Options {
-
-						var o Option
-						o.AlwaysSend = op.AlwaysSend
-						o.Code = op.Code
-						o.CsvFormat = op.CsvFormat
-						o.Data = op.Data
-						o.Name = op.Name
-						o.Space = op.Space
-
-						ops = append(ops, o)
-					}
-				}
-
 				var p Pool
 				p.Pool = pool.Pool
+				p.OptionData = []*Option{}
+
 				//p.OptionData = ops
-				p.OptionData = []Option{}
+				var ops []*Option
+				if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+					log.Println("ConvertOptionsFromPb error: ", err)
+					return err
+				}
+				p.OptionData = ops
+
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
 			//log.Println("begin subnet\n")
@@ -605,21 +598,12 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 					log.Println("p.pool == req.pool")
 					p.Pool = req.Pool
 
-					var ops = []Option{}
-					if len(req.Options) > 0 {
-						for _, op := range req.Options {
-
-							var o Option
-							o.AlwaysSend = op.AlwaysSend
-							o.Code = op.Code
-							o.CsvFormat = op.CsvFormat
-							o.Data = op.Data
-							o.Name = op.Name
-							o.Space = op.Space
-
-							ops = append(ops, o)
-						}
+					var ops []*Option
+					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+						log.Println("ConvertOptionsFromPb error: ", err)
+						return err
 					}
+					p.OptionData = ops
 				}
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 			}
@@ -699,9 +683,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 			rsv.IpAddress = req.IpAddr
 			rsv.NextServer = req.NextServer
 			//rsv.OptionData = req.Options
-			var ops = []Option{}
+			var ops = []*Option{}
 			for _, op := range req.Options {
-				var o Option
+				var o *Option
 				o.AlwaysSend = op.AlwaysSend
 				o.Code = op.Code
 				o.CsvFormat = op.CsvFormat
@@ -732,10 +716,102 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 }
 
 func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
+	log.Println("into dhcp.go, UpdateSubnetv4Reservation, req: ", req)
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+			log.Println("in if, req.IpAddr:[", req.IpAddr, "]")
+			log.Println("in if, req.OldRsvIP:[", req.OldRsvIP, "]")
+			conf.Arguments.Dhcp4.Subnet4[k].Reservations = []Reservation{}
+
+			for _, confRsv := range v.Reservations {
+				oldIP := strings.TrimSpace(confRsv.IpAddress)
+				reqIP := strings.TrimSpace(req.OldRsvIP)
+
+				if oldIP != reqIP {
+					log.Println("in for,confRsv.IpAddr!=[", oldIP, "],req.OldRsvIP:[", reqIP, "]")
+
+					//delete cur IPAddress
+					conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations,
+						confRsv)
+				} else {
+					log.Println("in for, confRsv.IpAddr == ", confRsv.IpAddress, ", req.OldRsvIP: ", req.OldRsvIP)
+					newRsv := Reservation{
+						IpAddress: req.IpAddr,
+						Duid:      req.Duid,
+						Hostname:  req.Hostname,
+					}
+					if len(req.NextServer) > 0 {
+						log.Println("req.NextServer: ", req.NextServer)
+						newRsv.NextServer = req.NextServer
+					}
+
+					var ops []*Option
+					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+						log.Println("ConvertOptionsFromPb error: ", err)
+						return err
+					}
+					newRsv.OptionData = ops
+
+					conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations,
+						newRsv)
+				}
+			}
+			log.Println("tobe configed rsvs:", conf.Arguments.Dhcp4.Subnet4[k].Reservations)
+		}
+	}
+	log.Println("CreateSubnetv4Reservation begin subnet\n")
+	log.Println(conf.Arguments.Dhcp4.Subnet4)
+	log.Println("CreateSubnetv4Reservation end subnet\n")
+
+	err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 func (handler *KEAv4Handler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4ReservationReq) error {
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	changeFlag := false
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		if v.Subnet == req.Subnet {
+			tmp := []Reservation{}
+
+			for _, p := range conf.Arguments.Dhcp4.Subnet4[k].Reservations {
+				if p.IpAddress != req.IpAddr {
+					tmp = append(tmp, p)
+				} else {
+					changeFlag = true
+				}
+			}
+			conf.Arguments.Dhcp4.Subnet4[k].Reservations = tmp
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 
 	return nil
 }

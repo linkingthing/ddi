@@ -663,14 +663,14 @@ func (r *ReservationHandler) CreateReservation(rsv *RestReservation) (*RestReser
 
 func (r *ReservationHandler) UpdateReservation(rsv *RestReservation) error {
 	log.Println("into UpdateReservation")
-	log.Println(rsv)
+	log.Println("input rsv: ", rsv)
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	subnetId := rsv.GetParent().GetID()
 	log.Println("UpdateReservation +++subnetId")
-	log.Println(subnetId)
+	log.Println("subnetId: ", subnetId)
 	err := PGDBConn.OrmUpdateReservation(subnetId, rsv)
 	if err != nil {
 		return err

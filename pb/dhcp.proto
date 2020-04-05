@@ -130,6 +130,7 @@ message UpdateSubnetv4ReservationReq{
     repeated Option options = 6;
     string bootFileName = 7;
     string serverHostname = 8;
+    string oldRsvIP = 9;
 }
 
 message DeleteSubnetv4ReservationReq{
