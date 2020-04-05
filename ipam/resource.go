@@ -1,6 +1,9 @@
 package ipam
 
-import "github.com/ben-han-cn/gorest/resource"
+import (
+	"github.com/ben-han-cn/gorest/resource"
+	"log"
+)
 
 type StatusAddress struct {
 	MacAddress      string `json:"macaddress"`
@@ -58,4 +61,22 @@ type GenerationNodes struct {
 
 type NodesTree struct {
 	Nodes GenerationNodes `json:"nodes"`
+}
+type DividedAddressData struct {
+	resource.ResourceBase `json:",inline"`
+	Oper                  string `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+}
+
+func (r DividedAddress) CreateAction(name string) *resource.Action {
+
+	log.Println("into DividedAddress, create action")
+	switch name {
+	case "change":
+		return &resource.Action{
+			Name:  "change",
+			Input: &DividedAddressData{},
+		}
+	default:
+		return nil
+	}
 }

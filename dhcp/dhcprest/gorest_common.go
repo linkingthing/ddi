@@ -8,6 +8,7 @@ import (
 	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	res "github.com/linkingthing/ddi/ipam"
 	"log"
 	"math"
 	"net"
@@ -30,6 +31,8 @@ var (
 	PoolKind        = resource.DefaultKindName(RestPool{})
 	OptionKind      = resource.DefaultKindName(RestOption{})
 	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
+
+	DividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
 	//OptionNameConfigKind = resource.DefaultKindName(RestOptionNameConfig{})
 
 	db *gorm.DB

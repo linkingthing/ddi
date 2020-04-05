@@ -16,6 +16,7 @@ import (
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	res "github.com/linkingthing/ddi/ipam"
 	"io/ioutil"
+	"log"
 	"math"
 )
 
@@ -56,6 +57,28 @@ func (h *dividedAddressHandler) Get(ctx *resource.Context) resource.Resource {
 		return nil
 	}
 	return dividedAddress
+}
+
+func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	//var s4s []*RestSubnetv4
+	//var retS4 *RestSubnetv4
+	//var err error
+	log.Println("into Action, ctx.Resource: ", ctx.Resource)
+
+	r := ctx.Resource
+	mergesplitData, _ := r.GetAction().Input.(*res.DividedAddressData)
+
+	log.Println("in Action, r.id: ", r.GetID())
+	log.Println("in Action, name: ", r.GetAction().Name)
+	log.Println("in Action, oper: ", mergesplitData.Oper)
+
+	switch r.GetAction().Name {
+	case "change":
+		if mergesplitData.Oper == "tostable" {
+			log.Println("in Action, oper=tostable ")
+		}
+	}
+	return nil, nil
 }
 
 type DividedAddressState struct {
