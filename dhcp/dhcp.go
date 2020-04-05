@@ -683,9 +683,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 			rsv.IpAddress = req.IpAddr
 			rsv.NextServer = req.NextServer
 			//rsv.OptionData = req.Options
-			var ops = []Option{}
+			var ops = []*Option{}
 			for _, op := range req.Options {
-				var o Option
+				var o *Option
 				o.AlwaysSend = op.AlwaysSend
 				o.Code = op.Code
 				o.CsvFormat = op.CsvFormat
