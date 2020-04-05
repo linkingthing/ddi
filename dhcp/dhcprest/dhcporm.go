@@ -404,7 +404,7 @@ func (handler *PGDB) OrmCreateReservation(id string, r *RestReservation) (dhcpor
 
 func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation) error {
 
-	ormRsv := dhcporm.OrmReservation{
+	ormRsv := dhcporm.Reservation{
 		Duid:         r.Duid,
 		BootFileName: r.BootFileName,
 		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
@@ -490,14 +490,45 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 }
 
 func (handler *PGDB) OrmDeleteReservation(id string) error {
+
 	log.Println("into dhcprest OrmDeleteReservation, id ", id)
-	dbId := ConvertStringToUint(id)
 
-	query := handler.db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.Reservation{})
+	var ormSubnetv4 dhcporm.OrmSubnetv4
+	var ormRsv dhcporm.Reservation
 
-	if query.Error != nil {
-		return fmt.Errorf("delete subnet Reservation error, Reservation id: " + id)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormRsv, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4rsv with ID %s, %w", id, err)
 	}
+	log.Println("subnetv4 id: ", ormRsv.Subnetv4ID)
+
+	if err := tx.First(&ormSubnetv4, ormRsv.Subnetv4ID).Error; err != nil {
+		return fmt.Errorf("unknown subnetv4 with ID %s, %w", ormRsv.Subnetv4ID, err)
+	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormRsv.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormRsv).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4ReservationReq{
+		Subnet: ormSubnetv4.Subnet,
+		IpAddr: ormRsv.IpAddress,
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Reservation); err != nil {
+		log.Println("SendDhcpCmd error, ", err)
+		return err
+	}
+	tx.Commit()
 
 	return nil
 }

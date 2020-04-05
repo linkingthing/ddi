@@ -732,6 +732,35 @@ func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4Rese
 	return nil
 }
 func (handler *KEAv4Handler) DeleteSubnetv4Reservation(req pb.DeleteSubnetv4ReservationReq) error {
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	changeFlag := false
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		if v.Subnet == req.Subnet {
+			tmp := []Reservation{}
+
+			for _, p := range conf.Arguments.Dhcp4.Subnet4[k].Reservations {
+				if p.IpAddress != req.IpAddr {
+					tmp = append(tmp, p)
+				} else {
+					changeFlag = true
+				}
+			}
+			conf.Arguments.Dhcp4.Subnet4[k].Reservations = tmp
+			if changeFlag {
+				err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 
 	return nil
 }

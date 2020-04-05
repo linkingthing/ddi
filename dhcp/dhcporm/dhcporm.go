@@ -58,6 +58,7 @@ func (OrmSubnetv4) TableName() string {
 
 type Reservation struct {
 	gorm.Model
+	Duid           string
 	ReservType     string
 	ReservValue    string
 	IpAddress      string
