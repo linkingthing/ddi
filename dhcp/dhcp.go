@@ -18,6 +18,7 @@ import (
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 const (
@@ -681,6 +682,77 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 }
 
 func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
+	log.Println("into dhcp.go, UpdateSubnetv4Reservation, req: ", req)
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+			log.Println("in if, req.IpAddr:[", req.IpAddr, "]")
+			log.Println("in if, req.OldRsvIP:[", req.OldRsvIP, "]")
+			conf.Arguments.Dhcp4.Subnet4[k].Reservations = []Reservation{}
+
+			for _, confRsv := range v.Reservations {
+				oldIP := strings.TrimSpace(confRsv.IpAddress)
+				reqIP := strings.TrimSpace(req.OldRsvIP)
+
+				if oldIP != reqIP {
+					log.Println("in for,confRsv.IpAddr!=[", oldIP, "],req.OldRsvIP:[", reqIP, "]")
+
+					//delete cur IPAddress
+					conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations,
+						confRsv)
+				} else {
+					log.Println("in for, confRsv.IpAddr == ", confRsv.IpAddress, ", req.OldRsvIP: ", req.OldRsvIP)
+					newRsv := Reservation{
+						IpAddress: req.IpAddr,
+						Duid:      req.Duid,
+						Hostname:  req.Hostname,
+					}
+					if len(req.NextServer) > 0 {
+						log.Println("req.NextServer: ", req.NextServer)
+						newRsv.NextServer = req.NextServer
+					}
+					//OptionData:req.Options,
+					var ops = []Option{}
+					for _, op := range req.Options {
+						var o Option
+						o.AlwaysSend = op.AlwaysSend
+						o.Code = op.Code
+						o.CsvFormat = op.CsvFormat
+						o.Data = op.Data
+						o.Name = op.Name
+						o.Space = op.Space
+
+						ops = append(ops, o)
+
+					}
+					newRsv.OptionData = ops
+
+					conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations,
+						newRsv)
+				}
+			}
+			log.Println("tobe configed rsvs:", conf.Arguments.Dhcp4.Subnet4[k].Reservations)
+		}
+	}
+	log.Println("CreateSubnetv4Reservation begin subnet\n")
+	log.Println(conf.Arguments.Dhcp4.Subnet4)
+	log.Println("CreateSubnetv4Reservation end subnet\n")
+
+	err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
