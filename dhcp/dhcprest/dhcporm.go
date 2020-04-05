@@ -448,7 +448,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 
 func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation) error {
 
-	ormRsv := dhcporm.Reservation{
+	ormRsv := dhcporm.OrmReservation{
 		Duid:         r.Duid,
 		BootFileName: r.BootFileName,
 		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
@@ -537,7 +537,7 @@ func (handler *PGDB) OrmDeleteReservation(id string) error {
 	log.Println("into dhcprest OrmDeleteReservation, id ", id)
 
 	var ormSubnetv4 dhcporm.OrmSubnetv4
-	var ormRsv dhcporm.Reservation
+	var ormRsv dhcporm.OrmReservation
 
 	tx := handler.db.Begin()
 	defer tx.Rollback()
