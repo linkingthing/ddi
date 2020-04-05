@@ -660,7 +660,58 @@ func (handler *KEAv4Handler) DeleteSubnetv4Pool(req pb.DeleteSubnetv4PoolReq) er
 	return nil
 }
 func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4ReservationReq) error {
+	log.Println("into dhcp.go, CreateSubnetv4Reservation, req: ", req)
+	var conf ParseDhcpv4Config
+	err := handler.getv4Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
+	//找到subnet， todo 存取数据库前端和后端的subnet对应关系
+
+	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
+		//log.Print("in for loop, v.Id: ", v.Id, ", req.Id: ", req.Id)
+		//log.Print("v.subnet: ", v.Subnet)
+		//log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+			//log.Println("req.IpAddr: ", req.IpAddr)
+			//log.Println("req.Duid: ", req.Duid)
+
+			var rsv Reservation
+			rsv.Duid = req.Duid
+			rsv.IpAddress = req.IpAddr
+			rsv.NextServer = req.NextServer
+			//rsv.OptionData = req.Options
+			var ops = []Option{}
+			for _, op := range req.Options {
+				var o Option
+				o.AlwaysSend = op.AlwaysSend
+				o.Code = op.Code
+				o.CsvFormat = op.CsvFormat
+				o.Data = op.Data
+				o.Name = op.Name
+				o.Space = op.Space
+
+				ops = append(ops, o)
+			}
+			rsv.OptionData = ops
+
+			conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations, rsv)
+
+			log.Println("CreateSubnetv4Reservation begin subnet\n")
+			log.Println(conf.Arguments.Dhcp4)
+			log.Println("CreateSubnetv4Reservation end subnet\n")
+
+			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("subnet do not exists, error")
 	return nil
 }
 

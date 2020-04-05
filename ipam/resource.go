@@ -28,3 +28,34 @@ type ScanAddress struct {
 	DetectMethod          string                   `json:"detect method"`
 	Data                  map[string]StatusAddress `json:"data"`
 }
+
+type IPNodes struct {
+	ID       string `json:"id"`
+	NodeCode byte   `json:"nodecode"`
+	NodeName string `json:"nodename"`
+	Subnet   string `json:"subnet"`
+}
+type AlloPrefix struct {
+	ParentID     string    `json:"parentid"`
+	ParentIPv6   string    `json:"parentipv6"`
+	PrefixLength byte      `json:"parentprefixlength"`
+	BitsUsedFor  string    `json:"bitsusedfor"`
+	BitNum       byte      `json:"bitnum"`
+	Depth        int       `json:"depth"`
+	Nodes        []IPNodes `json:"nodes"`
+}
+
+type GenerationNodes struct {
+	ID             string            `json:"id"`
+	Name           string            `json:"name"`
+	Subnet         string            `json:"subnet"`
+	NodeCode       byte              `json:"nodecode"`
+	SubtreeBitNum  byte              `json:"subtreebitnum"`
+	Depth          int               `json:"depth"`
+	SubtreeUseDFor string            `json:"usedfor"`
+	Nodes          []GenerationNodes `json:"nodes"`
+}
+
+type NodesTree struct {
+	Nodes GenerationNodes `json:"nodes"`
+}

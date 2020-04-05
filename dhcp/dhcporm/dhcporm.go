@@ -21,11 +21,11 @@ type OrmSubnetv4 struct {
 	Dhcpv4ConfId uint
 	Name         string `gorm:"column:name"`
 	//SubnetId        string          `gorm:"column:subnet_id"`
-	Subnet          string          `gorm:"column:subnet"`
-	ValidLifetime   string          `gorm:"column:valid_life_time"`
-	Reservations    []Reservation   `gorm:"foreignkey:Subnetv4ID"`
-	Pools           []Pool          `gorm:"foreignkey:Subnetv4ID"`
-	ManualAddresses []ManualAddress `gorm:"foreignkey:Subnetv4ID"`
+	Subnet          string           `gorm:"column:subnet"`
+	ValidLifetime   string           `gorm:"column:valid_life_time"`
+	Reservations    []OrmReservation `gorm:"foreignkey:Subnetv4ID"`
+	Pools           []Pool           `gorm:"foreignkey:Subnetv4ID"`
+	ManualAddresses []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
 type OrmSubnetv4Front struct {
@@ -56,12 +56,12 @@ func (OrmSubnetv4) TableName() string {
 	//SubnetRefer uint `json:"subnetv4_refer" sql:"type:bigint REFERENCES subnetv4s(id) ON DELETE CASCADE"`
 }*/
 
-type Reservation struct {
+type OrmReservation struct {
 	gorm.Model
-	Duid           string
-	ReservType     string
-	ReservValue    string
-	IpAddress      string
+	Duid           string `gorm:"duid"`
+	ReservType     string `gorm:"reserv_type"`
+	ReservValue    string `gorm:"reserv_value"`
+	IpAddress      string `gorm:"ip_address"`
 	Hostname       string
 	NextServer     string
 	ServerHostname string
@@ -70,7 +70,7 @@ type Reservation struct {
 	Subnetv4ID     uint     `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }
 
-func (Reservation) TableName() string {
+func (OrmReservation) TableName() string {
 	return "reservations"
 }
 
@@ -120,4 +120,20 @@ type AliveAddress struct {
 	LastAliveTime int64
 	ScanTime      int64
 	Subnetv4ID    uint `sql:"type:integer REFERENCES subnetv4s(id)"`
+}
+
+type Ipv6PlanedAddrTree struct {
+	gorm.Model
+	Depth    int
+	Name     string
+	ParentID uint
+	Subnet   string
+	NodeCode int
+	MaxCode  int
+	IsLeaf   bool
+}
+
+type BitsUseFor struct {
+	Parentid uint
+	UsedFor  string
 }

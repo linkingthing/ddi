@@ -16,6 +16,7 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/arp"
 	"github.com/paulstuart/ping"
+	"math"
 	"net"
 	"time"
 )
@@ -47,7 +48,7 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db = db
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv4{})
-	p.db.AutoMigrate(&dhcporm.Reservation{})
+	p.db.AutoMigrate(&dhcporm.OrmReservation{})
 	p.db.AutoMigrate(&dhcporm.Option{})
 	p.db.AutoMigrate(&dhcporm.Pool{})
 	p.db.AutoMigrate(&dhcporm.ManualAddress{})
@@ -57,6 +58,8 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.Reservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
 	p.db.AutoMigrate(&dhcporm.AliveAddress{})
+	p.db.AutoMigrate(&dhcporm.Ipv6PlanedAddrTree{})
+	p.db.AutoMigrate(&dhcporm.BitsUseFor{})
 	p.ticker = time.NewTicker(checkPeriod * time.Second)
 	return p
 }
@@ -82,7 +85,7 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 		//log.Println("k: ", k, ", v: ", v)
 		//log.Println("in Subnetv4List, v.ID: ", v.ID)
 
-		rsv := []dhcporm.Reservation{}
+		rsv := []dhcporm.OrmReservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
 		}
@@ -331,9 +334,9 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 	return &ormS4, err
 }
 
-func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
+func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.OrmReservation {
 	log.Println("in dhcprest, OrmReservationList, subnetId: ", subnetId)
-	var rsvs []dhcporm.Reservation
+	var rsvs []dhcporm.OrmReservation
 
 	subnetIdUint := ConvertStringToUint(subnetId)
 	if err := handler.db.Where("subnetv4_id = ?", subnetIdUint).Find(&rsvs).Error; err != nil {
@@ -365,11 +368,11 @@ func (handler *PGDB) OrmReservationList(subnetId string) []dhcporm.Reservation {
 	return rsvs
 }
 
-func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.Reservation {
+func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.OrmReservation {
 	log.Println("into rest OrmGetReservation, subnetId: ", subnetId, "rsv_id: ", rsv_id)
 	dbRsvId := ConvertStringToUint(rsv_id)
 
-	rsv := dhcporm.Reservation{}
+	rsv := dhcporm.OrmReservation{}
 	if err := handler.db.First(&rsv, int(dbRsvId)).Error; err != nil {
 		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
 		return nil
@@ -378,28 +381,69 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 	return &rsv
 }
 
-func (handler *PGDB) OrmCreateReservation(id string, r *RestReservation) (dhcporm.Reservation, error) {
-	log.Println("into OrmCreateReservation")
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
-	log.Println("in OrmCreateReservation, r.Subnetv4ID: ", r.IpAddress)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.ID)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.OptionData)
-	log.Println("in OrmCreateReservation, r.BootFileName: ", r.BootFileName)
-	var rsv = dhcporm.Reservation{
-		//Duid:         r.Duid,
+func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.OrmReservation, error) {
+	log.Println("into OrmCreateReservation, r: ", r, ", subnetv4_id: ", subnetv4_id)
+
+	ormRsv := dhcporm.OrmReservation{
+		Duid:         r.Duid,
 		BootFileName: r.BootFileName,
-		Subnetv4ID:   ConvertStringToUint(id),
+		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
 		Hostname:     r.Hostname,
 		IpAddress:    r.IpAddress,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
-	query := handler.db.Create(&rsv)
-	if query.Error != nil {
-		return dhcporm.Reservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
+	pbRsv := pb.Reservation{
+		Duid:        r.Duid,
+		Hostname:    r.Hostname,
+		IpAddresses: r.IpAddress,
+		NextServer:  r.NextServer,
 	}
 
-	return rsv, nil
+	//check whether subnet id exists
+	s4Obj := handler.GetSubnetv4ById(subnetv4_id)
+	if s4Obj.Subnet == "" {
+		log.Println("subnet not exist")
+		return ormRsv, fmt.Errorf("subnet not exist")
+	}
+
+	log.Println("begin to save db, ormRsv.IpAddress: ", ormRsv.IpAddress)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormRsv).Error; err != nil {
+		log.Println("save ormRsv error: ", err)
+		return ormRsv, err
+	}
+
+	//todo: post kafka msg to dhcp agent
+	rsvs := []*pb.Reservation{}
+	rsvs = append(rsvs, &pbRsv)
+	req := pb.CreateSubnetv4ReservationReq{
+		Subnet:     s4Obj.Subnet,
+		IpAddr:     pbRsv.IpAddresses,
+		Duid:       pbRsv.Duid,
+		Hostname:   pbRsv.Hostname,
+		NextServer: pbRsv.NextServer,
+	}
+	log.Println("OrmCreateReservation, req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return ormRsv, err
+	}
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Reservation); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
+		return ormRsv, err
+	}
+	//end of todo
+
+	//rsv := dhcporm.OrmReservation{}
+
+	//query := handler.db.Create(&rsv)
+	//if query.Error != nil {
+	//	return dhcporm.OrmReservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
+	//}
+	tx.Commit()
+
+	return ormRsv, nil
 }
 
 func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation) error {
@@ -486,7 +530,6 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 	//db.Model(&ormRsv).Updates(ormRsv)
 	//
 	//return nil
-
 }
 
 func (handler *PGDB) OrmDeleteReservation(id string) error {
@@ -950,7 +993,7 @@ func (handler *PGDB) GetScanAddress(id string) (*ipam.ScanAddress, error) {
 	}
 	//for used ip addresses
 	usedIP := map[string]string{}
-	var reservs []dhcporm.Reservation
+	var reservs []dhcporm.OrmReservation
 	if err := handler.db.Where("subnetv4_id = ?", id).Find(&reservs).Error; err != nil {
 		return nil, err
 	}
@@ -1007,7 +1050,7 @@ func (handler *PGDB) KeepDetectAlive() {
 
 func (handler *PGDB) DetectAliveAddress() error {
 	//get all the resevation address where reserv_type equal "hw-address" or "client-id"
-	var reservs []dhcporm.Reservation
+	var reservs []dhcporm.OrmReservation
 	if err := handler.db.Find(&reservs).Error; err != nil {
 		return err
 	}
@@ -1140,7 +1183,7 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 		if err := rows.Scan(&ret.OptionVer, &ret.Total); err != nil {
 			log.Println("get from db error, err: ", err)
 		}
-		log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
+		//log.Println("ret OptionVer: ", ret.OptionVer, ", total: ", ret.Total)
 		var restOpName RestOptionNameConfig
 		if ret.OptionVer == "v4" {
 			//retArr.V4Num = ret.Total
@@ -1168,4 +1211,179 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 
 	log.Println("newRet.Data: ", newRet.Data)
 	return &newRet
+}
+
+func (handler *PGDB) CreateSubtree(data *ipam.AlloPrefix) error {
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if data.Depth == 1 {
+		home := dhcporm.Ipv6PlanedAddrTree{}
+		home.Depth = 0
+		home.Subnet = data.ParentIPv6 + "/" + strconv.Itoa(int(data.PrefixLength))
+		home.IsLeaf = false
+		if err := tx.Create(&home).Error; err != nil {
+			return err
+		}
+		data.ParentID = strconv.Itoa(int(home.ID))
+	}
+	for i, v := range data.Nodes {
+		one := dhcporm.Ipv6PlanedAddrTree{}
+		one.Depth = data.Depth
+		one.Name = v.NodeName
+		var err error
+		var num int
+		if num, err = strconv.Atoi(data.ParentID); err != nil {
+			return err
+		}
+		one.ParentID = uint(num)
+		one.Subnet = v.Subnet
+		one.NodeCode = int(v.NodeCode)
+		one.MaxCode = int(math.Pow(2, float64(data.BitNum)))
+		one.IsLeaf = true
+		if err := tx.Create(&one).Error; err != nil {
+			return err
+		}
+		parent := dhcporm.Ipv6PlanedAddrTree{}
+		if err := tx.First(&parent, data.ParentID).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&parent).UpdateColumn("is_leaf", false).Error; err != nil {
+			return err
+		}
+		data.Nodes[i].ID = strconv.Itoa(int(one.ID))
+	}
+	generation := dhcporm.BitsUseFor{}
+	var err error
+	var num int
+	if num, err = strconv.Atoi(data.ParentID); err != nil {
+		return err
+	}
+	generation.Parentid = uint(num)
+	generation.UsedFor = data.BitsUsedFor
+	if err := tx.Create(&generation).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (handler *PGDB) DeleteSubtree(id string) error {
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := tx.First(&one, id).Error; err != nil {
+		return err
+	}
+	if !one.IsLeaf {
+		var childs []dhcporm.Ipv6PlanedAddrTree
+		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
+			return err
+		}
+		for _, c := range childs {
+			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
+				return err
+			}
+		}
+	}
+	if one.ParentID != 0 {
+		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+			return err
+		}
+	}
+	if err := tx.Unscoped().Delete(&one).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+func (handler *PGDB) DeleteOne(id string, tx *gorm.DB) error {
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := tx.First(&one, id).Error; err != nil {
+		return err
+	}
+	if !one.IsLeaf {
+		var childs []dhcporm.Ipv6PlanedAddrTree
+		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
+			return err
+		}
+		for _, c := range childs {
+			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
+				return err
+			}
+		}
+	}
+	if one.ParentID != 0 {
+		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+			return err
+		}
+	}
+	if err := tx.Unscoped().Delete(&one).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (handler *PGDB) GetSubtree(id string) (*ipam.NodesTree, error) {
+	data := ipam.NodesTree{}
+	one := dhcporm.Ipv6PlanedAddrTree{}
+	if err := handler.db.First(&one, id).Error; err != nil {
+		return nil, err
+	}
+	data.Nodes.ID = id
+	data.Nodes.Name = one.Name
+	data.Nodes.Subnet = one.Subnet
+	data.Nodes.NodeCode = byte(one.NodeCode)
+	data.Nodes.SubtreeBitNum = 0
+	data.Nodes.Depth = one.Depth
+	usedFor := dhcporm.BitsUseFor{}
+	if err := handler.db.Where("parentid = ?", one.ID).First(&usedFor).Error; err != nil {
+		return nil, err
+	}
+	data.Nodes.SubtreeUseDFor = usedFor.UsedFor
+	var bitNum int
+	var err error
+	if !one.IsLeaf {
+		if bitNum, err = handler.GetNextTree(&data.Nodes.Nodes, one.ID); err != nil {
+			return nil, err
+		}
+	}
+	data.Nodes.SubtreeBitNum = byte(bitNum)
+	return &data, nil
+}
+
+func (handler *PGDB) GetNextTree(p *[]ipam.GenerationNodes, parentid uint) (int, error) {
+	var many []dhcporm.Ipv6PlanedAddrTree
+	if err := handler.db.Where("parent_id = ?", parentid).Find(&many).Error; err != nil {
+		return 0, err
+	}
+	for _, one := range many {
+		data := ipam.GenerationNodes{}
+		data.ID = strconv.Itoa(int(one.ID))
+		data.Name = one.Name
+		data.Subnet = one.Subnet
+		data.NodeCode = byte(one.NodeCode)
+		data.SubtreeBitNum = 0
+		data.Depth = one.Depth
+		var usedFors []dhcporm.BitsUseFor
+		if err := handler.db.Where("parentid = ?", one.ID).Find(&usedFors).Error; err != nil {
+			return 0, err
+		}
+		if len(usedFors) == 1 {
+			data.SubtreeUseDFor = usedFors[0].UsedFor
+		}
+		var bitNum int
+		var err error
+		if !one.IsLeaf {
+			if bitNum, err = handler.GetNextTree(&data.Nodes, one.ID); err != nil {
+				return 0, err
+			}
+		}
+		data.SubtreeBitNum = byte(bitNum)
+		*p = append(*p, data)
+	}
+	if len(many) > 0 {
+		return int(math.Log2(float64(many[0].MaxCode))), nil
+	} else {
+		return 0, nil
+	}
 }
