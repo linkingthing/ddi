@@ -4,10 +4,6 @@ import (
 	"fmt"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/ben-han-cn/gorest"
-	"github.com/ben-han-cn/gorest/adaptor"
-	"github.com/ben-han-cn/gorest/resource"
-	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/lifei6671/gocaptcha"
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
@@ -17,6 +13,10 @@ import (
 	"github.com/linkingthing/ddi/ipam"
 	ipamapi "github.com/linkingthing/ddi/ipam/restfulapi"
 	"github.com/linkingthing/ddi/utils/config"
+	"github.com/zdnscloud/gorest"
+	"github.com/zdnscloud/gorest/adaptor"
+	"github.com/zdnscloud/gorest/resource"
+	"github.com/zdnscloud/gorest/resource/schema"
 
 	//"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
@@ -41,8 +41,22 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	checkValueLock sync.Mutex
-	checkValues    []data
+	checkValueLock     sync.Mutex
+	checkValues        []data
+	aCLKind            = resource.DefaultKindName(dnsapi.ACL{})
+	viewKind           = resource.DefaultKindName(dnsapi.View{})
+	zoneKind           = resource.DefaultKindName(dnsapi.Zone{})
+	rRKind             = resource.DefaultKindName(dnsapi.RR{})
+	forwardKind        = resource.DefaultKindName(dnsapi.Forward{})
+	redirectionKind    = resource.DefaultKindName(dnsapi.Redirection{})
+	defaultDNS64Kind   = resource.DefaultKindName(dnsapi.DefaultDNS64{})
+	dNS64Kind          = resource.DefaultKindName(dnsapi.DNS64{})
+	ipBlackHoleKind    = resource.DefaultKindName(dnsapi.IPBlackHole{})
+	recursiveConKind   = resource.DefaultKindName(dnsapi.RecursiveConcurrent{})
+	sortListKind       = resource.DefaultKindName(dnsapi.SortList{})
+	dividedAddressKind = resource.DefaultKindName(ipam.DividedAddress{})
+	scanAddressKind    = resource.DefaultKindName(ipam.ScanAddress{})
+	subtreeKind        = resource.DefaultKindName(ipam.Subtree{})
 )
 
 const (
@@ -105,22 +119,25 @@ func main() {
 	blackHoleState := dnsapi.NewIPBlackHoleState()
 	conState := dnsapi.NewRecursiveConcurrentState()
 	sortListsState := dnsapi.NewSortListsState()
-	schemas.Import(&version, dnsapi.ACL{}, dnsapi.NewACLHandler(aCLsState))
-	schemas.Import(&version, dnsapi.Forward{}, dnsapi.NewForwardHandler(forwardState))
-	schemas.Import(&version, dnsapi.DefaultDNS64{}, dnsapi.NewDefaultDNS64Handler(dnsState))
-	schemas.Import(&version, dnsapi.IPBlackHole{}, dnsapi.NewIPBlackHoleHandler(blackHoleState))
-	schemas.Import(&version, dnsapi.RecursiveConcurrent{}, dnsapi.NewRecursiveConcurrentHandler(conState))
-	schemas.Import(&version, dnsapi.SortList{}, dnsapi.NewSortListHandler(sortListsState))
+	schemas.MustImport(&version, dnsapi.ACL{}, dnsapi.NewACLHandler(aCLsState))
+	schemas.MustImport(&version, dnsapi.Forward{}, dnsapi.NewForwardHandler(forwardState))
+	schemas.MustImport(&version, dnsapi.DefaultDNS64{}, dnsapi.NewDefaultDNS64Handler(dnsState))
+	schemas.MustImport(&version, dnsapi.IPBlackHole{}, dnsapi.NewIPBlackHoleHandler(blackHoleState))
+	schemas.MustImport(&version, dnsapi.RecursiveConcurrent{}, dnsapi.NewRecursiveConcurrentHandler(conState))
+	schemas.MustImport(&version, dnsapi.SortList{}, dnsapi.NewSortListHandler(sortListsState))
 	state := dnsapi.NewViewsState()
-	schemas.Import(&version, dnsapi.View{}, dnsapi.NewViewHandler(state))
-	schemas.Import(&version, dnsapi.Zone{}, dnsapi.NewZoneHandler(state))
-	schemas.Import(&version, dnsapi.RR{}, dnsapi.NewRRHandler(state))
-	schemas.Import(&version, dnsapi.Redirection{}, dnsapi.NewRedirectionHandler(state))
-	schemas.Import(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
+	schemas.MustImport(&version, dnsapi.View{}, dnsapi.NewViewHandler(state))
+	schemas.MustImport(&version, dnsapi.Zone{}, dnsapi.NewZoneHandler(state))
+	schemas.MustImport(&version, dnsapi.RR{}, dnsapi.NewRRHandler(state))
+	schemas.MustImport(&version, dnsapi.Redirection{}, dnsapi.NewRedirectionHandler(state))
+	schemas.MustImport(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
+	//ipam interfaces
 	devidedAddressState := ipamapi.NewDividedAddressState()
-	schemas.Import(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
+	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
 	scanAddressState := ipamapi.NewScanAddressState()
-	schemas.Import(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
+	schemas.MustImport(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
+	/*subtreeState := ipamapi.NewSubtreeState()
+	schemas.MustImport(&version, ipam.Subtree{}, ipamapi.NewSubtreeHandler(subtreeState))*/
 
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
@@ -128,11 +145,11 @@ func main() {
 	defer dhcprest.PGDBConn.Close()
 
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	schemas.Import(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	schemas.MustImport(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
-	schemas.Import(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
-	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
-	schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
 	// end of dhcp model
 
 	router := gin.Default()
@@ -232,7 +249,8 @@ func main() {
 		auth.POST("/apis/linkingthing.com/example/v1/checkipv6prefix", ipamapi.CheckPrefix)
 		auth.POST("/apis/linkingthing.com/example/v1/createsubtree", ipamapi.CreateSubtree)
 		auth.POST("/apis/linkingthing.com/example/v1/deletesubtree", ipamapi.DeleteSubtree)
-		auth.POST("/apis/linkingthing.com/example/v1/getsubtree", ipamapi.GetSubtree)
+		auth.GET("/apis/linkingthing.com/example/v1/getsubtree", ipamapi.GetSubtree)
+		auth.POST("/apis/linkingthing.com/example/v1/updatesubtree", ipamapi.UpdateSubtree)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()

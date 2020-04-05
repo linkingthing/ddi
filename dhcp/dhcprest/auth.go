@@ -2,9 +2,9 @@ package dhcprest
 
 import (
 	"fmt"
-	goresterr "github.com/ben-han-cn/gorest/error"
-	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
+	goresterr "github.com/zdnscloud/gorest/error"
+	"github.com/zdnscloud/gorest/resource"
 	"log"
 	"time"
 )

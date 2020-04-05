@@ -5,16 +5,16 @@ import (
 	"log"
 	"time"
 
-	"github.com/ben-han-cn/gorest"
-	"github.com/ben-han-cn/gorest/adaptor"
-	"github.com/ben-han-cn/gorest/resource"
-	"github.com/ben-han-cn/gorest/resource/schema"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
+	"github.com/zdnscloud/gorest"
+	"github.com/zdnscloud/gorest/adaptor"
+	"github.com/zdnscloud/gorest/resource"
+	"github.com/zdnscloud/gorest/resource/schema"
 )
 
 var (

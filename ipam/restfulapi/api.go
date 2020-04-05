@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"strings"
 
-	goresterr "github.com/ben-han-cn/gorest/error"
-	"github.com/ben-han-cn/gorest/resource"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
 	res "github.com/linkingthing/ddi/ipam"
+	goresterr "github.com/zdnscloud/gorest/error"
+	"github.com/zdnscloud/gorest/resource"
 	"io/ioutil"
 	"math"
 )
@@ -26,8 +26,9 @@ var (
 	}
 	dividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
 	scanAddressKind    = resource.DefaultKindName(res.ScanAddress{})
-	db                 *gorm.DB
-	FormatError        = goresterr.ErrorCode{"Unauthorized", 400}
+	//subtreeKind        = resource.DefaultKindName(res.Subtree{})
+	db          *gorm.DB
+	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
 )
 
 /*type res.DividedAddress struct {
@@ -49,13 +50,13 @@ func NewDividedAddressHandler(s *DividedAddressState) *dividedAddressHandler {
 	}
 }
 
-func (h *dividedAddressHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *dividedAddressHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	var err error
 	var dividedAddress *res.DividedAddress
 	if dividedAddress, err = dhcprest.PGDBConn.GetDividedAddress(ctx.Resource.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return dividedAddress
+	return dividedAddress, nil
 }
 
 type DividedAddressState struct {
@@ -83,13 +84,13 @@ func NewScanAddressHandler(s *ScanAddressState) *scanAddressHandler {
 	}
 }
 
-func (h *scanAddressHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *scanAddressHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	var err error
 	var scanAddress *res.ScanAddress
 	if scanAddress, err = dhcprest.PGDBConn.GetScanAddress(ctx.Resource.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return scanAddress
+	return scanAddress, nil
 }
 
 type ScanAddressState struct {
@@ -137,19 +138,11 @@ func CheckPrefix(c *gin.Context) {
 
 func CreateSubtree(c *gin.Context) {
 	body, _ := ioutil.ReadAll(c.Request.Body)
-	p := &res.AlloPrefix{}
+	p := &res.Subtree{}
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
+		fmt.Println(err)
 		return
-	}
-	for i, n := range p.Nodes {
-		var ipv6Addr net.IP
-		ipv6Addr = net.ParseIP(p.ParentIPv6)
-		if ipv6Addr == nil {
-			return
-		}
-		ipv6Addr[(p.PrefixLength+p.BitNum)/8] = ipv6Addr[(p.PrefixLength+p.BitNum)/8] + n.NodeCode*byte(math.Pow(2, float64(8-p.PrefixLength%8-p.BitNum+1)))
-		p.Nodes[i].Subnet = ipv6Addr.String() + "/" + strconv.Itoa(int(p.PrefixLength+p.BitNum))
 	}
 	if err = dhcprest.PGDBConn.CreateSubtree(p); err != nil {
 		fmt.Println(err)
@@ -180,14 +173,16 @@ func DeleteSubtree(c *gin.Context) {
 }
 
 func GetSubtree(c *gin.Context) {
-	body, _ := ioutil.ReadAll(c.Request.Body)
+	id := c.Query("id")
+	/*body, _ := ioutil.ReadAll(c.Request.Body)
 	p := &idJson{}
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
 		return
-	}
-	var data *res.NodesTree
-	if data, err = dhcprest.PGDBConn.GetSubtree(p.ID); err != nil {
+	}*/
+	var err error
+	var data *res.Subtree
+	if data, err = dhcprest.PGDBConn.GetSubtree(id); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -197,3 +192,83 @@ func GetSubtree(c *gin.Context) {
 	}
 	fmt.Fprintln(c.Writer, string(jsonContext))
 }
+func UpdateSubtree(c *gin.Context) {
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	p := &res.Subtree{}
+	err := json.Unmarshal([]byte(body), p)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err := dhcprest.PGDBConn.DeleteSubtree(p.ID); err != nil {
+		fmt.Println(err)
+		return
+	}
+	p.ID = "0"
+	if err = dhcprest.PGDBConn.CreateSubtree(p); err != nil {
+		fmt.Println(err)
+		return
+	}
+	data, err := json.Marshal(p)
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(c.Writer, string(data))
+
+}
+
+//new resource subtree
+/*type subtreeHandler struct {
+	subtrees *SubtreeState
+}
+
+func NewSubtreeHandler(s *SubtreeState) *subtreeHandler {
+	return &subtreeHandler{
+		subtrees: s,
+	}
+}
+
+type SubtreeState struct {
+	Subtree []*res.Subtree
+}
+
+func NewSubtreeState() *SubtreeState {
+	return &SubtreeState{}
+}
+
+func (h *subtreeHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	var err error
+	var subtree *res.Subtree
+	if subtree, err = dhcprest.PGDBConn.GetSubtree(ctx.Resource.GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return subtree,nil
+}
+
+func (h *subtreeHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	subtree := ctx.Resource.(*res.Subtree)
+	var err error
+	if err = dhcprest.PGDBConn.CreateSubtree(subtree); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return subtree, nil
+}
+
+func (h *subtreeHandler) Delete(ctx *resource.Context) *goresterr.APIError {
+	subtree := ctx.Resource.(*res.Subtree)
+	if err := dhcprest.PGDBConn.DeleteSubtree(subtree.GetID()); err != nil {
+		return goresterr.NewAPIError(FormatError, err.Error())
+	} else {
+		return nil
+	}
+}
+
+func (h *subtreeHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	subtree := ctx.Resource.(*res.Subtree)
+	var err error
+	if err = dhcprest.PGDBConn.CreateSubtree(subtree); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return subtree, nil
+}
+*/

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	goresterr "github.com/ben-han-cn/gorest/error"
-	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	goresterr "github.com/zdnscloud/gorest/error"
+	"github.com/zdnscloud/gorest/resource"
 	"log"
 	"strconv"
 	"strings"
@@ -316,15 +316,15 @@ func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 
 }
 
-func (h *subnetv4Handler) List(ctx *resource.Context) interface{} {
+func (h *subnetv4Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go List")
 
-	return h.subnetv4s.GetSubnetv4s()
+	return h.subnetv4s.GetSubnetv4s(), nil
 }
 
-func (h *subnetv4Handler) Get(ctx *resource.Context) resource.Resource {
+func (h *subnetv4Handler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 
-	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID())
+	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID()), nil
 }
 
 func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
@@ -377,12 +377,12 @@ func (h *subnetv4Handler) Action(ctx *resource.Context) (interface{}, *goresterr
 	return nil, nil
 }
 
-func (h *optionNameHandler) List(ctx *resource.Context) interface{} {
+func (h *optionNameHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go optionNameHandler List")
 	//option := ctx.Resource.(*RestOptionName)
 	//action := option.GetAction()
 	//log.Println("action: ", action)
-	return h.GetOptionNames()
+	return h.GetOptionNames(), nil
 }
 
 func (r *optionNameHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
@@ -495,15 +495,15 @@ func (h *optionNameHandler) Action(ctx *resource.Context) (interface{}, *goreste
 	return nil, nil
 }
 
-func (r *PoolHandler) List(ctx *resource.Context) interface{} {
+func (r *PoolHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go subnetv4PoolHandler List")
 	pool := ctx.Resource.(*RestPool)
-	return r.GetPools(pool.GetParent().GetID())
+	return r.GetPools(pool.GetParent().GetID()), nil
 }
-func (r *PoolHandler) Get(ctx *resource.Context) resource.Resource {
+func (r *PoolHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go PoolHandler Get")
 	pool := ctx.Resource.(*RestPool)
-	return r.GetSubnetv4Pool(pool.GetParent().GetID(), pool.GetID())
+	return r.GetSubnetv4Pool(pool.GetParent().GetID(), pool.GetID()), nil
 }
 func (r *PoolHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go pool Create")
@@ -591,16 +591,16 @@ func (r *PoolHandler) DeletePool(pool *RestPool) error {
 	return nil
 }
 
-func (r *ReservationHandler) List(ctx *resource.Context) interface{} {
+func (r *ReservationHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go subnetv4ReservationHandler List")
 	rsv := ctx.Resource.(*RestReservation)
-	return r.GetReservations(rsv.GetParent().GetID())
+	return r.GetReservations(rsv.GetParent().GetID()), nil
 }
 
-func (r *ReservationHandler) Get(ctx *resource.Context) resource.Resource {
+func (r *ReservationHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go subnetv4ReservationHandler Get")
 	rsv := ctx.Resource.(*RestReservation)
-	return r.GetSubnetv4Reservation(rsv.GetParent().GetID(), rsv.GetID())
+	return r.GetSubnetv4Reservation(rsv.GetParent().GetID(), rsv.GetID()), nil
 }
 
 func (r *ReservationHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {

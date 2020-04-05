@@ -3,12 +3,12 @@ package restfulapi
 import (
 	//"fmt"
 
-	goresterr "github.com/ben-han-cn/gorest/error"
-	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	tb "github.com/linkingthing/ddi/dns/cockroachtables"
+	goresterr "github.com/zdnscloud/gorest/error"
+	"github.com/zdnscloud/gorest/resource"
 	"strconv"
 )
 
@@ -176,16 +176,16 @@ func (h *aCLHandler) Update(ctx *resource.Context) (resource.Resource, *gorester
 	return aCL, nil
 }
 
-func (h *aCLHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *aCLHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	var err error
 	var aCL *ACL
 	if aCL, err = DBCon.GetACL(ctx.Resource.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return aCL
+	return aCL, nil
 }
-func (h *aCLHandler) List(ctx *resource.Context) interface{} {
-	return DBCon.GetACLs()
+func (h *aCLHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	return DBCon.GetACLs(), nil
 }
 
 type ACLsState struct {
@@ -236,17 +236,17 @@ func (h *viewHandler) Update(ctx *resource.Context) (resource.Resource, *goreste
 	return view, nil
 }
 
-func (h *viewHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *viewHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	var err error
 	var view *View
 	if view, err = DBCon.GetView(ctx.Resource.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return view
+	return view, nil
 }
 
-func (h *viewHandler) List(ctx *resource.Context) interface{} {
-	return DBCon.GetViews()
+func (h *viewHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	return DBCon.GetViews(), nil
 }
 
 type ViewsState struct {
@@ -288,19 +288,19 @@ func (h *zoneHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	return nil
 }
 
-func (h *zoneHandler) List(ctx *resource.Context) interface{} {
+func (h *zoneHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	zone := ctx.Resource.(*Zone)
-	return DBCon.GetZones(zone.GetParent().GetID())
+	return DBCon.GetZones(zone.GetParent().GetID()), nil
 }
 
-func (h *zoneHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *zoneHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	zone := ctx.Resource.(*Zone)
 	one := &Zone{}
 	var err error
 	if one, err = DBCon.GetZone(zone.GetParent().GetID(), zone.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 func (h *zoneHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
@@ -383,24 +383,24 @@ func (h *rrHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 	}
 	return nil
 }
-func (h *rrHandler) List(ctx *resource.Context) interface{} {
+func (h *rrHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	rr := ctx.Resource.(*RR)
 	var one []*RR
 	var err error
 	if one, err = DBCon.GetRRs(rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
-func (h *rrHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *rrHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	rr := ctx.Resource.(*RR)
 	one := &RR{}
 	var err error
 	if one, err = DBCon.GetRR(rr.GetID(), rr.GetParent().GetID(), rr.GetParent().GetParent().GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 func (r RR) GetParents() []resource.ResourceKind {
@@ -464,23 +464,23 @@ func (h *forwardHandler) Update(ctx *resource.Context) (resource.Resource, *gore
 	return forward, nil
 }
 
-func (h *forwardHandler) List(ctx *resource.Context) interface{} {
+func (h *forwardHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	var one []*Forward
 	var err error
 	if one, err = DBCon.GetDefaultForwards(); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
-func (h *forwardHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *forwardHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	fw := ctx.Resource.(*Forward)
 	one := &Forward{}
 	var err error
 	if one, err = DBCon.GetDefaultForward(fw.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 type redirectionHandler struct {
@@ -526,24 +526,24 @@ func (r *redirectionHandler) Update(ctx *resource.Context) (resource.Resource, *
 	return redirection, nil
 }
 
-func (r *redirectionHandler) List(ctx *resource.Context) interface{} {
+func (r *redirectionHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	redirection := ctx.Resource.(*Redirection)
 	var one []*Redirection
 	var err error
 	if one, err = DBCon.GetRedirections(redirection.GetParent().GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
-func (r *redirectionHandler) Get(ctx *resource.Context) resource.Resource {
+func (r *redirectionHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	fw := ctx.Resource.(*Redirection)
 	one := &Redirection{}
 	var err error
 	if one, err = DBCon.GetRedirection(fw.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 type DefaultDNS64State struct {
@@ -593,23 +593,23 @@ func (h *defaultDNS64Handler) Update(ctx *resource.Context) (resource.Resource, 
 	return dns64, nil
 }
 
-func (h *defaultDNS64Handler) List(ctx *resource.Context) interface{} {
+func (h *defaultDNS64Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	var one []*DefaultDNS64
 	var err error
 	if one, err = DBCon.GetDefaultDNS64s(); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
-func (h *defaultDNS64Handler) Get(ctx *resource.Context) resource.Resource {
+func (h *defaultDNS64Handler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	dns64 := ctx.Resource.(*DefaultDNS64)
 	one := &DefaultDNS64{}
 	var err error
 	if one, err = DBCon.GetDefaultDNS64(dns64.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 type DNS64Handler struct {
@@ -651,24 +651,24 @@ func (h *DNS64Handler) Update(ctx *resource.Context) (resource.Resource, *gorest
 	return dns64, nil
 }
 
-func (h *DNS64Handler) List(ctx *resource.Context) interface{} {
+func (h *DNS64Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	dns64 := ctx.Resource.(*DNS64)
 	var one []*DNS64
 	var err error
 	if one, err = DBCon.GetDNS64s(dns64.GetParent().GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
-func (h *DNS64Handler) Get(ctx *resource.Context) resource.Resource {
+func (h *DNS64Handler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	dns64 := ctx.Resource.(*DNS64)
 	one := &DNS64{}
 	var err error
 	if one, err = DBCon.GetDNS64(dns64.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 type IPBlackHoleState struct {
@@ -718,23 +718,23 @@ func (h *ipBlackHoleHandler) Update(ctx *resource.Context) (resource.Resource, *
 	return ipBlackHole, nil
 }
 
-func (h *ipBlackHoleHandler) List(ctx *resource.Context) interface{} {
+func (h *ipBlackHoleHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	var many []*IPBlackHole
 	var err error
 	if many, err = DBCon.GetIPBlackHoles(); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return many
+	return many, nil
 }
 
-func (h *ipBlackHoleHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *ipBlackHoleHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	ipBlackHole := ctx.Resource.(*IPBlackHole)
 	one := &IPBlackHole{}
 	var err error
 	if one, err = DBCon.GetIPBlackHole(ipBlackHole.GetID()); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return one
+	return one, nil
 }
 
 ////////////
@@ -764,13 +764,13 @@ func (h *recursiveConcurrentHandler) Update(ctx *resource.Context) (resource.Res
 	return con, nil
 }
 
-func (h *recursiveConcurrentHandler) List(ctx *resource.Context) interface{} {
+func (h *recursiveConcurrentHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	var many []*RecursiveConcurrent
 	var err error
 	if many, err = DBCon.GetRecursiveConcurrents(); err != nil {
-		return nil
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return many
+	return many, nil
 }
 
 type SortListsState struct {
@@ -818,14 +818,14 @@ func (h *sortListHandler) Update(ctx *resource.Context) (resource.Resource, *gor
 	return sortList, nil
 }
 
-func (h *sortListHandler) Get(ctx *resource.Context) resource.Resource {
+func (h *sortListHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	var err error
 	sortList := &SortList{}
 	sortList.SetID("1")
 	tmp := &SortList{}
 	tmp.SetID("1")
 	if sortList, err = DBCon.GetSortList(); err != nil {
-		return tmp
+		return tmp, goresterr.NewAPIError(FormatError, err.Error())
 	}
-	return sortList
+	return sortList, nil
 }

@@ -1,7 +1,7 @@
 package dhcprest
 
 import (
-	"github.com/ben-han-cn/gorest/resource"
+	"github.com/zdnscloud/gorest/resource"
 )
 
 type AuthRest struct {
