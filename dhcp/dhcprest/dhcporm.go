@@ -384,12 +384,21 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.OrmReservation, error) {
 	log.Println("into OrmCreateReservation, r: ", r, ", subnetv4_id: ", subnetv4_id)
 
+	if len(r.NextServer) == 0 { // set default next-server
+		r.NextServer = "0.0.0.0"
+	}
+
 	ormRsv := dhcporm.OrmReservation{
-		Duid:         r.Duid,
-		BootFileName: r.BootFileName,
-		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
-		Hostname:     r.Hostname,
-		IpAddress:    r.IpAddress,
+
+		//BootFileName: r.BootFileName,
+		Subnetv4ID: ConvertStringToUint(subnetv4_id),
+		Hostname:   r.Hostname,
+		IpAddress:  r.IpAddress,
+		HwAddress:  r.HwAddress,
+		ClientId:   r.ClientId,
+		CircuitId:  r.CircuitId,
+		NextServer: r.NextServer,
+
 		//DhcpVer:       Dhcpv4Ver,
 	}
 	pbRsv := pb.Reservation{
@@ -397,6 +406,10 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		Hostname:    r.Hostname,
 		IpAddresses: r.IpAddress,
 		NextServer:  r.NextServer,
+		HwAddress:   r.HwAddress,
+		ClientId:    r.ClientId,
+		CircuitId:   r.CircuitId,
+		//OptData:     r.OptionData,
 	}
 
 	//check whether subnet id exists
@@ -422,6 +435,9 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		IpAddr:     pbRsv.IpAddresses,
 		Duid:       pbRsv.Duid,
 		Hostname:   pbRsv.Hostname,
+		HwAddress:  pbRsv.HwAddress,
+		CircuitId:  pbRsv.CircuitId,
+		ClientId:   pbRsv.ClientId,
 		NextServer: pbRsv.NextServer,
 	}
 	log.Println("OrmCreateReservation, req: ", req)
@@ -449,7 +465,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation) error {
 
 	ormRsv := dhcporm.OrmReservation{
-		Duid:         r.Duid,
+		//Duid:         r.Duid,
 		BootFileName: r.BootFileName,
 		Subnetv4ID:   ConvertStringToUint(subnetv4_id),
 		Hostname:     r.Hostname,
@@ -457,10 +473,14 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 		//DhcpVer:       Dhcpv4Ver,
 	}
 	pbRsv := pb.Reservation{
-		Duid:        r.Duid,
+		//Duid:        r.Duid,
 		Hostname:    r.Hostname,
 		IpAddresses: r.IpAddress,
 		NextServer:  r.NextServer,
+	}
+	if len(r.Duid) > 0 {
+		ormRsv.Duid = r.Duid
+		pbRsv.Duid = r.Duid
 	}
 
 	//get curr rsv by id

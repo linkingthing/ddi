@@ -60,22 +60,69 @@ func (h *dividedAddressHandler) Get(ctx *resource.Context) resource.Resource {
 }
 
 func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
-	//var s4s []*RestSubnetv4
-	//var retS4 *RestSubnetv4
-	//var err error
-	log.Println("into Action, ctx.Resource: ", ctx.Resource)
+	log.Println("into dividedAddressHandler Action, ctx.Resource: ", ctx.Resource)
 
 	r := ctx.Resource
-	mergesplitData, _ := r.GetAction().Input.(*res.DividedAddressData)
+	dividedAddressData, _ := r.GetAction().Input.(*res.DividedAddressData)
 
 	log.Println("in Action, r.id: ", r.GetID())
 	log.Println("in Action, name: ", r.GetAction().Name)
-	log.Println("in Action, oper: ", mergesplitData.Oper)
-
+	log.Println("in Action, oper: ", dividedAddressData.Oper)
+	log.Println("in Action, data: ", dividedAddressData.Data)
 	switch r.GetAction().Name {
 	case "change":
-		if mergesplitData.Oper == "tostable" {
+		if dividedAddressData.Oper == "tostable" {
 			log.Println("in Action, oper=tostable ")
+			//todo add one stable
+			changeData := dividedAddressData.Data
+			log.Println("in Action,changeData.IpAddress:", changeData.IpAddress)
+			if len(changeData.CircuitId) > 0 || len(changeData.HwAddress) > 0 {
+				//get subnetv4Id and build one restReservation object
+				subnetv4Id := changeData.Subnetv4Id
+				var restRsv dhcprest.RestReservation
+				restRsv.IpAddress = changeData.IpAddress
+				restRsv.CircuitId = changeData.CircuitId
+				restRsv.HwAddress = changeData.HwAddress
+				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
+					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
+					log.Println("newly created ormRsv.ID:", ormRsv.ID)
+					restRsv := dhcprest.ConvertReservationFromOrmToRest(&ormRsv)
+					log.Println("tostable, ret restRsv.IpAddress:", restRsv.IpAddress)
+					return &restRsv, nil
+				}
+
+			} else {
+				log.Println("change to stable IP error, need CirtcuitId or HwAddress")
+				return nil, nil
+			}
+
+		}
+		if dividedAddressData.Oper == "toresv" {
+			log.Println("in Action, oper=toresv ")
+			//todo add one resv
+			changeData := dividedAddressData.Data
+			log.Println("in Action,changeData.IpAddress:", changeData.IpAddress)
+			if len(changeData.CircuitId) > 0 || len(changeData.HwAddress) > 0 {
+				//get subnetv4Id and build one restReservation object
+				subnetv4Id := changeData.Subnetv4Id
+				var restRsv *dhcprest.RestReservation
+				restRsv.Duid = changeData.Duid
+				restRsv.Hostname = changeData.Hostname
+				restRsv.ClientId = changeData.ClientId
+				restRsv.IpAddress = changeData.IpAddress
+
+				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, restRsv); err != nil {
+					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
+					log.Println("newly created ormRsv.ID:", ormRsv.ID)
+					restRsv := dhcprest.ConvertReservationFromOrmToRest(&ormRsv)
+					log.Println("toresv, ret restRsv.IpAddress:", restRsv.IpAddress)
+					return &restRsv, nil
+				}
+
+			} else {
+				log.Println("change to stable IP error, need CirtcuitId or HwAddress")
+				return nil, nil
+			}
 		}
 	}
 	return nil, nil

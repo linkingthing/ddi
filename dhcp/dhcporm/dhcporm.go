@@ -63,8 +63,11 @@ type OrmReservation struct {
 	ReservValue    string `gorm:"reserv_value"`
 	IpAddress      string `gorm:"ip_address"`
 	Hostname       string
+	ClientId       string
+	CircuitId      string
 	NextServer     string
 	ServerHostname string
+	HwAddress      string `json:"hw_address"`
 	BootFileName   string
 	OptionData     []Option `gorm:"foreignkey:ReservationID"`
 	Subnetv4ID     uint     `json:"subnetv4_id" sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`

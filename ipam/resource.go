@@ -62,9 +62,23 @@ type GenerationNodes struct {
 type NodesTree struct {
 	Nodes GenerationNodes `json:"nodes"`
 }
+
+type ChangeData struct {
+	Subnetv4Id string `json:"subnetv4Id"`
+	CurrType   string `json:"currType"`
+	IpAddress  string `json:"ipAddress"`
+	HwAddress  string `json:"hwAddress"`
+	Hostname   string `json:"hostname"`
+	CircuitId  string `json:"circuitId"`
+	ClientId   string `json:"clientId"`
+	Duid       string `json:"duid"`
+	MacAddress string `json:"macaddress"`
+}
+
 type DividedAddressData struct {
 	resource.ResourceBase `json:",inline"`
-	Oper                  string `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+	Oper                  string     `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+	Data                  ChangeData `json:"data"`
 }
 
 func (r DividedAddress) CreateAction(name string) *resource.Action {

@@ -44,6 +44,11 @@ message Reservation{
     string ipAddresses      = 4;
     string nextServer       = 5;
     repeated    Option optData = 6;
+    string hwAddress = 7;
+    string circuitId = 8;
+    string clientId = 9;
+    string serverHostname = 10;
+    string bootFileName = 11;
 }
 
 message Pools{
@@ -118,6 +123,9 @@ message CreateSubnetv4ReservationReq{
     string nextServer = 5;
     repeated Option options = 6;
     string bootFileName = 7;
+    string circuitId = 8;
+    string clientId = 9;
+    string hwAddress = 10;
     //repeated string clientClasses = 8;
 }
 
@@ -131,6 +139,9 @@ message UpdateSubnetv4ReservationReq{
     string bootFileName = 7;
     string serverHostname = 8;
     string oldRsvIP = 9;
+    //    string circuitId = 10;
+    //    string clientId = 11;
+    //    string hwAddress = 12;
 }
 
 message DeleteSubnetv4ReservationReq{
