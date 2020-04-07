@@ -1,8 +1,9 @@
 package ipam
 
 import (
-	"github.com/zdnscloud/gorest/resource"
 	"log"
+
+	"github.com/zdnscloud/gorest/resource"
 )
 
 type StatusAddress struct {
@@ -55,15 +56,15 @@ type Subtree struct {
 }
 
 type ChangeData struct {
-	Subnetv4Id string `json:"subnetv4Id"`
-	CurrType   string `json:"currType"`
-	IpAddress  string `json:"ipAddress"`
-	HwAddress  string `json:"hwAddress"`
-	Hostname   string `json:"hostname"`
-	CircuitId  string `json:"circuitId"`
-	ClientId   string `json:"clientId"`
-	Duid       string `json:"duid"`
-	MacAddress string `json:"macaddress"`
+	Subnetv4Id string `json:"subnetv4Id,omitempty"`
+	CurrType   string `json:"currType,omitempty"`
+	IpAddress  string `json:"ipAddress,omitempty"`
+	HwAddress  string `json:"hwAddress,omitempty"`
+	Hostname   string `json:"hostname,omitempty"`
+	CircuitId  string `json:"circuitId,omitempty"`
+	ClientId   string `json:"clientId,omitempty"`
+	Duid       string `json:"duid,omitempty"`
+	MacAddress string `json:"macaddress,omitempty"`
 }
 
 type DividedAddressData struct {
@@ -72,6 +73,20 @@ type DividedAddressData struct {
 	Data                  ChangeData `json:"data"`
 }
 
+func (r DividedAddress) GetActions() []resource.Action {
+	log.Println("into DividedAddress GetActions")
+	var actions []resource.Action
+
+	action := resource.Action{
+		Name:   "change",
+		Input:  &DividedAddressData{},
+		Output: &DividedAddressData{},
+	}
+	actions = append(actions, action)
+
+	//log.Println("in cluster GetActions, actions: ", actions)
+	return actions
+}
 func (r DividedAddress) CreateAction(name string) *resource.Action {
 
 	log.Println("into DividedAddress, create action")

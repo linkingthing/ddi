@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"io/ioutil"
+	"log"
+	"math"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -15,9 +19,6 @@ import (
 	res "github.com/linkingthing/ddi/ipam"
 	goresterr "github.com/zdnscloud/gorest/error"
 	"github.com/zdnscloud/gorest/resource"
-	"io/ioutil"
-	"log"
-	"math"
 )
 
 var (
@@ -66,7 +67,6 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 	r := ctx.Resource
 	dividedAddressData, _ := r.GetAction().Input.(*res.DividedAddressData)
 
-	log.Println("in Action, r.id: ", r.GetID())
 	log.Println("in Action, name: ", r.GetAction().Name)
 	log.Println("in Action, oper: ", dividedAddressData.Oper)
 	log.Println("in Action, data: ", dividedAddressData.Data)
