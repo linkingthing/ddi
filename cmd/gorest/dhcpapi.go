@@ -45,17 +45,14 @@ func main() {
 	// start of dhcp model
 	//go dhcpv4agent.Dhcpv4Client()
 	dhcpv4 := dhcprest.NewDhcpv4(db)
-	err = schemas.MustImport(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
-	if err != nil {
-		log.Println("schemas import err: ", err)
-	}
+	schemas.MustImport(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
-	schemas.Import(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
-	schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
 
 	devidedAddressState := ipamapi.NewDividedAddressState()
-	schemas.Import(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
+	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
 
 	//state := dhcprest.NewOptionNamesState()
 	//err = schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(state))
