@@ -1,7 +1,7 @@
 package ipam
 
 import (
-	"github.com/ben-han-cn/gorest/resource"
+	import "github.com/zdnscloud/gorest/resource"
 	"log"
 )
 
@@ -32,23 +32,7 @@ type ScanAddress struct {
 	Data                  map[string]StatusAddress `json:"data"`
 }
 
-type IPNodes struct {
-	ID       string `json:"id"`
-	NodeCode byte   `json:"nodecode"`
-	NodeName string `json:"nodename"`
-	Subnet   string `json:"subnet"`
-}
-type AlloPrefix struct {
-	ParentID     string    `json:"parentid"`
-	ParentIPv6   string    `json:"parentipv6"`
-	PrefixLength byte      `json:"parentprefixlength"`
-	BitsUsedFor  string    `json:"bitsusedfor"`
-	BitNum       byte      `json:"bitnum"`
-	Depth        int       `json:"depth"`
-	Nodes        []IPNodes `json:"nodes"`
-}
-
-type GenerationNodes struct {
+/*type GenerationNode struct {
 	ID             string            `json:"id"`
 	Name           string            `json:"name"`
 	Subnet         string            `json:"subnet"`
@@ -56,11 +40,18 @@ type GenerationNodes struct {
 	SubtreeBitNum  byte              `json:"subtreebitnum"`
 	Depth          int               `json:"depth"`
 	SubtreeUseDFor string            `json:"usedfor"`
-	Nodes          []GenerationNodes `json:"nodes"`
-}
-
-type NodesTree struct {
-	Nodes GenerationNodes `json:"nodes"`
+	Nodes          []*GenerationNode `json:"nodes"`
+}*/
+type Subtree struct {
+	//resource.ResourceBase `json:",inline"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Subnet         string    `json:"subnet"`
+	NodeCode       byte      `json:"nodecode"`
+	SubtreeBitNum  byte      `json:"subtreebitnum"`
+	Depth          int       `json:"depth"`
+	SubtreeUseDFor string    `json:"usedfor"`
+	Nodes          []Subtree `json:"nodes"`
 }
 
 type ChangeData struct {

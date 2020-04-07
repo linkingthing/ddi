@@ -1,9 +1,9 @@
 package dhcprest
 
 import (
-	"github.com/ben-han-cn/gorest/resource"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"github.com/zdnscloud/gorest/resource"
 	"strconv"
 	"sync"
 )

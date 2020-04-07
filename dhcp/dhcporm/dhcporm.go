@@ -137,6 +137,6 @@ type Ipv6PlanedAddrTree struct {
 }
 
 type BitsUseFor struct {
-	Parentid uint
+	Parentid uint `gorm:"primary_key"`
 	UsedFor  string
 }
