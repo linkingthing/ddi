@@ -150,7 +150,9 @@ func main() {
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
-	// end of dhcp model
+    //devidedAddressState := ipamapi.NewDividedAddressState()
+    schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
+    // end of dhcp model
 
 	router := gin.Default()
 	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
