@@ -927,14 +927,16 @@ func (handler *PGDB) GetDividedAddress(subNetID string) (*ipam.DividedAddress, e
 		tmp := ipam.StatusAddress{MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
 		allData[l.IpAddress] = tmp
 	}
-	beginNums := strings.Split(pools[0].BeginAddress, ".")
-	prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
-	for i := 1; i < 256; i++ {
-		if allData[prefix+strconv.Itoa(i)].AddressType == "" {
-			tmp := ipam.StatusAddress{AddressType: "unused"}
-			one.Data[prefix+strconv.Itoa(i)] = tmp
-		} else {
-			one.Data[prefix+strconv.Itoa(i)] = allData[prefix+strconv.Itoa(i)]
+	if len(pools) > 0 {
+		beginNums := strings.Split(pools[0].BeginAddress, ".")
+		prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
+		for i := 1; i < 256; i++ {
+			if allData[prefix+strconv.Itoa(i)].AddressType == "" {
+				tmp := ipam.StatusAddress{AddressType: "unused"}
+				one.Data[prefix+strconv.Itoa(i)] = tmp
+			} else {
+				one.Data[prefix+strconv.Itoa(i)] = allData[prefix+strconv.Itoa(i)]
+			}
 		}
 	}
 	return &one, nil
@@ -1256,12 +1258,12 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 	one.Subnet = data.Subnet
 	one.NodeCode = int(data.NodeCode)
 	one.MaxCode = maxCode
-	if data.Nodes == nil {
+	if len(data.Nodes) == 0 {
 		one.IsLeaf = true
 	} else {
 		one.IsLeaf = false
 	}
-	if data.ID != "" {
+	/*if data.ID != "" {
 		var num int
 		var err error
 		if num, err = strconv.Atoi(data.ID); err != nil {
@@ -1271,11 +1273,11 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 		if err := tx.Save(&one).Error; err != nil {
 			return err
 		}
-	} else {
-		if err := tx.Create(&one).Error; err != nil {
-			return err
-		}
+	} else {*/
+	if err := tx.Create(&one).Error; err != nil {
+		return err
 	}
+	//}
 	data.ID = strconv.Itoa(int(one.ID))
 	data.Depth = depth
 	//add data to table BitsUseFor
@@ -1283,15 +1285,15 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 		bitsUsedFor := dhcporm.BitsUseFor{}
 		bitsUsedFor.Parentid = one.ID
 		bitsUsedFor.UsedFor = data.SubtreeUseDFor
-		if data.ID != "" {
+		/*if data.ID != "" {
 			if err := tx.Save(&bitsUsedFor).Error; err != nil {
 				return err
 			}
-		} else {
-			if err := tx.Create(&bitsUsedFor).Error; err != nil {
-				return err
-			}
+		} else {*/
+		if err := tx.Create(&bitsUsedFor).Error; err != nil {
+			return err
 		}
+		//}
 	}
 	for i, _ := range data.Nodes {
 		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
@@ -1338,8 +1340,14 @@ func (handler *PGDB) DeleteSubtree(id string) error {
 			}
 		}
 	}
+	if err := tx.Unscoped().Where("parentid = ?", one.ID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+		return err
+	}
+	//update the parent's IsLeaf to be true if it's exists.
 	if one.ParentID != 0 {
-		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
+		parent := dhcporm.Ipv6PlanedAddrTree{}
+		parent.ID = one.ParentID
+		if err := tx.Model(&parent).UpdateColumn("is_leaf", "true").Error; err != nil {
 			return err
 		}
 	}
@@ -1379,15 +1387,26 @@ func (handler *PGDB) DeleteOne(id string, tx *gorm.DB) error {
 func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
 	data := ipam.Subtree{}
 	one := dhcporm.Ipv6PlanedAddrTree{}
+	var many []dhcporm.Ipv6PlanedAddrTree
+	//var one dhcporm.Ipv6PlanedAddrTree
 	if id == "" {
-		if err := handler.db.Where("parent_id = ?", 0).Find(&one).Error; err != nil {
-			return nil, err
+		if err := handler.db.Where("parent_id = ?", 0).Find(&many).Error; err != nil {
+			return nil, nil
 		}
-		id = strconv.Itoa(int(one.ID))
+		fmt.Println(many)
+		if len(many) >= 1 {
+			id = strconv.Itoa(int(many[0].ID))
+			one = many[0]
+		}
 	} else {
 		if err := handler.db.First(&one, id).Error; err != nil {
-			return nil, err
+			if err := handler.db.Where("parent_id = ?", 0).Find(&one).Error; err != nil {
+				return nil, err
+			}
 		}
+	}
+	if len(many) == 0 {
+		return nil, nil
 	}
 	data.ID = id
 	data.Name = one.Name
@@ -1395,11 +1414,13 @@ func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
 	data.NodeCode = byte(one.NodeCode)
 	data.SubtreeBitNum = 0
 	data.Depth = one.Depth
-	usedFor := dhcporm.BitsUseFor{}
-	if err := handler.db.Where("parentid = ?", one.ID).First(&usedFor).Error; err != nil {
+	var usedFors []dhcporm.BitsUseFor
+	if err := handler.db.Where("parentid = ?", one.ID).Find(&usedFors).Error; err != nil {
 		return nil, err
 	}
-	data.SubtreeUseDFor = usedFor.UsedFor
+	if len(usedFors) >= 1 {
+		data.SubtreeUseDFor = usedFors[0].UsedFor
+	}
 	var bitNum int
 	var err error
 	if !one.IsLeaf {

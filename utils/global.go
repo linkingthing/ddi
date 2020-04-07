@@ -19,4 +19,5 @@ var (
 	KeaPort         = 8000        //host port on which kea is running
 	NodeRole        = "controller"
 	KafkaServerProm = ""
+	DHCPGrpcServer  = ""
 )

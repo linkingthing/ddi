@@ -66,7 +66,7 @@ type ServerConf struct {
 	Kafka      KafkaConf      `yaml:"kafka"`
 	Prometheus PrometheusConf `yaml:"prometheus"`
 	Agent      string         `yaml:"agent"`
-	Db         string         `yaml:"db"`
+	DHCPGrpc   string         `yaml:"dhcpgrpc"`
 }
 
 type VanguardConf struct {

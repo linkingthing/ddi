@@ -105,22 +105,53 @@ type ipv6Prefix struct {
 	Prefix string `json:"prefix"`
 }
 
+type ipv6AddressTrans struct {
+	Prefix string `json:"prefix"`
+	Binary string `json:"binary"`
+}
+
+func convertToBin(num int) string {
+	s := ""
+
+	if num == 0 {
+		return "00000000"
+	}
+
+	// num /= 2 每次循环的时候 都将num除以2  再把结果赋值给 num
+	for ; num > 0; num /= 2 {
+		lsb := num % 2
+		// strconv.Itoa() 将数字强制性转化为字符串
+		s = strconv.Itoa(lsb) + s
+	}
+	if len(s) < 8 {
+		var tmp string
+		for i := 0; i < 8-len(s); i++ {
+			tmp += "0"
+		}
+		s = tmp + s
+	}
+	return s
+}
+
 func CheckPrefix(c *gin.Context) {
 	body, _ := ioutil.ReadAll(c.Request.Body)
 	p := &ipv6Prefix{}
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	s := strings.Split(p.Prefix, "/")
 	var L int
 	if L, err = strconv.Atoi(s[len(s)-1]); err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	fmt.Println(L)
 	var ipv6Addr net.IP
 	ipv6Addr = net.ParseIP(s[0])
 	if ipv6Addr == nil {
+		c.JSON(500, "error")
 		return
 	}
 	//M := 8-int(L%8)
@@ -129,8 +160,13 @@ func CheckPrefix(c *gin.Context) {
 	ipv6Addr[L/8] = ipv6Addr[L/8] & (byte(math.Pow(2, 8)) - byte(math.Pow(2, offset)))
 	another := &ipv6Prefix{}
 	another.Prefix = ipv6Addr.String() + "/" + s[1]
-	jsonContext, err := json.Marshal(another)
+	tmp := ipv6AddressTrans{Prefix: another.Prefix}
+	for i := 0; i < 16; i++ {
+		tmp.Binary = tmp.Binary + convertToBin(int(ipv6Addr[i]))
+	}
+	jsonContext, err := json.Marshal(tmp)
 	if err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	fmt.Fprintln(c.Writer, string(jsonContext))
@@ -142,14 +178,17 @@ func CreateSubtree(c *gin.Context) {
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 	if err = dhcprest.PGDBConn.CreateSubtree(p); err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 	data, err := json.Marshal(p)
 	if err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	fmt.Fprintln(c.Writer, string(data))
@@ -164,10 +203,12 @@ func DeleteSubtree(c *gin.Context) {
 	p := &idJson{}
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	if err := dhcprest.PGDBConn.DeleteSubtree(p.ID); err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 }
@@ -184,10 +225,12 @@ func GetSubtree(c *gin.Context) {
 	var data *res.Subtree
 	if data, err = dhcprest.PGDBConn.GetSubtree(id); err != nil {
 		fmt.Println(err)
+		c.JSON(500, err)
 		return
 	}
 	jsonContext, err := json.Marshal(&data)
 	if err != nil {
+		c.JSON(500, err)
 		return
 	}
 	fmt.Fprintln(c.Writer, string(jsonContext))
@@ -198,19 +241,57 @@ func UpdateSubtree(c *gin.Context) {
 	err := json.Unmarshal([]byte(body), p)
 	if err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 	if err := dhcprest.PGDBConn.DeleteSubtree(p.ID); err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 	p.ID = "0"
 	if err = dhcprest.PGDBConn.CreateSubtree(p); err != nil {
 		fmt.Println(err)
+		c.JSON(500, "error")
 		return
 	}
 	data, err := json.Marshal(p)
 	if err != nil {
+		c.JSON(500, "error")
+		return
+	}
+	fmt.Fprintln(c.Writer, string(data))
+
+}
+
+type fileData struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func GetSubtreeMember(c *gin.Context) {
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	p := &res.Subtree{}
+	err := json.Unmarshal([]byte(body), p)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	if err := dhcprest.PGDBConn.DeleteSubtree(p.ID); err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	p.ID = "0"
+	if err = dhcprest.PGDBConn.CreateSubtree(p); err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	data, err := json.Marshal(p)
+	if err != nil {
+		c.JSON(500, "error")
 		return
 	}
 	fmt.Fprintln(c.Writer, string(data))

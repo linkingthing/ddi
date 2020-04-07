@@ -3,15 +3,12 @@ package grpc
 import (
 	"context"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 	"google.golang.org/grpc"
 )
 
-const (
-	address = "localhost:8888"
-)
-
 func GetLeases(subNetID string) []*pb.Lease {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(utils.DHCPGrpcServer, grpc.WithInsecure())
 	if err != nil {
 		return nil
 	}
