@@ -85,16 +85,16 @@ type DHCPv4Conf struct {
 	Dhcp4 Dhcpv4Config
 }
 type Dhcpv4Config struct {
-	Authoritative bool   `json:"authoritative"`
-	BootFileName  string `json:"boot-file-name"`
+	Authoritative bool   `json:"authoritative,omitempty"`
+	BootFileName  string `json:"boot-file-name,omitempty"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"control-socket"`
-	OptionData    []Option       `json:"option-data"`
+	ControlSocket ControlSocket  `json:"control-socket,omitempty"`
+	OptionData    []Option       `json:"option-data,omitempty"`
 	Subnet4       []SubnetConfig `json:"subnet4"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime"`
+	ValidLifetime json.Number `json:"valid-lifetime,omitempty"`
 }
 
 type ParseDhcpv6Config struct {
@@ -105,21 +105,21 @@ type DHCPv6Conf struct {
 	Dhcp6 Dhcpv6Config
 }
 type Dhcpv6Config struct {
-	Authoritative bool   `json:"authoritative"`
-	BootFileName  string `json:"boot-file-name"`
+	Authoritative bool   `json:"authoritative,omitempty"`
+	BootFileName  string `json:"boot-file-name,omitempty"`
 	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"control-socket"`
-	OptionData    []Option       `json:"option-data"`
-	Subnet6       []SubnetConfig `json:"subnet6"`
+	ControlSocket ControlSocket  `json:"control-socket,omitempty"`
+	OptionData    []Option       `json:"option-data,omitempty"`
+	Subnet6       []SubnetConfig `json:"subnet6,omitempty"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime"`
+	ValidLifetime json.Number `json:"valid-lifetime,omitempty"`
 }
 
 type ControlSocket struct {
-	SocketName string `json:"socket-name"`
-	SocketType string `json:"socket-type"`
+	SocketName string `json:"socket-name,omitempty"`
+	SocketType string `json:"socket-type,omitempty"`
 }
 
 type SubnetConfig struct {
@@ -131,8 +131,8 @@ type SubnetConfig struct {
 	Id json.Number `json:"id"`
 	//MatchClientId   bool          `json:"match-client-id"`
 	//NextServer      string        `json:"next-server"`
-	OptionData []Option `json:"option-data"`
-	Pools      []Pool   `json:"pools"`
+	OptionData []Option `json:"option-data,omitempty"`
+	Pools      []Pool   `json:"pools,omitempty"`
 	//RebindTimer     json.Number   `json:"rebind-timer"`
 	//Relay           SubnetRelay   `json:"relay"`
 	//RenewTimer      json.Number   `json:"renew-timer"`
@@ -142,20 +142,20 @@ type SubnetConfig struct {
 
 	//T1Percent float64 `json:"t1-percent"`
 	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime    json.Number `json:"valid-lifetime"`
-	MaxValidLifetime json.Number `json:"max-valid-lifetime"`
+	ValidLifetime    json.Number `json:"valid-lifetime,omitempty"`
+	MaxValidLifetime json.Number `json:"max-valid-lifetime,omitempty"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
 }
 
 type Option struct {
-	AlwaysSend bool   `json:"always-send"`
-	Code       uint64 `json:"code"`
-	CsvFormat  bool   `json:"csv-format"`
-	Data       string `json:"data"`
-	Name       string `json:"name"`
-	Space      string `json:"space"`
+	AlwaysSend bool   `json:"always-send,omitempty"`
+	Code       uint64 `json:"code,omitempty"`
+	CsvFormat  bool   `json:"csv-format,omitempty"`
+	Data       string `json:"data,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Space      string `json:"space,omitempty"`
 }
 type Pool struct {
 	OptionData []*Option `json:"option-data"`
@@ -164,13 +164,15 @@ type Pool struct {
 type Reservation struct {
 	BootFileName string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
-	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
-	Duid           string    `json:"duid"`
-	Hostname       string    `json:"hostname"`
-	IpAddress      string    `json:"ip-address"`
-	NextServer     string    `json:"next-server"`
-	OptionData     []*Option `json:"option-data"`
-	ServerHostname string    `json:"server-hostname"`
+	ClientId       string    `json:"client-id,omitempty"` //reservations can be multi-types, need to split  todo
+	Duid           string    `json:"duid,omitempty"`
+	Hostname       string    `json:"hostname,omitempty"`
+	IpAddress      string    `json:"ip-address,omitempty"`
+	HwAddress      string    `json:"hw-address,omitempty"`
+	CircuitId      string    `json:"circuit-id,omitempty"`
+	NextServer     string    `json:"next-server,omitempty"`
+	OptionData     []*Option `json:"option-data,omitempty"`
+	ServerHostname string    `json:"server-hostname,omitempty"`
 }
 
 type KEAv4Handler struct {
@@ -677,11 +679,15 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 		if v.Subnet == req.Subnet {
 			//log.Println("req.IpAddr: ", req.IpAddr)
 			//log.Println("req.Duid: ", req.Duid)
-
 			var rsv Reservation
+			rsv.HwAddress = req.HwAddress
 			rsv.Duid = req.Duid
+			rsv.Hostname = req.Hostname
 			rsv.IpAddress = req.IpAddr
+			rsv.CircuitId = req.CircuitId
+			rsv.ClientId = req.ClientId
 			rsv.NextServer = req.NextServer
+
 			//rsv.OptionData = req.Options
 			var ops = []*Option{}
 			for _, op := range req.Options {
@@ -697,22 +703,22 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 			}
 			rsv.OptionData = ops
 
+			log.Println("new rsv: ", rsv)
 			conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations, rsv)
-
-			log.Println("CreateSubnetv4Reservation begin subnet\n")
-			log.Println(conf.Arguments.Dhcp4)
-			log.Println("CreateSubnetv4Reservation end subnet\n")
-
-			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
-			if err != nil {
-				return err
-			}
-			return nil
+			log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
 		}
 	}
 
-	return fmt.Errorf("subnet do not exists, error")
+	log.Println("CreateSubnetv4Reservation begin subnet\n")
+	log.Println(conf.Arguments.Dhcp4.Subnet4)
+	log.Println("CreateSubnetv4Reservation end subnet\n")
+	err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
+	if err != nil {
+		return err
+	}
 	return nil
+	//return fmt.Errorf("subnet do not exists, error")
+	//return nil
 }
 
 func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4ReservationReq) error {
@@ -752,6 +758,18 @@ func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4Rese
 						Duid:      req.Duid,
 						Hostname:  req.Hostname,
 					}
+					if len(req.Duid) > 0 {
+						log.Println("set duid")
+						newRsv.Duid = req.Duid
+					}
+					if len(req.Hostname) > 0 {
+						log.Println("set duid")
+						newRsv.Hostname = req.Hostname
+					}
+					//if len(req.) > 0 {
+					//	log.Println("set duid")
+					//	newRsv.Hostname = req.Hostname
+					//}
 					if len(req.NextServer) > 0 {
 						log.Println("req.NextServer: ", req.NextServer)
 						newRsv.NextServer = req.NextServer

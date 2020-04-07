@@ -5,9 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp/dhcporm"
-	"github.com/zdnscloud/gorest/resource"
 	"log"
 	"math"
 	"net"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"github.com/zdnscloud/gorest/resource"
 )
 
 var (
@@ -30,6 +31,8 @@ var (
 	PoolKind        = resource.DefaultKindName(RestPool{})
 	OptionKind      = resource.DefaultKindName(RestOption{})
 	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
+
+	//DividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
 	//OptionNameConfigKind = resource.DefaultKindName(RestOptionNameConfig{})
 
 	db *gorm.DB
@@ -81,10 +84,12 @@ type RestReservation struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	BootFileName          string `json:"boot-file-name"`
 	//ClientClasses []interface{} `json:"client-classes"`
-	//ClientId string `json:"client-id"` //reservations can be multi-types, need to split  todo
+	ClientId       string       `json:"clientId"` //reservations can be multi-types, need to split  todo
+	CircuitId      string       `json:"circuitId"`
 	Duid           string       `json:"duid"`
 	Hostname       string       `json:"hostname"`
 	IpAddress      string       `json:"ipAddress"`
+	HwAddress      string       `json:"hwAddress"`
 	NextServer     string       `json:"nextServer"`
 	OptionData     []RestOption `json:"optionData"`
 	ServerHostname string       `json:"serverHostname"`
@@ -284,6 +289,18 @@ func ConvertReservationsFromOrmToRest(rs []dhcporm.OrmReservation) []*RestReserv
 	}
 
 	return restRs
+}
+func ConvertReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
+
+	restR := RestReservation{
+		Duid:         v.Duid,
+		BootFileName: v.BootFileName,
+		Hostname:     v.Hostname,
+		IpAddress:    v.IpAddress,
+	}
+	restR.ID = strconv.Itoa(int(v.ID))
+
+	return &restR
 }
 
 func ConvertOptionNamesFromOrmToRest(ps []*dhcporm.OrmOptionName) []*RestOptionName {
