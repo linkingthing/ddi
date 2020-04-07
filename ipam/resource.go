@@ -1,7 +1,7 @@
 package ipam
 
 import (
-	import "github.com/zdnscloud/gorest/resource"
+	"github.com/zdnscloud/gorest/resource"
 	"log"
 )
 
