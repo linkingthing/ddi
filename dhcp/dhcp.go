@@ -11,6 +11,8 @@ import (
 
 	"strconv"
 
+	"strings"
+
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
@@ -18,7 +20,6 @@ import (
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
@@ -162,7 +163,7 @@ type Pool struct {
 	Pool       string    `json:"pool"`
 }
 type Reservation struct {
-	BootFileName string `json:"boot-file-name"`
+	BootFileName string `json:"boot-file-name,omitempty"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	ClientId       string    `json:"client-id,omitempty"` //reservations can be multi-types, need to split  todo
 	Duid           string    `json:"duid,omitempty"`
