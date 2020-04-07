@@ -5,11 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/jinzhu/gorm"
-	"github.com/linkingthing/ddi/dhcp/dhcporm"
-	res "github.com/linkingthing/ddi/ipam"
-	"github.com/zdnscloud/gorest/resource"
-
 	"log"
 	"math"
 	"net"
@@ -19,6 +14,10 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/jinzhu/gorm"
+	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	"github.com/zdnscloud/gorest/resource"
 )
 
 var (
@@ -33,7 +32,7 @@ var (
 	OptionKind      = resource.DefaultKindName(RestOption{})
 	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
 
-	DividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
+	//DividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
 	//OptionNameConfigKind = resource.DefaultKindName(RestOptionNameConfig{})
 
 	db *gorm.DB
