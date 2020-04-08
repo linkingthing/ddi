@@ -29,7 +29,7 @@ func SetHostIPs(confPath string) {
 	log.Println("in common.go, utils.promServer ip: ", PromServer)
 	log.Println("in common.go, utils.KafkaServerProm ip: ", KafkaServerProm)
 	log.Println("in common.go, utils.PromLocalInstance ip: ", PromLocalInstance)
-
+	log.Println("in common.go, utils.DHCPGrpc ip: ", DHCPGrpcServer)
 }
 
 func Cmd(command string) (string, error) {
