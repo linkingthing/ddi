@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"time"
 
-	server "github.com/linkingthing/ddi/dhcp/service"
+	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
+
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/cmd/node"
 	"github.com/linkingthing/ddi/dhcp"
+	server "github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
@@ -50,7 +52,7 @@ var KafkaOffsetDhcpv4 int64 = 0
 func dhcpClient() {
 
 	log.Println("in dhcpv4agent/agent.go, utils.KafkaServerProm: ", utils.KafkaServerProm)
-	conn, err := grpc.Dial(dhcp.Dhcpv4AgentAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(utils.Dhcpv4AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
@@ -209,8 +211,15 @@ func main() {
 		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
 	}
 
+	log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
+	if !yamlConfig.Localhost.IsController {
+		log.Println("begin to call node exporter")
+		go physicalMetrics.NodeExporter()
+	}
+
+	log.Println("Dhcpv4AgentAddr: ", utils.Dhcpv4AgentAddr)
 	//ver string, ConfPath string, addr string
-	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
+	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
 	if err != nil {
 
 		log.Fatal(err)

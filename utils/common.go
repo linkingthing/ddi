@@ -17,6 +17,9 @@ func SetHostIPs(confPath string) {
 		PromLocalInstance = conf.Localhost.IP + ":" + PromLocalPort
 	}
 	KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+
+	DHCPGrpcServer = conf.Server.DHCPGrpc
+	Dhcpv4AgentAddr = conf.Server.DHCPGrpc
 	/*IsController = conf.Localhost.IsController
 	IsDHCP = conf.Localhost.IsDHCP
 	IsDNS = conf.Localhost.IsDNS*/
