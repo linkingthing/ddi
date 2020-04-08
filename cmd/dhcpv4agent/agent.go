@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	businessMetrics "github.com/linkingthing/ddi/dns/metrics"
+
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 
 	"github.com/ben-han-cn/cement/shell"
@@ -48,6 +50,7 @@ const (
 var dhcpv4Start bool = false
 var KafkaOffsetFileDhcpv4 = "/tmp/kafka-offset-dhcpv4.txt" // store kafka offset num into this file
 var KafkaOffsetDhcpv4 int64 = 0
+var dnsExporterPort = "8001"
 
 func dhcpClient() {
 
@@ -210,6 +213,10 @@ func main() {
 	if yamlConfig.Localhost.IsDHCP {
 		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
 	}
+
+	//according to dns module, added
+	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
+	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
 
 	log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
 	if !yamlConfig.Localhost.IsController {
