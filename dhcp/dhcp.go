@@ -706,7 +706,7 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 
 			log.Println("new rsv: ", rsv)
 			conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations, rsv)
-			log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
+			//log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
 		}
 	}
 

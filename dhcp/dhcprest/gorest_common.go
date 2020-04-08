@@ -126,6 +126,20 @@ type RestSubnetv4 struct {
 	SubnetUsage           string `json:"usage"`
 }
 
+func (s4 RestSubnetv4) GetActions() []resource.Action {
+	log.Println("into RestSubnetv4, GetActions")
+	var actions []resource.Action
+	action := resource.Action{
+		Name:   "mergesplit",
+		Input:  &MergeSplitData{},
+		Output: &MergeSplitData{},
+	}
+	actions = append(actions, action)
+
+	//log.Println("in cluster GetActions, actions: ", actions)
+	return actions
+}
+
 func (s4 RestSubnetv4) CreateAction(name string) *resource.Action {
 	log.Println("into RestSubnetv4, create action")
 	switch name {
