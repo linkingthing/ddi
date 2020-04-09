@@ -107,6 +107,7 @@ type RestPool struct {
 	Total                 uint32       `json:"total"`
 	Usage                 float32      `json:"usage"`
 	AddressType           string       `json:"addressType"`
+	PoolName              string       `json:"poolName"`
 }
 
 //type Subnetv4 struct {
@@ -365,7 +366,7 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 			BeginAddress: v.BeginAddress,
 			EndAddress:   v.EndAddress,
 		}
-		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress)
+		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
 		restP.ID = strconv.Itoa(int(v.ID))
 
 		// todo get usage of a pool, (put it to somewhere)
@@ -373,6 +374,8 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 		restP.Usage = 15.32
 		restP.AddressType = "resv"
 		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
+
 		restPs = append(restPs, &restP)
 
 	}
