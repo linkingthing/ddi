@@ -46,8 +46,10 @@ type Subtree struct {
 	//resource.ResourceBase `json:",inline"`
 	ID             string    `json:"id"`
 	Name           string    `json:"name"`
-	Subnet         string    `json:"subnet"`
-	NodeCode       byte      `json:"nodecode"`
+	BeginSubnet    string    `json:"beginsubnet"`
+	EndSubnet      string    `json:"endsubnet"`
+	BeginNodeCode  byte      `json:"beginnodecode"`
+	EndNodeCode    byte      `json:"endnodecode"`
 	SubtreeBitNum  byte      `json:"subtreebitnum"`
 	Depth          int       `json:"depth"`
 	SubtreeUseDFor string    `json:"usedfor"`

@@ -127,13 +127,15 @@ type AliveAddress struct {
 
 type Ipv6PlanedAddrTree struct {
 	gorm.Model
-	Depth    int
-	Name     string
-	ParentID uint
-	Subnet   string
-	NodeCode int
-	MaxCode  int
-	IsLeaf   bool
+	Depth         int
+	Name          string
+	ParentID      uint
+	BeginSubnet   string
+	EndSubnet     string
+	BeginNodeCode int
+	EndNodeCode   int
+	MaxCode       int
+	IsLeaf        bool
 }
 
 type BitsUseFor struct {

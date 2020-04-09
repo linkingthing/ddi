@@ -1249,8 +1249,8 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 	//general subnet
 	var max byte
 	for _, v := range data.Nodes {
-		if max < v.NodeCode {
-			max = v.NodeCode
+		if max < v.EndNodeCode {
+			max = v.EndNodeCode
 		}
 	}
 	if data.SubtreeBitNum == 0 || (data.SubtreeBitNum > 0 && int(max)+1 > int(math.Pow(2, float64(data.SubtreeBitNum)))) {
@@ -1275,8 +1275,10 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 	one.Depth = depth
 	one.Name = data.Name
 	one.ParentID = parentid
-	one.Subnet = data.Subnet
-	one.NodeCode = int(data.NodeCode)
+	one.BeginSubnet = data.BeginSubnet
+	one.EndSubnet = data.EndSubnet
+	one.BeginNodeCode = int(data.BeginNodeCode)
+	one.EndNodeCode = int(data.EndNodeCode)
 	one.MaxCode = maxCode
 	if len(data.Nodes) == 0 {
 		one.IsLeaf = true
@@ -1320,24 +1322,87 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 	}
 	return nil
 }
-func (handler *PGDB) CaculateSubnet(p *ipam.Subtree) error {
-	s := strings.Split(p.Subnet, "/")
-	if len(s) != 2 {
-		return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
+
+func (handler *PGDB) PrefixIncrementN(beginIpv6 string, prefixLength int, n int) (string, error) {
+	var ipv6Addr net.IP
+	ipv6Addr = net.ParseIP(beginIpv6)
+	if ipv6Addr == nil {
+		return "", fmt.Errorf("ipv6 adderss %v parse err!", beginIpv6)
 	}
+	var frontDest int64
+	//var frontSour int64
+	for i := 0; i < 8; i++ {
+		frontDest += int64(ipv6Addr[i]) * int64(math.Pow(2, float64((7-i)*8)))
+	}
+	frontDest += int64(n) * int64(math.Pow(2, float64(64-prefixLength)))
+	for i := 0; i < 8; i++ {
+		fmt.Println(byte(frontDest >> ((7 - i) * 8) & 0x000000FF))
+		ipv6Addr[i] = byte(frontDest >> ((7 - i) * 8) & 0x000000FF)
+	}
+	return ipv6Addr.String(), nil
+}
+
+func (handler *PGDB) CaculateSubnet(p *ipam.Subtree) error {
+	//caculate the same prefix ipv6 address between BeginSubnet and EndSubnet's ipv6 adderss.
+	var sameIpv6 string
 	var prefixLength int
-	var err error
-	if prefixLength, err = strconv.Atoi(s[1]); err != nil {
-		return err
+	if p.BeginNodeCode != p.EndNodeCode {
+		begin := strings.Split(p.BeginSubnet, "/")
+		if len(begin) != 2 {
+			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
+		}
+		var err error
+		if prefixLength, err = strconv.Atoi(begin[1]); err != nil {
+			return err
+		}
+		prefixLength -= int(math.Log2(float64(p.EndNodeCode - p.BeginNodeCode + 1)))
+		var beginIpv6 net.IP
+		beginIpv6 = net.ParseIP(begin[0])
+		if beginIpv6 == nil {
+			return fmt.Errorf("ip parse error: %v", begin[0])
+		}
+		end := strings.Split(p.EndSubnet, "/")
+		if len(end) != 2 {
+			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
+		}
+		var endIpv6 net.IP
+		endIpv6 = net.ParseIP(end[0])
+		if endIpv6 == nil {
+			return fmt.Errorf("ip parse error: %v", end[0])
+		}
+
+		var samePrefix net.IP
+		samePrefix = net.ParseIP("::")
+		if samePrefix == nil {
+			return fmt.Errorf("ip parse error: %v", samePrefix)
+		}
+		for i := 0; i < 16; i++ {
+			samePrefix[i] = beginIpv6[i] & endIpv6[i]
+		}
+		sameIpv6 = samePrefix.String()
+	} else {
+		s := strings.Split(p.BeginSubnet, "/")
+		if len(s) != 2 {
+			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
+		}
+		var err error
+		if prefixLength, err = strconv.Atoi(s[1]); err != nil {
+			return err
+		}
+		sameIpv6 = s[0]
 	}
 	for i, n := range p.Nodes {
-		var ipv6Addr net.IP
-		ipv6Addr = net.ParseIP(s[0])
-		if ipv6Addr == nil {
-			return fmt.Errorf("subnet id:", p.ID, "subnet's ipv6 address format error!")
+		var beginIpv6 string
+		var endIpv6 string
+		var err error
+		if beginIpv6, err = handler.PrefixIncrementN(sameIpv6, prefixLength+int(p.SubtreeBitNum), int(n.BeginNodeCode)); err != nil {
+			return err
 		}
-		ipv6Addr[(prefixLength+int(p.SubtreeBitNum))/8] = ipv6Addr[(prefixLength+int(p.SubtreeBitNum))/8] + n.NodeCode*byte(math.Pow(2, float64(8-prefixLength%8-int(p.SubtreeBitNum)+1)))
-		p.Nodes[i].Subnet = ipv6Addr.String() + "/" + strconv.Itoa(int(prefixLength+int(p.SubtreeBitNum)))
+		if endIpv6, err = handler.PrefixIncrementN(sameIpv6, prefixLength+int(p.SubtreeBitNum), int(n.EndNodeCode)); err != nil {
+			return err
+		}
+		p.Nodes[i].BeginSubnet = beginIpv6 + "/" + strconv.Itoa(int(prefixLength+int(p.SubtreeBitNum)))
+		p.Nodes[i].EndSubnet = endIpv6 + "/" + strconv.Itoa(int(prefixLength+int(p.SubtreeBitNum)))
 	}
 	return nil
 }
@@ -1430,8 +1495,10 @@ func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
 	}
 	data.ID = id
 	data.Name = one.Name
-	data.Subnet = one.Subnet
-	data.NodeCode = byte(one.NodeCode)
+	data.BeginSubnet = one.BeginSubnet
+	data.EndSubnet = one.EndSubnet
+	data.BeginNodeCode = byte(one.BeginNodeCode)
+	data.EndNodeCode = byte(one.EndNodeCode)
 	data.SubtreeBitNum = 0
 	data.Depth = one.Depth
 	var usedFors []dhcporm.BitsUseFor
@@ -1461,8 +1528,10 @@ func (handler *PGDB) GetNextTree(p *[]ipam.Subtree, parentid uint) (int, error) 
 		data := ipam.Subtree{}
 		data.ID = strconv.Itoa(int(one.ID))
 		data.Name = one.Name
-		data.Subnet = one.Subnet
-		data.NodeCode = byte(one.NodeCode)
+		data.BeginSubnet = one.BeginSubnet
+		data.EndSubnet = one.EndSubnet
+		data.BeginNodeCode = byte(one.BeginNodeCode)
+		data.EndNodeCode = byte(one.EndNodeCode)
 		data.SubtreeBitNum = 0
 		data.Depth = one.Depth
 		var usedFors []dhcporm.BitsUseFor
