@@ -3,14 +3,15 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/linkingthing/ddi/dhcp"
-	"github.com/linkingthing/ddi/dns/metrics/collector"
-	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/dns/metrics/collector"
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 type Buckets struct {
@@ -265,7 +266,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	log.Println("stats: ", stats)
 
 	//get subnet name and id from dhcp config
-	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
+	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
 	conf := dhcp.ParseDhcpv4Config{}
 	err := k.GetDhcpv4Config(dhcp.KEADHCPv4Service, &conf)
 	if err != nil {
@@ -352,7 +353,7 @@ func GetSubnetUsage() *BaseJsonDhcpAssign {
 	log.Println("stats: ", stats)
 
 	//get subnet name and id from dhcp config
-	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, dhcp.Dhcpv4AgentAddr)
+	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
 	conf := dhcp.ParseDhcpv4Config{}
 	err := k.GetDhcpv4Config(dhcp.KEADHCPv4Service, &conf)
 	if err != nil {

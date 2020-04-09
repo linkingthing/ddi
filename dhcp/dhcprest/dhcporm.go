@@ -6,6 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	"math"
+	"net"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/dhcp"
@@ -16,9 +20,6 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils/arp"
 	"github.com/paulstuart/ping"
-	"math"
-	"net"
-	"time"
 )
 
 const Dhcpv4Ver string = "4"
@@ -384,12 +385,7 @@ func (handler *PGDB) OrmGetReservation(subnetId string, rsv_id string) *dhcporm.
 func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation) (dhcporm.OrmReservation, error) {
 	log.Println("into OrmCreateReservation, r: ", r, ", subnetv4_id: ", subnetv4_id)
 
-	if len(r.NextServer) == 0 { // set default next-server
-		r.NextServer = "0.0.0.0"
-	}
-
 	ormRsv := dhcporm.OrmReservation{
-
 		//BootFileName: r.BootFileName,
 		Subnetv4ID: ConvertStringToUint(subnetv4_id),
 		Hostname:   r.Hostname,
@@ -398,7 +394,6 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		ClientId:   r.ClientId,
 		CircuitId:  r.CircuitId,
 		NextServer: r.NextServer,
-
 		//DhcpVer:       Dhcpv4Ver,
 	}
 	pbRsv := pb.Reservation{
@@ -451,12 +446,6 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 	}
 	//end of todo
 
-	//rsv := dhcporm.OrmReservation{}
-
-	//query := handler.db.Create(&rsv)
-	//if query.Error != nil {
-	//	return dhcporm.OrmReservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
-	//}
 	tx.Commit()
 
 	return ormRsv, nil
@@ -522,38 +511,12 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 	}
 	//end of todo
 
-	//rsv := dhcporm.OrmReservation{}
-
-	//query := handler.db.Create(&rsv)
-	//if query.Error != nil {
-	//	return dhcporm.OrmReservation{}, fmt.Errorf("CreateReservation error, duid: " + r.Duid)
-	//}
 	tx.Commit()
 
 	return nil
-
-	//log.Println("into dhcporm, OrmUpdateReservation, id: ", r.GetID())
-	//
-	//search subnet, if not exist, return error
-	//subnet := handler.OrmGetReservation(subnetv4_id, r.GetID())
-	//if subnet == nil {
-	//	return fmt.Errorf(name + " not exists, return")
-	//}
-
-	//
-	//ormRsv := dhcporm.OrmReservation{}
-	//ormRsv.ID = ConvertStringToUint(r.GetID())
-	//ormRsv.Hostname = r.Hostname
-	////ormRsv.Duid = r.Duid
-	//ormRsv.BootFileName = r.BootFileName
-	//
-	//db.Model(&ormRsv).Updates(ormRsv)
-	//
-	//return nil
 }
 
 func (handler *PGDB) OrmDeleteReservation(id string) error {
-
 	log.Println("into dhcprest OrmDeleteReservation, id ", id)
 
 	var ormSubnetv4 dhcporm.OrmSubnetv4

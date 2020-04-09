@@ -5,7 +5,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/linkingthing/ddi/dhcp"
+	"github.com/linkingthing/ddi/utils"
+
 	"github.com/linkingthing/ddi/pb"
 	"google.golang.org/grpc"
 )
@@ -30,7 +31,7 @@ const (
 func init() {
 	flag.StringVar(&cmd, "cmd", "", StartDHCPv4+"\n"+
 		StopDHCPv4)
-	flag.StringVar(&addr, "addr", dhcp.Dhcpv4AgentAddr, "ip:port")
+	flag.StringVar(&addr, "addr", utils.Dhcpv4AgentAddr, "ip:port")
 
 }
 func main() {

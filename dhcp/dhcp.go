@@ -11,6 +11,8 @@ import (
 
 	"strconv"
 
+	"strings"
+
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/postgres"
@@ -18,7 +20,6 @@ import (
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 const (
@@ -34,9 +35,6 @@ const (
 	KeaPidPath      = "/usr/local/var/run/kea/"
 	KeaDhcp4PidFile = "kea-dhcp4.kea-dhcp4.pid"
 	KeaDhcp6PidFile = "kea-dhcp6.kea-dhcp6.pid"
-
-	Dhcpv4AgentAddr = "localhost:8898"
-	Dhcpv6AgentAddr = "localhost:8899"
 
 	IntfStartDHCPv4 = 1 + iota
 	IntfStopDHCPv4
@@ -162,7 +160,7 @@ type Pool struct {
 	Pool       string    `json:"pool"`
 }
 type Reservation struct {
-	BootFileName string `json:"boot-file-name"`
+	BootFileName string `json:"boot-file-name,omitempty"`
 	//ClientClasses []interface{} `json:"client-classes"`
 	ClientId       string    `json:"client-id,omitempty"` //reservations can be multi-types, need to split  todo
 	Duid           string    `json:"duid,omitempty"`
@@ -705,7 +703,7 @@ func (handler *KEAv4Handler) CreateSubnetv4Reservation(req pb.CreateSubnetv4Rese
 
 			log.Println("new rsv: ", rsv)
 			conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations, rsv)
-			log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
+			//log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
 		}
 	}
 

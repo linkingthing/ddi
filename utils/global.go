@@ -20,4 +20,6 @@ var (
 	NodeRole        = "controller"
 	KafkaServerProm = ""
 	DHCPGrpcServer  = ""
+	Dhcpv4AgentAddr = "localhost:8898"
+	Dhcpv6AgentAddr = "localhost:8899"
 )

@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"log"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 const (
@@ -39,7 +40,7 @@ func SocketClient(ip string, port int) {
 func main() {
 
 	//get promServer from yaml config file
-	ip := config.GetLocalIP()
+	ip := config.GetLocalIP("/etc/vanguard/vanguard.conf")
 	port := utils.WebSocket_Port
 
 	SocketClient(ip, port)

@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/linkingthing/ddi/utils"
+
 	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
@@ -68,7 +70,7 @@ func KeepDhcpv4Alive(ticker *time.Ticker, quit chan int) {
 func Dhcpv4Client() {
 
 	log.Println("into Dhcpv4Client()")
-	conn, err := grpc.Dial(dhcp.Dhcpv4AgentAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(utils.Dhcpv4AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		log.Println("dhcp连接grpc服务错误 ", err)
 		return

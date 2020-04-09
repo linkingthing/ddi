@@ -17,7 +17,9 @@ func SetHostIPs(confPath string) {
 		PromLocalInstance = conf.Localhost.IP + ":" + PromLocalPort
 	}
 	KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
+
 	DHCPGrpcServer = conf.Server.DHCPGrpc
+	Dhcpv4AgentAddr = conf.Server.DHCPGrpc
 	/*IsController = conf.Localhost.IsController
 	IsDHCP = conf.Localhost.IsDHCP
 	IsDNS = conf.Localhost.IsDNS*/
@@ -28,7 +30,6 @@ func SetHostIPs(confPath string) {
 	log.Println("in common.go, utils.KafkaServerProm ip: ", KafkaServerProm)
 	log.Println("in common.go, utils.PromLocalInstance ip: ", PromLocalInstance)
 	log.Println("in common.go, utils.DHCPGrpc ip: ", DHCPGrpcServer)
-
 }
 
 func Cmd(command string) (string, error) {

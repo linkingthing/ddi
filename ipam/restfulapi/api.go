@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"io/ioutil"
+	"log"
+	"math"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -15,9 +19,6 @@ import (
 	res "github.com/linkingthing/ddi/ipam"
 	goresterr "github.com/zdnscloud/gorest/error"
 	"github.com/zdnscloud/gorest/resource"
-	"io/ioutil"
-	"log"
-	"math"
 )
 
 var (
@@ -66,7 +67,6 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 	r := ctx.Resource
 	dividedAddressData, _ := r.GetAction().Input.(*res.DividedAddressData)
 
-	log.Println("in Action, r.id: ", r.GetID())
 	log.Println("in Action, name: ", r.GetAction().Name)
 	log.Println("in Action, oper: ", dividedAddressData.Oper)
 	log.Println("in Action, data: ", dividedAddressData.Data)
@@ -103,16 +103,16 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 			//todo add one resv
 			changeData := dividedAddressData.Data
 			log.Println("in Action,changeData.IpAddress:", changeData.IpAddress)
-			if len(changeData.CircuitId) > 0 || len(changeData.HwAddress) > 0 {
+			if len(changeData.CircuitId) == 0 && len(changeData.HwAddress) == 0 {
 				//get subnetv4Id and build one restReservation object
 				subnetv4Id := changeData.Subnetv4Id
-				var restRsv *dhcprest.RestReservation
+				var restRsv dhcprest.RestReservation
 				restRsv.Duid = changeData.Duid
 				restRsv.Hostname = changeData.Hostname
 				restRsv.ClientId = changeData.ClientId
 				restRsv.IpAddress = changeData.IpAddress
 
-				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, restRsv); err != nil {
+				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
 					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
 					log.Println("newly created ormRsv.ID:", ormRsv.ID)
 					restRsv := dhcprest.ConvertReservationFromOrmToRest(&ormRsv)
@@ -121,7 +121,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 				}
 
 			} else {
-				log.Println("change to stable IP error, need CirtcuitId or HwAddress")
+				log.Println("change to reserv IP error, CirtcuitId or HwAddress should not exist")
 				return nil, nil
 			}
 		}
