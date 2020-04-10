@@ -2,6 +2,7 @@ package dhcprest
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -103,6 +104,10 @@ type RestPool struct {
 	EndAddress            string       `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	MaxValidLifetime      int          `json:"maxValidLifetime,omitempty"`
 	ValidLifetime         int          `json:"validLifetime,omitempty"`
+	Total                 uint32       `json:"total"`
+	Usage                 float32      `json:"usage"`
+	AddressType           string       `json:"addressType"`
+	PoolName              string       `json:"poolName"`
 }
 
 //type Subnetv4 struct {
@@ -361,13 +366,37 @@ func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 			BeginAddress: v.BeginAddress,
 			EndAddress:   v.EndAddress,
 		}
+		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
 		restP.ID = strconv.Itoa(int(v.ID))
+
+		// todo get usage of a pool, (put it to somewhere)
+
+		restP.Usage = 15.32
+		restP.AddressType = "resv"
+		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
+
 		restPs = append(restPs, &restP)
+
 	}
 
 	return restPs
 }
 
+func backtoIP4(ipInt int64) string {
+
+	// need to do two bit shifting and “0xff” masking
+	b0 := strconv.FormatInt((ipInt>>24)&0xff, 10)
+	b1 := strconv.FormatInt((ipInt>>16)&0xff, 10)
+	b2 := strconv.FormatInt((ipInt>>8)&0xff, 10)
+	b3 := strconv.FormatInt((ipInt & 0xff), 10)
+	return b0 + "." + b1 + "." + b2 + "." + b3
+}
+func ipv42Long(ip string) uint32 {
+	var long uint32
+	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
+	return long
+}
 func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubnetv4 {
 
 	v4 := &RestSubnetv4{}
