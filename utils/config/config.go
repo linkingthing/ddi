@@ -67,6 +67,7 @@ type ServerConf struct {
 	Prometheus PrometheusConf `yaml:"prometheus"`
 	Agent      string         `yaml:"agent"`
 	DHCPGrpc   string         `yaml:"dhcpgrpc"`
+	GrpcPort   string         `yaml:"grpcport"`
 }
 
 type VanguardConf struct {

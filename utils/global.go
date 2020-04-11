@@ -22,4 +22,5 @@ var (
 	DHCPGrpcServer  = ""
 	Dhcpv4AgentAddr = "localhost:8898"
 	Dhcpv6AgentAddr = "localhost:8899"
+	GrpcServer      = "127.0.0.1:8888"
 )

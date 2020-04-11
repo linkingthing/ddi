@@ -1445,6 +1445,8 @@ func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
 		if len(many) >= 1 {
 			id = strconv.Itoa(int(many[0].ID))
 			one = many[0]
+		} else {
+			return nil, nil
 		}
 	} else {
 		if err := handler.db.First(&one, id).Error; err != nil {
@@ -1453,10 +1455,7 @@ func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
 			}
 		}
 	}
-	if len(many) == 0 {
-		return nil, nil
-	}
-	data.ID = id
+	data.ID = strconv.Itoa(int(one.ID))
 	data.Name = one.Name
 	data.BeginSubnet = one.BeginSubnet
 	data.EndSubnet = one.EndSubnet

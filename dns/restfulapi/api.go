@@ -82,6 +82,18 @@ func (z Zone) CreateAction(name string) *resource.Action {
 	}
 }
 
+func (z Zone) GetActions() []resource.Action {
+	var actions []resource.Action
+	var action resource.Action
+	action = resource.Action{
+		Name:   "forward",
+		Input:  &ForwardData{},
+		Output: &ForwardData{},
+	}
+	actions = append(actions, action)
+	return actions
+}
+
 type ForwardData struct {
 	resource.ResourceBase `json:",inline"`
 	Oper                  string   `json:"oper" rest:"required=true,minLen=1,maxLen=20"`

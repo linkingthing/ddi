@@ -16,6 +16,8 @@ import (
 	"github.com/linkingthing/ddi/utils/grpcserver"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
+	"io/ioutil"
+	"strconv"
 )
 
 const (
@@ -68,12 +70,13 @@ const (
 )
 
 var (
-	kafkaServer     = "localhost:9092"
-	dnsTopic        = "dns"
-	kafkaWriter     *kg.Writer
-	kafkaReader     *kg.Reader
-	address         = "localhost:8888"
-	dnsExporterPort = "8001"
+	kafkaServer           = "localhost:9092"
+	dnsTopic              = "dns"
+	kafkaWriter           *kg.Writer
+	kafkaReader           *kg.Reader
+	dnsExporterPort             = "8001"
+	KafkaOffsetFileDhcpv4       = "/tmp/kafka-offset-dhcpv4.txt" // store kafka offset num into this file
+	KafkaOffsetDhcpv4     int64 = 0
 )
 
 func main() {
@@ -96,7 +99,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(utils.GrpcServer, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
@@ -306,8 +309,18 @@ func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 		Brokers: []string{kafkaServer},
 		Topic:   dhcp.Dhcpv4Topic,
 	})
+	var KafkaOffsetDhcpv4 int64
+	size, err := ioutil.ReadFile(KafkaOffsetFileDhcpv4)
+	if err == nil {
+		offset, err2 := strconv.Atoi(string(size))
+		if err2 != nil {
+			log.Println(err2)
+		}
+		KafkaOffsetDhcpv4 = int64(offset)
+		kafkaReader.SetOffset(KafkaOffsetDhcpv4)
+	}
+	log.Println("kafka Offset: ", KafkaOffsetDhcpv4)
 	var message kg.Message
-	var err error
 	for {
 		message, err = kafkaReader.ReadMessage(context.Background())
 		if err != nil {
@@ -315,6 +328,16 @@ func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 			return
 		}
 
+		//store curOffset into KafkaOffsetFile
+		curOffset := kafkaReader.Stats().Offset
+		if curOffset > KafkaOffsetDhcpv4 {
+			KafkaOffsetDhcpv4 = curOffset
+			byteOffset := []byte(strconv.Itoa(int(curOffset)))
+			err = ioutil.WriteFile(KafkaOffsetFileDhcpv4, byteOffset, 0644)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		switch string(message.Key) {
 		case StartDHCPv4:
 			var target pb.StartDHCPv4Req
