@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"time"
 
+	"log"
+	"strconv"
+	"strings"
+
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	goresterr "github.com/zdnscloud/gorest/error"
 	"github.com/zdnscloud/gorest/resource"
-	"log"
-	"strconv"
-	"strings"
 )
 
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
@@ -34,7 +35,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
 	}
 
 	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv4)
-	s4, err := PGDBConn.CreateSubnetv4(subnetv4.Name, subnetv4.Subnet, subnetv4.ValidLifetime)
+	s4, err := PGDBConn.CreateSubnetv4(subnetv4)
 	if err != nil {
 		return err
 	}
@@ -233,6 +234,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 
 		subnet.SubnetTotal = "0"
 		subnet.SubnetUsage = "0.0"
+
 		//subnet.Name = ""
 		if _, ok := getUsages[v.Subnet]; ok {
 			//存在

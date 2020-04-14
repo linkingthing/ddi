@@ -160,6 +160,84 @@ func (service *DHCPv6Service) StopDHCPv6(content context.Context, req *pb.StopDH
 		return &pb.OperResult{RetCode: opSuccess}, nil
 	}
 }
+
+func (service *DHCPv6Service) CreateSubnetv6(context context.Context, req *pb.CreateSubnetv6Req) (*pb.OperResult, error) {
+	log.Println("into dhcp/server/service.go CreateSubnetv6()")
+	err := service.handler.CreateSubnetv6(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DHCPv6Service) UpdateSubnetv6(context context.Context, req *pb.UpdateSubnetv6Req) (*pb.OperResult, error) {
+	err := service.handler.UpdateSubnetv6(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DHCPv6Service) DeleteSubnetv6(context context.Context, req *pb.DeleteSubnetv6Req) (*pb.OperResult, error) {
+	err := service.handler.DeleteSubnetv6(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
+func (service *DHCPv6Service) CreateSubnetv6Pool(context context.Context, req *pb.CreateSubnetv6PoolReq) (*pb.OperResult, error) {
+	err := service.handler.CreateSubnetv6Pool(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
+func (service *DHCPv6Service) UpdateSubnetv6Pool(context context.Context, req *pb.UpdateSubnetv6PoolReq) (*pb.OperResult, error) {
+	err := service.handler.UpdateSubnetv6Pool(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DHCPv6Service) DeleteSubnetv6Pool(context context.Context, req *pb.DeleteSubnetv6PoolReq) (*pb.OperResult, error) {
+	err := service.handler.DeleteSubnetv6Pool(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
+func (service *DHCPv6Service) CreateSubnetv6Reservation(context context.Context, req *pb.CreateSubnetv6ReservationReq) (*pb.OperResult, error) {
+	err := service.handler.CreateSubnetv6Reservation(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DHCPv6Service) UpdateSubnetv6Reservation(context context.Context, req *pb.UpdateSubnetv6ReservationReq) (*pb.OperResult, error) {
+	err := service.handler.UpdateSubnetv6Reservation(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+func (service *DHCPv6Service) DeleteSubnetv6Reservation(context context.Context, req *pb.DeleteSubnetv6ReservationReq) (*pb.OperResult, error) {
+	err := service.handler.DeleteSubnetv6Reservation(*req)
+	if err != nil {
+		return &pb.OperResult{RetCode: opFail, RetMsg: fmt.Sprintf("%s", err)}, err
+	} else {
+		return &pb.OperResult{RetCode: opSuccess}, nil
+	}
+}
+
 func (service *DHCPv6Service) Close() {
 	service.handler.Close()
 }

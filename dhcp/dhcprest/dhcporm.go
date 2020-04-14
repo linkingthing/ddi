@@ -56,7 +56,7 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.OrmOptionName{})
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv6{})
-	p.db.AutoMigrate(&dhcporm.Reservationv6{})
+	p.db.AutoMigrate(&dhcporm.OrmReservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
 	p.db.AutoMigrate(&dhcporm.AliveAddress{})
 	p.db.AutoMigrate(&dhcporm.Ipv6PlanedAddrTree{})
@@ -85,6 +85,16 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 	for k, v := range subnetv4s {
 		//log.Println("k: ", k, ", v: ", v)
 		//log.Println("in Subnetv4List, v.ID: ", v.ID)
+		//if len(v.Gateway) > 0 {
+		//	option := dhcporm.Option{
+		//		Name: v.Name,
+		//		Data: v.Gateway,
+		//	}
+		//	options := []dhcporm.Option{}
+		//	options = append(options, option)
+		//	subnetv4s[k].Options = options
+		//	log.Println("options: ", options)
+		//}
 
 		rsv := []dhcporm.OrmReservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
@@ -117,20 +127,21 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 }
 
 //return (new inserted id, error)
-func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv4, error) {
-	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ", name, subnet, validLifetime)
+func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubnetv4, error) {
+	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ")
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:  1,
-		Name:          name,
-		Subnet:        subnet,
-		ValidLifetime: validLifetime,
+		Name:          restSubnetv4.Name,
+		Subnet:        restSubnetv4.Subnet,
+		ValidLifetime: restSubnetv4.ValidLifetime,
+		Gateway:       restSubnetv4.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
 	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
-		return s4, fmt.Errorf("create subnet error, subnet name: " + name)
+		return s4, fmt.Errorf("create subnet error, subnet name: " + restSubnetv4.Name)
 	}
 	var last dhcporm.OrmSubnetv4
 	query.Last(&last)
@@ -138,9 +149,10 @@ func (handler *PGDB) CreateSubnetv4(name string, subnet string, validLifetime st
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
-		Subnet:        subnet,
+		Subnet:        restSubnetv4.Subnet,
 		Id:            strconv.Itoa(int(last.ID)),
-		ValidLifetime: validLifetime,
+		ValidLifetime: restSubnetv4.ValidLifetime,
+		Gateway:       restSubnetv4.Gateway,
 	}
 	log.Println("pb.CreateSubnetv4Req req: ", req)
 
@@ -261,8 +273,11 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	for _, v := range newSubs {
 		log.Println("in for loop, v: ", v)
 
+		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
-		newS4, err = handler.CreateSubnetv4(v, v, "0")
+		restS4.Name = v
+		restS4.Subnet = v
+		newS4, err = handler.CreateSubnetv4(&restS4)
 		if err != nil {
 			log.Println("create subnetv4 error, ", err)
 			return ormS4s, err
@@ -326,7 +341,10 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 	log.Println("-- s4Objs: ", s4Objs)
 
 	// 2 create new subnet with subnet: newSubnet, if some properties will be heritated further, fill them
-	ormS4, err = handler.CreateSubnetv4(newSubnet, newSubnet, "0")
+	restS4 := RestSubnetv4{}
+	restS4.Name = newSubnet
+	restS4.Subnet = newSubnet
+	ormS4, err = handler.CreateSubnetv4(&restS4)
 	if err != nil {
 		log.Println("create subnetv4 error, ", err)
 		return &ormS4, err
@@ -643,6 +661,22 @@ func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 	if err := handler.db.Where("subnetv4_id = ?", subnetIdUint).Find(&ps).Error; err != nil {
 		return nil
 	}
+
+	////get the release address for the subnet
+	//leases := dhcpgrpc.GetLeases(subnetId)
+	//log.Println("in OrmPoolList, leases: ", leases)
+	//for _, l := range leases {
+	//	var macAddr string
+	//	for i := 0; i < len(l.HwAddress); i++ {
+	//		tmp := fmt.Sprintf("%d", l.HwAddress[i])
+	//		macAddr += tmp
+	//	}
+	//	log.Println("in OrmPoolList, macAddr: ", macAddr)
+	//
+	//	tmp := ipam.StatusAddress{MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
+	//	//allData[l.IpAddress] = tmp
+	//	log.Println("in OrmPoolList, tmp: ", tmp)
+	//}
 
 	for _, p := range ps {
 		p2 := p

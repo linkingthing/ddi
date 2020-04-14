@@ -129,6 +129,7 @@ type RestSubnetv4 struct {
 	Pools                 []*RestPool
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
+	Gateway               string `json:"gateway"`
 }
 
 func (s4 RestSubnetv4) GetActions() []resource.Action {
@@ -399,6 +400,7 @@ func ipv42Long(ip string) uint32 {
 }
 func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubnetv4 {
 
+	//log.Println("---into ConvertSubnetv4FromOrmToRest")
 	v4 := &RestSubnetv4{}
 	v4.SetID(strconv.Itoa(int(v.ID)))
 	v4.Subnet = v.Subnet
@@ -407,6 +409,9 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.ValidLifetime = v.ValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+
+	v4.Gateway = v.Gateway
+
 	return v4
 }
 func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
