@@ -57,7 +57,6 @@ func Dhcpv6Client() {
 	defer conn.Close()
 	cli := pb.NewDhcpv6ManagerClient(conn)
 
-	log.Println("dhcp.KafkaServer: ", dhcp.KafkaServer)
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{utils.KafkaServerProm},

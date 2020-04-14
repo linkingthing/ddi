@@ -62,7 +62,7 @@ func main() {
 	// end of dhcp model
 
 	dhcpv6 := dhcprest.NewDhcpv6(db)
-	schemas.MustImport(&version, dhcprest.Subnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
+	schemas.MustImport(&version, dhcprest.RestSubnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
 	subnetv6s := dhcprest.NewSubnetv6s(db)
 	schemas.MustImport(&version, dhcprest.RestPoolv6{}, dhcprest.NewPoolv6Handler(subnetv6s))
 

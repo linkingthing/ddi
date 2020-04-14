@@ -12,12 +12,12 @@ import (
 
 type Dhcpv6 struct {
 	db        *gorm.DB
-	subnetv6s []*Subnetv6
+	subnetv6s []*RestSubnetv6
 	lock      sync.Mutex
 }
 
 type Subnetv6s struct {
-	Subnetv6s []*Subnetv6
+	Subnetv6s []*RestSubnetv6
 	db        *gorm.DB
 }
 
@@ -74,7 +74,7 @@ func NewPoolv6Handler(s *Subnetv6s) *Poolv6Handler {
 	}
 }
 
-type Subnetv6 struct {
+type RestSubnetv6 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
@@ -103,9 +103,9 @@ func ConvertReservationv6sFromOrmToRest(rs []*dhcporm.OrmReservationv6) []*RestR
 	return restRs
 }
 
-func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *Subnetv6 {
+func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubnetv6 {
 
-	v6 := &Subnetv6{}
+	v6 := &RestSubnetv6{}
 	v6.SetID(strconv.Itoa(int(v.ID)))
 	v6.Subnet = v.Subnet
 	v6.ValidLifetime = v.ValidLifetime
