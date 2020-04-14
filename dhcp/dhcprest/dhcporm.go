@@ -644,6 +644,22 @@ func (handler *PGDB) OrmPoolList(subnetId string) []*dhcporm.Pool {
 		return nil
 	}
 
+	////get the release address for the subnet
+	//leases := dhcpgrpc.GetLeases(subnetId)
+	//log.Println("in OrmPoolList, leases: ", leases)
+	//for _, l := range leases {
+	//	var macAddr string
+	//	for i := 0; i < len(l.HwAddress); i++ {
+	//		tmp := fmt.Sprintf("%d", l.HwAddress[i])
+	//		macAddr += tmp
+	//	}
+	//	log.Println("in OrmPoolList, macAddr: ", macAddr)
+	//
+	//	tmp := ipam.StatusAddress{MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
+	//	//allData[l.IpAddress] = tmp
+	//	log.Println("in OrmPoolList, tmp: ", tmp)
+	//}
+
 	for _, p := range ps {
 		p2 := p
 		p2.ID = p.ID
