@@ -153,6 +153,11 @@ func main() {
 	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
 	//devidedAddressState := ipamapi.NewDividedAddressState()
 	//schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
+
+	dhcpv6 := dhcprest.NewDhcpv6(db)
+	schemas.MustImport(&version, dhcprest.RestSubnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
+	subnetv6s := dhcprest.NewSubnetv6s(db)
+	schemas.MustImport(&version, dhcprest.RestPoolv6{}, dhcprest.NewPoolv6Handler(subnetv6s))
 	// end of dhcp model
 
 	router := gin.Default()
