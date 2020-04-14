@@ -23,9 +23,11 @@ type OrmSubnetv4 struct {
 	//SubnetId        string          `gorm:"column:subnet_id"`
 	Subnet          string           `gorm:"column:subnet"`
 	ValidLifetime   string           `gorm:"column:valid_life_time"`
+	Options         []Option         `gorm:"foreignkey:Subnetv4ID"`
 	Reservations    []OrmReservation `gorm:"foreignkey:Subnetv4ID"`
 	Pools           []Pool           `gorm:"foreignkey:Subnetv4ID"`
 	ManualAddresses []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
+	Gateway         string           `gorm:"gateway"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
 type OrmSubnetv4Front struct {

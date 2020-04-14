@@ -80,12 +80,13 @@ message stopDHCPv4Req{
 }
 
 message CreateSubnetv4Req{
-    string      id          = 1;
-    string      subnet      = 2;
-    repeated    Option      options     = 3;
+    string      id                          = 1;
+    string      subnet                      = 2;
+    repeated    Option      options         = 3;
     repeated    Reservation reservations    = 4;
-    string      validLifetime = 5;
-    repeated    Pools pool = 6;
+    string      validLifetime               = 5;
+    repeated    Pools       pool            = 6;
+    string      gateway                     = 7;
 }
 
 message UpdateSubnetv4Req{

@@ -24,6 +24,7 @@ import (
 
 const (
 	DhcpHost        = "127.0.0.1"
+	DhcpHost31      = "10.0.0.31"
 	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
@@ -195,6 +196,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 
+	//log.Println("in GetDhcpv4config, getCmd: ", getCmd)
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
@@ -376,6 +378,18 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	newSubnet4.Pools = []Pool{}
 	//subnetv4 = append(subnetv4, newSubnet4)
 	//log.Println("---subnetv4: ", subnetv4)
+
+	log.Println("req.gateway: ", req.Gateway)
+	if len(req.Gateway) > 0 {
+		option := Option{
+			Name: "routers",
+			Data: req.Gateway,
+		}
+		options := []Option{}
+		options = append(options, option)
+		newSubnet4.OptionData = options
+		log.Println("new subnetv4 optionData: ", newSubnet4.OptionData)
+	}
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
 	//log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)

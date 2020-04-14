@@ -101,7 +101,7 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 }
 func (handler *KEAv6Handler) getv6Config(conf *ParseDhcpv6Config) error {
 	if len(KeaDhcpv4Conf) == 0 {
-		log.Print("KeaDhcpv4Conf is nil")
+		log.Print("KeaDhcpv6Conf is nil")
 		err := handler.GetDhcpv6Config(KEADHCPv4Service, conf)
 		if err != nil {
 			log.Print(err)
