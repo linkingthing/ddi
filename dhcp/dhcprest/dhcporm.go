@@ -56,7 +56,7 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.OrmOptionName{})
 
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv6{})
-	p.db.AutoMigrate(&dhcporm.Reservationv6{})
+	p.db.AutoMigrate(&dhcporm.OrmReservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
 	p.db.AutoMigrate(&dhcporm.AliveAddress{})
 	p.db.AutoMigrate(&dhcporm.Ipv6PlanedAddrTree{})
