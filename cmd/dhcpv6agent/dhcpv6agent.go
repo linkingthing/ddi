@@ -86,6 +86,35 @@ func Dhcpv6Client() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.CreateSubnetv6(context.Background(), &target)
+
+		case UpdateSubnetv6:
+			var target pb.UpdateSubnetv6Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.UpdateSubnetv6(context.Background(), &target)
+
+		case DeleteSubnetv6:
+			var target pb.DeleteSubnetv6Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.DeleteSubnetv6(context.Background(), &target)
+		case CreateSubnetv6Pool:
+			var target pb.CreateSubnetv6PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.CreateSubnetv6Pool(context.Background(), &target)
+
+		case UpdateSubnetv6Pool:
+			var target pb.UpdateSubnetv6PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.UpdateSubnetv6Pool(context.Background(), &target)
+
+		case DeleteSubnetv6Pool:
+			var target pb.DeleteSubnetv6PoolReq
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
+			}
+			cli.DeleteSubnetv6Pool(context.Background(), &target)
 		}
 	}
 }

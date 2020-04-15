@@ -19,7 +19,7 @@ type OrmSubnetv6 struct {
 	ValidLifetime  string              `gorm:"column:valid_life_time"`
 	Reservationv6s []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
 	Pools          []*Poolv6           `gorm:"foreignkey:Subnetv6ID"`
-	Gateway        string              `gorm:"gateway"`
+	//Gateway        string              `gorm:"gateway"`
 	//ManualAddresses []ManualAddress    `gorm:"foreignkey:Subnetv6ID"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }
@@ -50,8 +50,12 @@ type Poolv6 struct {
 	OptionData       []Option `json:"option-data"`
 	BeginAddress     string   `json:"begin-address"`
 	EndAddress       string   `json:"end-address"`
-	Subnetv6ID       uint     `sql:"type:integer REFERENCES subnetv6s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	Subnetv6ID       uint     `json:"subnetv6_id" sql:"type:integer REFERENCES subnetv6s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 	Pool             string   `json:"pool"`
 	MaxValidLifetime int      `json:"max-valid-lifetime"`
 	ValidLifetime    int      `json:"valid-lifetime"`
+}
+
+func (Poolv6) TableName() string {
+	return "poolv6s"
 }

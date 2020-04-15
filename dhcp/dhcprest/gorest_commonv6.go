@@ -50,7 +50,7 @@ type RestReservationv6 struct {
 
 type RestPoolv6 struct {
 	resource.ResourceBase `json:"embedded,inline"`
-	Subnetv4Id            string         `json:"subnetv4Id"`
+	Subnetv6Id            string         `json:"subnetv6Id"`
 	OptionData            []RestOptionv6 `json:"optionData"`
 	BeginAddress          string         `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	EndAddress            string         `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
@@ -65,6 +65,11 @@ type Poolv6Handler struct {
 	subnetv6s *Subnetv6s
 	db        *gorm.DB
 	lock      sync.Mutex
+}
+
+func (n RestPoolv6) GetParents() []resource.ResourceKind {
+	log.Println("dhcprest, into RestPoolv6 GetParents")
+	return []resource.ResourceKind{RestSubnetv6{}}
 }
 
 func NewPoolv6Handler(s *Subnetv6s) *Poolv6Handler {
@@ -84,7 +89,7 @@ type RestSubnetv6 struct {
 	Pools                 []*RestPoolv6
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
-	Gateway               string `json:"gateway"`
+	//Gateway               string `json:"gateway"`
 }
 
 //tools func
@@ -143,6 +148,25 @@ func ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
 func (r *Poolv6Handler) GetPoolv6s(subnetId string) []*RestPoolv6 {
 	list := PGDBConn.OrmPoolv6List(subnetId)
 	pool := ConvertPoolv6sFromOrmToRest(list)
+
+	return pool
+}
+func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
+	pool := &RestPool{}
+
+	if v == nil {
+		return pool
+	}
+
+	pool.SetID(strconv.Itoa(int(v.ID)))
+	pool.BeginAddress = v.BeginAddress
+	pool.EndAddress = v.EndAddress
+
+	return pool
+}
+func (r *Poolv6Handler) GetSubnetv6Pool(subnetId string, pool_id string) *RestPool {
+	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+	pool := r.convertSubnetv6PoolFromOrmToRest(orm)
 
 	return pool
 }
