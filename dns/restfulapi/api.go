@@ -3,13 +3,14 @@ package restfulapi
 import (
 	//"fmt"
 
+	"strconv"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	tb "github.com/linkingthing/ddi/dns/cockroachtables"
 	goresterr "github.com/zdnscloud/gorest/error"
 	"github.com/zdnscloud/gorest/resource"
-	"strconv"
 )
 
 var (

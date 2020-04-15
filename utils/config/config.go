@@ -2,9 +2,12 @@ package config
 
 import (
 	"errors"
-	//"flag"
+	"fmt"
+
 	"github.com/zdnscloud/cement/configure"
 	"gopkg.in/yaml.v2"
+
+	//"flag"
 	"io/ioutil"
 	"log"
 	"reflect"
@@ -98,6 +101,7 @@ func processTags(config interface{}) error {
 	}
 
 	typ := value.Type()
+	fmt.Println("type: ", typ)
 	for i := 0; i < typ.NumField(); i++ {
 		fieldType := typ.Field(i)
 		fieldValue := value.Field(i)

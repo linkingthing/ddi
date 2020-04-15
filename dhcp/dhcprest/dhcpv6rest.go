@@ -95,7 +95,7 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 	}
 
 	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv6)
-	s6, err := PGDBConn.CreateSubnetv6(subnetv6.Name, subnetv6.Subnet, subnetv6.ValidLifetime)
+	s6, err := PGDBConn.CreateSubnetv6(subnetv6)
 	if err != nil {
 		return err
 	}

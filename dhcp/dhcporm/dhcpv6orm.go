@@ -19,6 +19,7 @@ type OrmSubnetv6 struct {
 	ValidLifetime  string              `gorm:"column:valid_life_time"`
 	Reservationv6s []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
 	Pools          []*Poolv6           `gorm:"foreignkey:Subnetv6ID"`
+	Gateway        string              `gorm:"gateway"`
 	//ManualAddresses []ManualAddress    `gorm:"foreignkey:Subnetv6ID"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 }

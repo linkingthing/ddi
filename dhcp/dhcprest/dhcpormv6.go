@@ -59,20 +59,21 @@ func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
 }
 
 //return (new inserted id, error)
-func (handler *PGDB) CreateSubnetv6(name string, subnet string, validLifetime string) (dhcporm.OrmSubnetv6, error) {
-	log.Println("into CreateSubnetv6, name, subnet, validLifetime: ", name, subnet, validLifetime)
+func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error) {
+	log.Println("into CreateSubnetv6, name, subnet, validLifetime: ")
 	var s6 = dhcporm.OrmSubnetv6{
 		Dhcpv6ConfId:  1,
-		Name:          name,
-		Subnet:        subnet,
-		ValidLifetime: validLifetime,
+		Name:          s.Name,
+		Subnet:        s.Subnet,
+		ValidLifetime: s.ValidLifetime,
+		Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
 	query := handler.db.Create(&s6)
 
 	if query.Error != nil {
-		return s6, fmt.Errorf("create subnet error, subnet name: " + name)
+		return s6, fmt.Errorf("create subnet error, subnet name: ")
 	}
 	var last dhcporm.OrmSubnetv6
 	query.Last(&last)
@@ -80,9 +81,10 @@ func (handler *PGDB) CreateSubnetv6(name string, subnet string, validLifetime st
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv6Req{
-		Subnet:        subnet,
+		Subnet:        s.Subnet,
 		Id:            strconv.Itoa(int(last.ID)),
-		ValidLifetime: validLifetime,
+		ValidLifetime: s.ValidLifetime,
+		Gateway:       s.Gateway,
 	}
 	log.Println("pb.CreateSubnetv6Req req: ", req)
 
@@ -90,7 +92,7 @@ func (handler *PGDB) CreateSubnetv6(name string, subnet string, validLifetime st
 	if err != nil {
 		return last, err
 	}
-	dhcp.SendDhcpCmd(data, dhcpv6agent.CreateSubnetv6)
+	dhcp.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6)
 
 	log.Println(" in CreateSubnetv6, last: ", last)
 	return last, nil
