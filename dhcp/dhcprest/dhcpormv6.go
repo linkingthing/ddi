@@ -137,6 +137,41 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	return nil
 }
 
+func (handler *PGDB) DeleteSubnetv6(id string) error {
+	log.Println("into dhcprest DeleteSubnetv6, id ", id)
+
+	var ormS6 dhcporm.OrmSubnetv6
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormS6, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv6 with ID %s, %w", id, err)
+	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormS6.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormS6).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv4Req{Id: id, Subnet: ormS6.Subnet}
+	log.Println("DeleteSubnetv6() req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6); err != nil {
+		log.Println("SendCmdDhcpv6 error, ", err)
+		return err
+	}
+	tx.Commit()
+
+	return nil
+}
+
 // --- old
 func (handler *PGDB) GetSubnetv6(db *gorm.DB, id string) *dhcporm.OrmSubnetv6 {
 	dbId := ConvertStringToUint(id)

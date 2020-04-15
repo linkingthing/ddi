@@ -126,6 +126,23 @@ func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	return nil
 }
 
+func (s *Dhcpv6) DeleteSubnetv6(s6 *RestSubnetv6) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	log.Println("dhcp/dhcprest DeleteSubnetv4() subnetv4 id: ", s6.ID)
+	if c := s.getSubnetv6ById(s6.ID); c == nil {
+		return fmt.Errorf("subnet %s not exist", s6.Subnet)
+	}
+
+	err := PGDBConn.DeleteSubnetv6(s6.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (h *subnetv6Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go v6 Create")
 
@@ -153,6 +170,17 @@ func (h *subnetv6Handler) Update(ctx *resource.Context) (resource.Resource, *gor
 	return subnetv6, nil
 }
 
+func (h *subnetv6Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	log.Println("into dhcprest.go Delete")
+	subnetv6 := ctx.Resource.(*RestSubnetv6)
+
+	if err := h.subnetv6s.DeleteSubnetv6(subnetv6); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+
+}
+
 func (h *subnetv6Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into subnetv6Handler dhcprest.go List")
 
@@ -163,6 +191,7 @@ func (h *subnetv6Handler) Get(ctx *resource.Context) (resource.Resource, *gorest
 
 	return h.subnetv6s.GetSubnetv6(ctx.Resource.GetID()), nil
 }
+
 func (r *Poolv6Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go subnetv4PoolHandler List")
 	pool := ctx.Resource.(*RestPoolv6)
