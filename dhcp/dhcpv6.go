@@ -152,7 +152,7 @@ func (handler *KEAv6Handler) setDhcpv6Config(service string, conf *DHCPv6Conf) e
 		return err
 	}
 	if cmdRet.Result != 0 {
-		log.Println("set dhcpv4 config Error, err: ", cmdRet.Text)
+		log.Println("set dhcpv6 config Error, err: ", cmdRet.Text)
 		return fmt.Errorf(cmdRet.Text)
 	}
 	//log.Print(curlCmd)
