@@ -53,7 +53,7 @@ func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
 
 	subnetv6 := dhcporm.OrmSubnetv6{}
 	subnetv6.ID = dbId
-	handler.db.Preload("Reservations").First(&subnetv6)
+	handler.db.Preload("Reservationv6s").First(&subnetv6)
 
 	return &subnetv6
 }
@@ -66,7 +66,7 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 		Name:          s.Name,
 		Subnet:        s.Subnet,
 		ValidLifetime: s.ValidLifetime,
-		Gateway:       s.Gateway,
+		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -84,7 +84,7 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 		Subnet:        s.Subnet,
 		Id:            strconv.Itoa(int(last.ID)),
 		ValidLifetime: s.ValidLifetime,
-		Gateway:       s.Gateway,
+		//Gateway:       s.Gateway,
 	}
 	log.Println("pb.CreateSubnetv6Req req: ", req)
 
@@ -98,6 +98,45 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 	return last, nil
 }
 
+func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
+	log.Println("into dhcporm, OrmUpdateSubnetv6, Subnet: ", subnetv6.Subnet)
+
+	dbS6 := dhcporm.OrmSubnetv6{}
+	//dbS4.SubnetId = subnetv4.ID
+	dbS6.Subnet = subnetv6.Subnet
+	dbS6.Name = subnetv6.Name
+	dbS6.ValidLifetime = subnetv6.ValidLifetime
+	id, err := strconv.Atoi(subnetv6.ID)
+	if err != nil {
+		log.Println("subnetv6.ID error, id: ", subnetv6.ID)
+		return err
+	}
+	dbS6.ID = uint(id)
+
+	log.Println("begin to save db, dbS6.ID: ", dbS6.ID)
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&dbS6).Error; err != nil {
+		return err
+	}
+
+	//todo send kafka msg
+	req := pb.UpdateSubnetv6Req{Id: subnetv6.ID, Subnet: subnetv6.Subnet, ValidLifetime: subnetv6.ValidLifetime}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	log.Println("begin to call SendDhcpv6Cmd, update subnetv6")
+	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6); err != nil {
+		log.Println("SendCmdDhcpv6 error, ", err)
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
 // --- old
 func (handler *PGDB) GetSubnetv6(db *gorm.DB, id string) *dhcporm.OrmSubnetv6 {
 	dbId := ConvertStringToUint(id)
@@ -109,22 +148,23 @@ func (handler *PGDB) GetSubnetv6(db *gorm.DB, id string) *dhcporm.OrmSubnetv6 {
 	return &subnetv6
 }
 
-func (handler *PGDB) CreateSubnetv6Old(db *gorm.DB, name string, validLifetime string) error {
-	var subnet = dhcporm.OrmSubnetv6{
-		Dhcpv6ConfId:  1,
-		Subnet:        name,
-		ValidLifetime: validLifetime,
-		//DhcpVer:       Dhcpv4Ver,
-	}
-
-	query := db.Create(&subnet)
-
-	if query.Error != nil {
-		return fmt.Errorf("create subnet error, subnet name: " + name)
-	}
-
-	return nil
-}
+//
+//func (handler *PGDB) CreateSubnetv6Old(db *gorm.DB, name string, validLifetime string) error {
+//	var subnet = dhcporm.OrmSubnetv6{
+//		Dhcpv6ConfId:  1,
+//		Subnet:        name,
+//		ValidLifetime: validLifetime,
+//		//DhcpVer:       Dhcpv4Ver,
+//	}
+//
+//	query := db.Create(&subnet)
+//
+//	if query.Error != nil {
+//		return fmt.Errorf("create subnet error, subnet name: " + name)
+//	}
+//
+//	return nil
+//}
 
 func (handler *PGDB) OrmPoolv6List(subnetId string) []*dhcporm.Poolv6 {
 	log.Println("in dhcprest, OrmPoolv6List, subnetId: ", subnetId)

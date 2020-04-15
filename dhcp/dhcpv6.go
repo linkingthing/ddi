@@ -393,18 +393,6 @@ func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 	//subnetv4 = append(subnetv6, newSubnet4)
 	//log.Println("---subnetv6: ", subnetv6)
 
-	log.Println("req.gateway: ", req.Gateway)
-	if len(req.Gateway) > 0 {
-		option := Option{
-			Name: "routers",
-			Data: req.Gateway,
-		}
-		options := []Option{}
-		options = append(options, option)
-		newSubnet6.OptionData = options
-		log.Println("new subnetv6 optionData: ", newSubnet6.OptionData)
-	}
-
 	conf.Arguments.Dhcp6.Subnet6 = append(conf.Arguments.Dhcp6.Subnet6, newSubnet6)
 	//log.Println("---2 subnetv6: ", conf.Arguments.Dhcp6.Subnet6)
 	setErr := handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)

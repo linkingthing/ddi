@@ -72,17 +72,7 @@ func (s *Dhcpv6) GetSubnetv6s() []*RestSubnetv6 {
 	}
 	return v6
 }
-func (s *Dhcpv6) getSubnetv6BySubnet(subnet string) *RestSubnetv6 {
-	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.getSubnetv6BySubnet(subnet)
-	if v.ID == 0 {
-		return nil
-	}
-	v4 := s.ConvertSubnetv6FromOrmToRest(v)
-
-	return v4
-}
 func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 	log.Println("into CreateSubnetv6, subnetv6: ", subnetv6)
 
@@ -112,6 +102,30 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 	return nil
 }
 
+func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
+	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
+	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
+	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
+	log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv6.Subnet)
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if c := s.getSubnetv6ById(subnetv6.ID); c == nil {
+		return fmt.Errorf("subnet %s not exist", subnetv6.ID)
+	}
+
+	err := PGDBConn.OrmUpdateSubnetv6(subnetv6)
+	if err != nil {
+		return err
+	}
+
+	subnetv6.CreationTimestamp = resource.ISOTime(subnetv6.GetCreationTimestamp())
+	log.Println("subnetv4.CreationTimestamp ", subnetv6.CreationTimestamp)
+
+	return nil
+}
+
 func (h *subnetv6Handler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	log.Println("into dhcprest.go v6 Create")
 
@@ -123,6 +137,20 @@ func (h *subnetv6Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 	} else {
 		return subnetv6, nil
 	}
+}
+func (h *subnetv6Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into dhcprest.go Update")
+
+	subnetv6 := ctx.Resource.(*RestSubnetv6)
+	if err := h.subnetv6s.UpdateSubnetv6(subnetv6); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	if subnetv6.SubnetId == "" {
+		subnetv6.SubnetId = subnetv6.ID
+	}
+
+	return subnetv6, nil
 }
 
 func (h *subnetv6Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
@@ -146,3 +174,24 @@ func (r *Poolv6Handler) List(ctx *resource.Context) (interface{}, *goresterr.API
 //	pool := ctx.Resource.(*RestPool)
 //	return r.GetSubnetv4Pool(pool.GetParent().GetID(), pool.GetID()), nil
 //}
+func (s *Dhcpv6) getSubnetv6ById(id string) *RestSubnetv6 {
+
+	v := PGDBConn.GetSubnetv6ById(id)
+	if v.ID == 0 {
+		return nil
+	}
+
+	v4 := s.ConvertSubnetv6FromOrmToRest(v)
+	return v4
+}
+func (s *Dhcpv6) getSubnetv6BySubnet(subnet string) *RestSubnetv6 {
+	log.Println("In dhcprest getSubnetv6BySubnet, subnet: ", subnet)
+
+	v := PGDBConn.getSubnetv6BySubnet(subnet)
+	if v.ID == 0 {
+		return nil
+	}
+	v6 := s.ConvertSubnetv6FromOrmToRest(v)
+
+	return v6
+}

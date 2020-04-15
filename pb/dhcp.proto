@@ -180,7 +180,6 @@ message CreateSubnetv6Req{
     repeated    Reservation reservations    = 4;
     string      validLifetime   = 5;
     repeated    Pools    pool = 6;
-    string      gateway       = 7;
 }
 
 message UpdateSubnetv6Req{
