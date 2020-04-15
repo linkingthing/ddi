@@ -70,7 +70,12 @@ message Pools{
                 string validLifetime = 3;
                 string maxValidLifetime = 4;
 }
-
+message Poolv6s{
+    repeated    Option options  = 1;
+                string pool     = 2;
+                string validLifetime = 3;
+                string maxValidLifetime = 4;
+}
 message startDHCPv4Req{
     string      config      = 1;
 }

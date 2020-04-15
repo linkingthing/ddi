@@ -192,7 +192,7 @@ func (handler *KEAv6Handler) setDhcpv6Config(service string, conf *DHCPv6Conf) e
 
 func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) error {
 
-	log.Println("into dhcp.go, CreateSubnetv4Pool, req: ", req)
+	log.Println("into dhcp.go, CreateSubnetv6Pool, req: ", req)
 	var conf ParseDhcpv6Config
 	err := handler.getv6Config(&conf)
 	if err != nil {

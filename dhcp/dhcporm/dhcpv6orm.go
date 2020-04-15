@@ -50,8 +50,12 @@ type Poolv6 struct {
 	OptionData       []Option `json:"option-data"`
 	BeginAddress     string   `json:"begin-address"`
 	EndAddress       string   `json:"end-address"`
-	Subnetv6ID       uint     `sql:"type:integer REFERENCES subnetv6s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
+	Subnetv6ID       uint     `json:"subnetv6_id" sql:"type:integer REFERENCES subnetv6s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 	Pool             string   `json:"pool"`
 	MaxValidLifetime int      `json:"max-valid-lifetime"`
 	ValidLifetime    int      `json:"valid-lifetime"`
+}
+
+func (Poolv6) TableName() string {
+	return "poolv6s"
 }

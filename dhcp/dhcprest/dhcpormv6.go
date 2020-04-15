@@ -239,3 +239,75 @@ func (handler *PGDB) OrmPoolv6List(subnetId string) []*dhcporm.Poolv6 {
 
 	return poolv6s
 }
+func (handler *PGDB) OrmGetPoolv6(subnetId string, pool_id string) *dhcporm.Poolv6 {
+	log.Println("into rest OrmGetPoolv6, subnetId: ", subnetId, "pool_id: ", pool_id)
+	dbRsvId := ConvertStringToUint(pool_id)
+
+	poolv6 := dhcporm.Poolv6{}
+	if err := handler.db.First(&poolv6, int(dbRsvId)).Error; err != nil {
+		//fmt.Errorf("get reservation error, subnetId: ", subnetId, " reservation id: ", rsv_id)
+		return nil
+	}
+
+	return &poolv6
+}
+
+func (handler *PGDB) OrmCreatePoolv6(subnetv6_id string, r *RestPoolv6) (dhcporm.Poolv6, error) {
+	log.Println("into OrmCreatePoolv6, r: ", r, ", subnetv6_id: ", subnetv6_id)
+
+	sid, err := strconv.Atoi(subnetv6_id)
+	if err != nil {
+		log.Println("OrmCreatePoolv6, sid error: ", subnetv6_id)
+	}
+	var ormPoolv6 dhcporm.Poolv6
+	ormPoolv6 = dhcporm.Poolv6{
+		Subnetv6ID:       uint(sid),
+		BeginAddress:     r.BeginAddress,
+		EndAddress:       r.EndAddress,
+		OptionData:       []dhcporm.Option{},
+		ValidLifetime:    r.ValidLifetime,
+		MaxValidLifetime: r.MaxValidLifetime,
+	}
+
+	var pool = pb.Pools{
+		Pool:             r.BeginAddress + "-" + r.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(r.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(r.MaxValidLifetime),
+
+		//DhcpVer:       Dhcpv4Ver,
+	}
+
+	//get subnet by subnetv4_id
+	ormSubnetv6 := handler.GetSubnetv6ById(subnetv6_id)
+	s6Subnet := ormSubnetv6.Subnet
+
+	//todo: post kafka msg to dhcp agent
+	pools := []*pb.Pools{}
+	pools = append(pools, &pool)
+	req := pb.CreateSubnetv6PoolReq{
+		Id:               subnetv6_id,
+		Subnet:           s6Subnet,
+		Pool:             pools,
+		ValidLifetime:    pool.ValidLifetime,
+		MaxValidLifetime: pool.MaxValidLifetime,
+	}
+	log.Println("OrmCreatePool, req: ", req)
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return ormPoolv6, err
+	}
+	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6Pool); err != nil {
+		log.Println("SendCmdDhcpv6 error, ", err)
+		return ormPoolv6, err
+	}
+	//end of todo
+
+	query := handler.db.Create(&ormPoolv6)
+	if query.Error != nil {
+		return dhcporm.Poolv6{}, fmt.Errorf("CreatePool error, begin address: " +
+			r.BeginAddress + ", end adderss: " + r.EndAddress)
+	}
+
+	return ormPoolv6, nil
+}
