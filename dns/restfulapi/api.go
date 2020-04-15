@@ -1,8 +1,6 @@
 package restfulapi
 
 import (
-	//"fmt"
-
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
@@ -50,6 +48,7 @@ type View struct {
 type Zone struct {
 	resource.ResourceBase `json:",inline"`
 	Name                  string  `json:"name" rest:"required=true,minLen=1,maxLen=254"`
+	ZoneType              string  `json:"zonetype" rest:"required=true,options=master|forward"`
 	rRs                   []*RR   `json:"-"`
 	forwards              Forward `json:"-"`
 	RRSize                int     `json:"rrsize"`
@@ -301,8 +300,15 @@ func (h *zoneHandler) Delete(ctx *resource.Context) *goresterr.APIError {
 }
 
 func (h *zoneHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	filter := ctx.GetFilters()
 	zone := ctx.Resource.(*Zone)
-	return DBCon.GetZones(zone.GetParent().GetID()), nil
+	var zoneType string
+	if len(filter) == 0 {
+		zoneType = "master"
+	} else {
+		zoneType = filter[0].Values[0]
+	}
+	return DBCon.GetZones(zone.GetParent().GetID(), zoneType), nil
 }
 
 func (h *zoneHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {

@@ -254,6 +254,7 @@ func main() {
 		auth.POST("/apis/linkingthing.com/example/v1/deletesubtree", ipamapi.DeleteSubtree)
 		auth.GET("/apis/linkingthing.com/example/v1/getsubtree", ipamapi.GetSubtree)
 		auth.POST("/apis/linkingthing.com/example/v1/updatesubtree", ipamapi.UpdateSubtree)
+		auth.POST("/apis/linkingthing.com/example/v1/splitsubnet", ipamapi.SplitSubnet)
 	}
 	router.StaticFS("/public", http.Dir("/opt/website"))
 	go CheckValueDestroy()

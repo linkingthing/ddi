@@ -679,9 +679,12 @@ func (controller *DBController) CreateZone(zone *Zone, viewID string) (tb.Zone, 
 	if err := tx.First(&dbview, num).Error; err != nil {
 		return tb.Zone{}, err
 	}
-	one.ZoneFile = zone.Name + dbview.Name + ".zone"
+	if zone.ZoneType == "master" {
+		one.ZoneFile = zone.Name + dbview.Name + ".zone"
+	}
+	one.ZoneType = zone.ZoneType
 	var dbZones []tb.Zone
-	if err := tx.Where("name = ?", zone.Name).Find(&dbZones).Error; err != nil {
+	if err := tx.Where("name = ?", zone.Name).Where("view_id = ?", viewID).Where("zone_type = ?", zone.ZoneType).Find(&dbZones).Error; err != nil {
 		return tb.Zone{}, err
 	}
 	if len(dbZones) > 0 {
@@ -800,12 +803,12 @@ func (controller *DBController) GetZone(viewID string, id string) (*Zone, error)
 	return nil
 }*/
 
-func (controller *DBController) GetZones(viewID string) []*Zone {
+func (controller *DBController) GetZones(viewID string, zoneType string) []*Zone {
 	var zones []*Zone
 	var zoneDBs []tb.Zone
 	tx := controller.db.Begin()
 	defer tx.Rollback()
-	if err := tx.Where("view_id = ?", viewID).Find(&zoneDBs).Error; err != nil {
+	if err := tx.Where("view_id = ?", viewID).Where("zone_type = ?", zoneType).Find(&zoneDBs).Error; err != nil {
 		return nil
 	}
 	var err error

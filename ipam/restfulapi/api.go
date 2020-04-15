@@ -368,6 +368,35 @@ func GetSubtreeMember(c *gin.Context) {
 
 }
 
+func SplitSubnet(c *gin.Context) {
+	body, _ := ioutil.ReadAll(c.Request.Body)
+	p := &res.SplitSubnet{}
+	err := json.Unmarshal([]byte(body), p)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	if err := dhcprest.PGDBConn.DeleteSubtree(p.ID); err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	var ret *res.SplitSubnetResult
+	if ret, err = dhcprest.PGDBConn.SplitSubnet(p); err != nil {
+		fmt.Println(err)
+		c.JSON(500, "error")
+		return
+	}
+	data, err := json.Marshal(ret)
+	if err != nil {
+		c.JSON(500, "error")
+		return
+	}
+	fmt.Fprintln(c.Writer, string(data))
+
+}
+
 //new resource subtree
 /*type subtreeHandler struct {
 	subtrees *SubtreeState

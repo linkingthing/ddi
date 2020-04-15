@@ -476,6 +476,9 @@ func (handler *BindHandler) CreateZone(req pb.CreateZoneReq) error {
 		return err
 	}
 	viewName := out["name"]
+	if req.ZoneFileName == "" { //zone file name is "" stands for the forward zone
+		return nil
+	}
 	if err := handler.rndcAddZone(req.ZoneName, req.ZoneFileName, string(viewName)); err != nil {
 		return err
 	}
@@ -497,6 +500,12 @@ func (handler *BindHandler) DeleteZone(req pb.DeleteZoneReq) error {
 	}
 	viewName := out["name"]
 	if err := handler.db.DeleteTable(kv.TableName(viewsPath + req.ViewID + zonesPath + req.ZoneID)); err != nil {
+		return nil
+	}
+	if string(zoneFile) == "" { // zone file equal "" stands for the forward zone.
+		if err := handler.rewriteNamedFile(); err != nil {
+			return err
+		}
 		return nil
 	}
 	if err := handler.rndcDelZone(string(zoneName), string(zoneFile), string(viewName)); err != nil {
@@ -955,6 +964,9 @@ func (handler *BindHandler) nzfsData() ([]nzfData, error) {
 			}
 			zoneName := Names["name"]
 			zoneFile := Names["zonefile"]
+			if string(zoneFile) == "" { //the type of the forward zone has no zone file.
+				continue
+			}
 			zone := Zone{Name: string(zoneName), ZoneFile: string(zoneFile)}
 			zones = append(zones, zone)
 		}
@@ -1062,6 +1074,9 @@ func (handler *BindHandler) zonesData() ([]zoneData, error) {
 			}
 			zoneName := names["name"]
 			zoneFile := names["zonefile"]
+			if string(zoneFile) == "" {
+				continue
+			}
 			rrTables, err := handler.tables(viewsPath + viewid + zonesPath + zoneID + rRsEndPath)
 			if err != nil {
 				return nil, err

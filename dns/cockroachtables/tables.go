@@ -6,10 +6,9 @@ import (
 
 type ACL struct {
 	gorm.Model
-	Name   string
-	IsUsed int
-	Views  []View `gorm:"many2many:view_acls;"`
-	IPs    []IP   `gorm:"foreignkey:ACLID"`
+	Name  string
+	Views []View `gorm:"many2many:view_acls;"`
+	IPs   []IP   `gorm:"foreignkey:ACLID"`
 	//SortLists []SortList `gorm:"many2many:sortlist_acls;"`
 }
 
@@ -22,7 +21,6 @@ type View struct {
 	gorm.Model
 	Name         string
 	Priority     int
-	IsUsed       int
 	ACLs         []ACL         `gorm:"many2many:view_acls;"`
 	Zones        []Zone        `gorm:"foreignkey:ViewID"`
 	Redirections []Redirection `gorm:"foreignkey:ViewID"`
@@ -34,7 +32,7 @@ type Zone struct {
 	Name        string
 	ZoneFile    string
 	ViewID      uint `sql:"type:integer REFERENCES views(id) on update cascade on delete cascade"`
-	IsUsed      int
+	ZoneType    string
 	IsForward   int
 	ForwardType string
 	RRs         []RR        `gorm:"foreignkey:ZoneID"`
@@ -47,7 +45,6 @@ type RR struct {
 	DataType string
 	TTL      uint
 	Value    string
-	IsUsed   int
 	ZoneID   uint `sql:"type:integer REFERENCES zones(id) on update cascade on delete cascade"`
 }
 

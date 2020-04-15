@@ -1519,3 +1519,8 @@ func (handler *PGDB) GetNextTree(p *[]ipam.Subtree, parentid uint) (int, error) 
 		return 0, nil
 	}
 }
+
+func (handler *PGDB) SplitSubnet(p *ipam.SplitSubnet) (*ipam.SplitSubnetResult, error) {
+	data := ipam.SplitSubnetResult{}
+	return &data, nil
+}

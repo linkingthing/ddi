@@ -57,6 +57,18 @@ type Subtree struct {
 	Nodes          []Subtree `json:"nodes"`
 }
 
+type SplitSubnet struct {
+	ID         string `json:"todeleteid"`
+	NameFirst  string `json:"namefirst"`
+	NameSecond string `json:"namesecond"`
+	Bitwith    byte   `json:"bitwith"`
+}
+
+type SplitSubnetResult struct {
+	First  Subtree `json:"firstnode"`
+	Second Subtree `json:"secondnode"`
+}
+
 type ChangeData struct {
 	Subnetv4Id string `json:"subnetv4Id,omitempty"`
 	CurrType   string `json:"currType,omitempty"`
