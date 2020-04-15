@@ -2,9 +2,11 @@ package config
 
 import (
 	"errors"
-	//"flag"
+
 	"github.com/zdnscloud/cement/configure"
 	"gopkg.in/yaml.v2"
+
+	//"flag"
 	"io/ioutil"
 	"log"
 	"reflect"

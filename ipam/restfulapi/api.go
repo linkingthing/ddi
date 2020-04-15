@@ -70,6 +70,11 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 	log.Println("in Action, name: ", r.GetAction().Name)
 	log.Println("in Action, oper: ", dividedAddressData.Oper)
 	log.Println("in Action, data: ", dividedAddressData.Data)
+
+	var restRet dhcprest.BaseJsonOptionName
+	restRet.Status = "200"
+	restRet.Message = "操作成功"
+
 	switch r.GetAction().Name {
 	case "change":
 		if dividedAddressData.Oper == "tostable" {
@@ -126,7 +131,8 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 			}
 		}
 	}
-	return nil, nil
+
+	return restRet, nil
 }
 
 type DividedAddressState struct {

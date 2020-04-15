@@ -26,6 +26,19 @@ service Dhcpv4Manager {
 service Dhcpv6Manager {
     rpc StartDHCPv6(startDHCPv6Req) returns (OperResult){}
     rpc StopDHCPv6(stopDHCPv6Req)   returns (OperResult){}
+
+    rpc CreateSubnetv6(CreateSubnetv6Req)   returns (OperResult){}
+    rpc UpdateSubnetv6(UpdateSubnetv6Req)   returns (OperResult){}
+    rpc DeleteSubnetv6(DeleteSubnetv6Req)   returns (OperResult){}
+
+    rpc CreateSubnetv6Pool(CreateSubnetv6PoolReq)   returns (OperResult){}
+    rpc UpdateSubnetv6Pool(UpdateSubnetv6PoolReq)   returns (OperResult){}
+    rpc DeleteSubnetv6Pool(DeleteSubnetv6PoolReq)   returns (OperResult){}
+
+    rpc CreateSubnetv6Reservation(CreateSubnetv6ReservationReq)   returns (OperResult){}
+    rpc UpdateSubnetv6Reservation(UpdateSubnetv6ReservationReq)   returns (OperResult){}
+    rpc DeleteSubnetv6Reservation(DeleteSubnetv6ReservationReq)   returns (OperResult){}
+
 }
 
 message Option{
@@ -67,12 +80,13 @@ message stopDHCPv4Req{
 }
 
 message CreateSubnetv4Req{
-    string      id          = 1;
-    string      subnet      = 2;
-    repeated    Option      options     = 3;
+    string      id                          = 1;
+    string      subnet                      = 2;
+    repeated    Option      options         = 3;
     repeated    Reservation reservations    = 4;
-    string      validLifetime = 5;
-    repeated    Pools pool = 6;
+    string      validLifetime               = 5;
+    repeated    Pools       pool            = 6;
+    string      gateway                     = 7;
 }
 
 message UpdateSubnetv4Req{
@@ -113,7 +127,6 @@ message DeleteSubnetv4PoolReq{
     string  subnet  = 1;
     string  pool    = 2;
 }
-
 
 message CreateSubnetv4ReservationReq{
     string  subnet  = 1;
@@ -167,6 +180,7 @@ message CreateSubnetv6Req{
     repeated    Reservation reservations    = 4;
     string      validLifetime   = 5;
     repeated    Pools    pool = 6;
+    string      gateway       = 7;
 }
 
 message UpdateSubnetv6Req{
@@ -188,8 +202,10 @@ message CreateSubnetv6PoolReq{
     string      id = 1;
     string      subnet = 2;
     repeated    Option options = 3;
-    repeated    Reservation reservs = 4;
+    repeated    Pools  pool = 4;
     string      validLifetime = 5;
+    string      maxValidLifetime = 6;
+    repeated    Reservation reservations    = 7;
 }
 
 message UpdateSubnetv6PoolReq{
@@ -245,4 +261,3 @@ int64 expire = 4;
 message GetLeasesResp{
         repeated Lease leases = 1;
 }
-

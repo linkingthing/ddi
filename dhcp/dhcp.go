@@ -24,6 +24,7 @@ import (
 
 const (
 	DhcpHost        = "127.0.0.1"
+	DhcpHost31      = "10.0.0.31"
 	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
@@ -89,26 +90,6 @@ type Dhcpv4Config struct {
 	ControlSocket ControlSocket  `json:"control-socket,omitempty"`
 	OptionData    []Option       `json:"option-data,omitempty"`
 	Subnet4       []SubnetConfig `json:"subnet4"`
-
-	//T1Percent json.Number `json:"t1-percent"`
-	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime,omitempty"`
-}
-
-type ParseDhcpv6Config struct {
-	Result    json.Number
-	Arguments DHCPv6Conf
-}
-type DHCPv6Conf struct {
-	Dhcp6 Dhcpv6Config
-}
-type Dhcpv6Config struct {
-	Authoritative bool   `json:"authoritative,omitempty"`
-	BootFileName  string `json:"boot-file-name,omitempty"`
-	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"control-socket,omitempty"`
-	OptionData    []Option       `json:"option-data,omitempty"`
-	Subnet6       []SubnetConfig `json:"subnet6,omitempty"`
 
 	//T1Percent json.Number `json:"t1-percent"`
 	//T2Percent json.Number `json:"t2-percent"`
@@ -183,12 +164,6 @@ type KEAv4Handler struct {
 	//ViewList     []View
 	//FreeACLList  map[string]ACL
 }
-type KEAv6Handler struct {
-	mu           sync.Mutex
-	ver          string
-	ConfigPath   string
-	MainConfName string
-}
 
 func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 	instance := &KEAv4Handler{ver: ver, ConfigPath: ConfPath}
@@ -203,12 +178,6 @@ func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 			log.Fatal(err)
 		}
 	}
-
-	return instance
-}
-func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
-
-	instance := &KEAv6Handler{ver: ver, ConfigPath: ConfPath}
 
 	return instance
 }
@@ -227,6 +196,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 
+	//log.Println("in GetDhcpv4config, getCmd: ", getCmd)
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
@@ -408,6 +378,18 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	newSubnet4.Pools = []Pool{}
 	//subnetv4 = append(subnetv4, newSubnet4)
 	//log.Println("---subnetv4: ", subnetv4)
+
+	log.Println("req.gateway: ", req.Gateway)
+	if len(req.Gateway) > 0 {
+		option := Option{
+			Name: "routers",
+			Data: req.Gateway,
+		}
+		options := []Option{}
+		options = append(options, option)
+		newSubnet4.OptionData = options
+		log.Println("new subnetv4 optionData: ", newSubnet4.OptionData)
+	}
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
 	//log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
@@ -851,49 +833,5 @@ func (handler *KEAv4Handler) GetLeases(req pb.GetLeasesReq) (*pb.GetLeasesResp, 
 }
 func (handler *KEAv4Handler) Close() {
 	handler.db.Close()
-
-}
-
-func (handler *KEAv6Handler) StartDHCPv6(req pb.StartDHCPv6Req) error {
-	startCmd := "nohup keactrl start -s " + KEADHCPv6Service + " >/dev/null 2>&1 &"
-
-	_, err := cmd(startCmd)
-	if err != nil {
-		logrus.Error("keactrl start -s kea-" + KEADHCPv6Service + " failed")
-		return err
-	}
-
-	time.Sleep(time.Second)
-	return nil
-}
-
-func (handler *KEAv6Handler) StopDHCPv6(req pb.StopDHCPv6Req) error {
-
-	stopCmd := "keactrl stop -s " + KEADHCPv6Service
-
-	ret, err := cmd(stopCmd)
-
-	if err != nil {
-		log.Printf("stopCmd ret: %s\n", ret)
-		return err
-	}
-
-	return nil
-}
-
-func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
-
-	return nil
-}
-
-func (handler *KEAv6Handler) UpdateSubnetv6(req pb.UpdateSubnetv6Req) error {
-	return nil
-}
-
-func (handler *KEAv6Handler) DeleteSubnetv6(req pb.DeleteSubnetv6Req) error {
-
-	return nil
-}
-func (handler *KEAv6Handler) Close() {
 
 }

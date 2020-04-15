@@ -2,22 +2,33 @@ package main
 
 import (
 	"context"
-	"os"
-	"time"
 
-	"github.com/ben-han-cn/cement/shell"
+	"github.com/linkingthing/ddi/utils/config"
+
+	"github.com/linkingthing/ddi/utils"
+
+	"log"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
-	"github.com/linkingthing/ddi/dhcp/service"
+	server "github.com/linkingthing/ddi/dhcp/service"
 	"github.com/linkingthing/ddi/pb"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
-	"log"
 )
 
 const (
-	StartDHCPv6 = "StartDHCPv6"
-	StopDHCPv6  = "StopDHCPv6"
+	StartDHCPv6               = "StartDHCPv6"
+	StopDHCPv6                = "StopDHCPv6"
+	CreateSubnetv6            = "CreateSubnetv6"
+	UpdateSubnetv6            = "UpdateSubnetv6"
+	DeleteSubnetv6            = "DeleteSubnetv6"
+	CreateSubnetv6Pool        = "CreateSubnetv6Pool"
+	UpdateSubnetv6Pool        = "UpdateSubnetv6Pool"
+	DeleteSubnetv6Pool        = "DeleteSubnetv6Pool"
+	CreateSubnetv6Reservation = "CreateSubnetv6Reservation"
+	UpdateSubnetv6Reservation = "UpdateSubnetv6Reservation"
+	DeleteSubnetv6Reservation = "DeleteSubnetv6Reservation"
 )
 
 var (
@@ -32,7 +43,8 @@ const (
 var dhcpv6Start bool = false
 
 func Dhcpv6Client() {
-	conn, err := grpc.Dial(dhcp.Dhcpv6AgentAddr, grpc.WithInsecure())
+	log.Println("in dhcpv6agent/agent.go, utils.KafkaServerProm: ", utils.KafkaServerProm)
+	conn, err := grpc.Dial(utils.Dhcpv6AgentAddr, grpc.WithInsecure())
 	if err != nil {
 		return
 	}
@@ -41,11 +53,11 @@ func Dhcpv6Client() {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{dhcp.KafkaServer},
+		Brokers: []string{utils.KafkaServerProm},
 		Topic:   dhcp.Dhcpv6Topic,
 	})
 	var message kg.Message
-	ticker := time.NewTicker(checkPeriod * time.Second)
+	//ticker := time.NewTicker(checkPeriod * time.Second)
 	quit := make(chan int)
 	for {
 		message, err = kafkaReader.ReadMessage(context.Background())
@@ -61,7 +73,7 @@ func Dhcpv6Client() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.StartDHCPv6(context.Background(), &target)
-			go KeepDhcpv6Alive(ticker, quit)
+			//go KeepDhcpv6Alive(ticker, quit)
 
 		case StopDHCPv6:
 			var target pb.StopDHCPv6Req
@@ -69,33 +81,52 @@ func Dhcpv6Client() {
 			}
 			cli.StopDHCPv6(context.Background(), &target)
 			quit <- 1
-
-		}
-	}
-}
-
-func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
-	for {
-		select {
-		case <-ticker.C:
-			if _, err := os.Stat("/root/keatest/" + "named.pid"); err == nil {
-				continue
+		case CreateSubnetv6:
+			var target pb.CreateSubnetv6Req
+			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
-			var param string = "-c" + "/root/keatest/" + "named.conf"
-			shell.Shell("named", param)
-
-		case <-quit:
-			return
+			cli.CreateSubnetv6(context.Background(), &target)
 		}
 	}
 }
+
+//func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
+//	for {
+//		select {
+//		case <-ticker.C:
+//			if _, err := os.Stat("/root/keatest/" + "named.pid"); err == nil {
+//				continue
+//			}
+//			var param string = "-c" + "/root/keatest/" + "named.conf"
+//			shell.Shell("named", param)
+//
+//		case <-quit:
+//			return
+//		}
+//	}
+//}
 
 func main() {
-	go Dhcpv6Client()
-	s, err := server.NewDHCPv6GRPCServer(dhcp.KEADHCPv6Service, dhcp.DhcpConfigPath, dhcp.Dhcpv6AgentAddr)
+	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
+	//yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	//if yamlConfig.Localhost.IsDHCP {
+	//	go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
+	//}
+	//log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
+	//if !yamlConfig.Localhost.IsController {
+	//	log.Println("begin to call node exporter")
+	//	go physicalMetrics.NodeExporter()
+	//}
+	s, err := server.NewDHCPv6GRPCServer(dhcp.KEADHCPv6Service, dhcp.DhcpConfigPath, utils.Dhcpv6AgentAddr)
 	if err != nil {
+
+		log.Fatal(err)
 		return
 	}
+	log.Println("begin to call dhcpv6client")
+
+	go Dhcpv6Client()
+
 	s.Start()
 	defer s.Stop()
 

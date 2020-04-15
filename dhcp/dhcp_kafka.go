@@ -42,6 +42,28 @@ func SendDhcpCmd(data []byte, cmd string) error {
 	return nil
 }
 
+func SendDhcpv6Cmd(data []byte, cmd string) error {
+	log.Println("into SendDhcpv6Cmd(), cmd: ", cmd)
+
+	KafkaServer = utils.KafkaServerProm
+	log.Println("after kafkaServer: ", KafkaServer)
+	var DhcpkafkaWriter *kg.Writer
+	DhcpkafkaWriter = kg.NewWriter(kg.WriterConfig{
+		Brokers: []string{KafkaServer},
+		Topic:   Dhcpv6Topic,
+	})
+
+	postData := kg.Message{
+		Key:   []byte(cmd),
+		Value: data,
+	}
+	if err := DhcpkafkaWriter.WriteMessages(context.Background(), postData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func produce(msg kg.Message) {
 	//log.Printf("into produce\n")
 	w := kg.NewWriter(kg.WriterConfig{
