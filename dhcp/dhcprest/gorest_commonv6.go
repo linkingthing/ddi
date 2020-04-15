@@ -84,6 +84,7 @@ type RestSubnetv6 struct {
 	Pools                 []*RestPoolv6
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
+	Gateway               string `json:"gateway"`
 }
 
 //tools func

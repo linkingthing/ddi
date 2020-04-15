@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -57,7 +58,7 @@ func NewKEAv6Handler(ver string, ConfPath string, addr string) *KEAv6Handler {
 	instance.db, err = gorm.Open("postgres", postgresqlAddress)
 	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
 	if yamlConfig.Localhost.IP == "10.0.0.55" {
-		log.Println("in NewKEAv4Handler, use db:  utils.DBAddr")
+		log.Println("in NewKEAv6Handler, use db:  utils.DBAddr")
 		instance.db, err = gorm.Open("postgres", utils.DBAddr)
 		if err != nil {
 			log.Fatal(err)
@@ -86,13 +87,13 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 	if err != nil {
 		return err
 	}
-	//log.Println("config json: ", configJson)
+	log.Println("dhcpv6 config json: ", configJson)
 	log.Println("dhcphost: ", DhcpHost)
 	log.Println("DhcpPort: ", DhcpPort)
 
-	KeaDhcpv4Conf = []byte(string(configJson[2 : len(configJson)-2]))
+	KeaDhcpv6Conf = []byte(string(configJson[2 : len(configJson)-2]))
 
-	err = json.Unmarshal(KeaDhcpv4Conf, conf)
+	err = json.Unmarshal(KeaDhcpv6Conf, conf)
 	if err != nil {
 		return err
 	}
@@ -102,25 +103,25 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 func (handler *KEAv6Handler) getv6Config(conf *ParseDhcpv6Config) error {
 	if len(KeaDhcpv4Conf) == 0 {
 		log.Print("KeaDhcpv6Conf is nil")
-		err := handler.GetDhcpv6Config(KEADHCPv4Service, conf)
+		err := handler.GetDhcpv6Config(KEADHCPv6Service, conf)
 		if err != nil {
 			log.Print(err)
 			return err
 		}
 	} else {
-		log.Print("KeaDhcpv4Conf is not nil")
+		log.Print("KeaDhcpv6Conf is not nil")
 		err := json.Unmarshal(KeaDhcpv4Conf, conf)
 		if err != nil {
 			return err
 		}
 	}
-	log.Println("in getv4Config, conf: ", conf)
+	log.Println("in getv6Config, conf: ", conf)
 	return nil
 }
 
 func (handler *KEAv6Handler) setDhcpv6Config(service string, conf *DHCPv6Conf) error {
 
-	log.Print("dhcp/dhcpv6.go, into setDhcpv6Config()")
+	log.Print("dhcp/dhcpv6.go, into setDhcpv6Config(), service: ", service)
 	//fmt.Printf("conf: %+v\n", conf)
 
 	handler.mu.Lock()
@@ -249,7 +250,7 @@ func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) er
 			//log.Println(conf.Arguments.Dhcp4)
 			//log.Println("end subnet\n")
 
-			err = handler.setDhcpv6Config(KEADHCPv4Service, &conf.Arguments)
+			err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
 			if err != nil {
 				return err
 			}
@@ -311,7 +312,7 @@ func (handler *KEAv6Handler) CreateSubnetv6Reservation2(req pb.CreateSubnetv6Res
 	log.Println("CreateSubnetv4Reservation begin subnet\n")
 	log.Println(conf.Arguments.Dhcp6.Subnet6)
 	log.Println("CreateSubnetv4Reservation end subnet\n")
-	err = handler.setDhcpv6Config(KEADHCPv4Service, &conf.Arguments)
+	err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
 	if err != nil {
 		return err
 	}
@@ -349,6 +350,67 @@ func (handler *KEAv6Handler) StopDHCPv6(req pb.StopDHCPv6Req) error {
 
 func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 
+	log.Println("into dhcp/dhcp.go CreateSubnetv6(), req.subnet: ", req.Subnet)
+	var conf ParseDhcpv6Config
+	if err := handler.getv6Config(&conf); err != nil {
+		return err
+	}
+
+	//var subnetv6 []SubnetConfig
+	var maxId int
+	for k, v := range conf.Arguments.Dhcp6.Subnet6 {
+		//log.Println("conf Subnet4: ", v.Subnet)
+		//log.Println("conf Subnet4 id: ", v.Id, ", maxId: ", maxId)
+		curId, err := strconv.Atoi(string(v.Id))
+		if err != nil {
+			return err
+		}
+		if curId >= maxId {
+			maxId = curId + 1
+		}
+		if v.ReservationMode == "" {
+			log.Println("reserationMode == nil, subnet: ", v.Subnet)
+			conf.Arguments.Dhcp6.Subnet6[k].ReservationMode = "all"
+		}
+		if v.Subnet == req.Subnet {
+			return fmt.Errorf(req.Subnet + " exists, return")
+		}
+		//subnetv6 = append(subnetv6, v)
+	}
+
+	newSubnet6 := SubnetConfig{
+		ReservationMode: "all",
+		Reservations:    []Reservation{},
+		OptionData:      []Option{},
+		Subnet:          req.Subnet,
+		ValidLifetime:   json.Number(req.ValidLifetime),
+		Id:              json.Number(strconv.Itoa(maxId)),
+		//Relay: SubnetRelay{
+		//	IpAddresses: []string{},
+		//},
+	}
+	newSubnet6.Pools = []Pool{}
+	//subnetv4 = append(subnetv6, newSubnet4)
+	//log.Println("---subnetv6: ", subnetv6)
+
+	log.Println("req.gateway: ", req.Gateway)
+	if len(req.Gateway) > 0 {
+		option := Option{
+			Name: "routers",
+			Data: req.Gateway,
+		}
+		options := []Option{}
+		options = append(options, option)
+		newSubnet6.OptionData = options
+		log.Println("new subnetv6 optionData: ", newSubnet6.OptionData)
+	}
+
+	conf.Arguments.Dhcp6.Subnet6 = append(conf.Arguments.Dhcp6.Subnet6, newSubnet6)
+	//log.Println("---2 subnetv6: ", conf.Arguments.Dhcp6.Subnet6)
+	setErr := handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
+	if setErr != nil {
+		return setErr
+	}
 	return nil
 }
 

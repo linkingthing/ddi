@@ -2,11 +2,6 @@ package main
 
 import (
 	"context"
-	"os"
-	"time"
-
-	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
-	"github.com/linkingthing/ddi/cmd/node"
 
 	"github.com/linkingthing/ddi/utils/config"
 
@@ -14,7 +9,6 @@ import (
 
 	"log"
 
-	"github.com/ben-han-cn/cement/shell"
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
 	server "github.com/linkingthing/ddi/dhcp/service"
@@ -63,7 +57,7 @@ func Dhcpv6Client() {
 		Topic:   dhcp.Dhcpv6Topic,
 	})
 	var message kg.Message
-	ticker := time.NewTicker(checkPeriod * time.Second)
+	//ticker := time.NewTicker(checkPeriod * time.Second)
 	quit := make(chan int)
 	for {
 		message, err = kafkaReader.ReadMessage(context.Background())
@@ -79,7 +73,7 @@ func Dhcpv6Client() {
 			if err := proto.Unmarshal(message.Value, &target); err != nil {
 			}
 			cli.StartDHCPv6(context.Background(), &target)
-			go KeepDhcpv6Alive(ticker, quit)
+			//go KeepDhcpv6Alive(ticker, quit)
 
 		case StopDHCPv6:
 			var target pb.StopDHCPv6Req
@@ -96,33 +90,33 @@ func Dhcpv6Client() {
 	}
 }
 
-func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
-	for {
-		select {
-		case <-ticker.C:
-			if _, err := os.Stat("/root/keatest/" + "named.pid"); err == nil {
-				continue
-			}
-			var param string = "-c" + "/root/keatest/" + "named.conf"
-			shell.Shell("named", param)
-
-		case <-quit:
-			return
-		}
-	}
-}
+//func KeepDhcpv6Alive(ticker *time.Ticker, quit chan int) {
+//	for {
+//		select {
+//		case <-ticker.C:
+//			if _, err := os.Stat("/root/keatest/" + "named.pid"); err == nil {
+//				continue
+//			}
+//			var param string = "-c" + "/root/keatest/" + "named.conf"
+//			shell.Shell("named", param)
+//
+//		case <-quit:
+//			return
+//		}
+//	}
+//}
 
 func main() {
 	utils.SetHostIPs(config.YAML_CONFIG_FILE) //set global vars from yaml conf
-	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
-	if yamlConfig.Localhost.IsDHCP {
-		go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
-	}
-	log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
-	if !yamlConfig.Localhost.IsController {
-		log.Println("begin to call node exporter")
-		go physicalMetrics.NodeExporter()
-	}
+	//yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	//if yamlConfig.Localhost.IsDHCP {
+	//	go node.RegisterNode("/etc/vanguard/vanguard.conf", "dhcp")
+	//}
+	//log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
+	//if !yamlConfig.Localhost.IsController {
+	//	log.Println("begin to call node exporter")
+	//	go physicalMetrics.NodeExporter()
+	//}
 	s, err := server.NewDHCPv6GRPCServer(dhcp.KEADHCPv6Service, dhcp.DhcpConfigPath, utils.Dhcpv6AgentAddr)
 	if err != nil {
 

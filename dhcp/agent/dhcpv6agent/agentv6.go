@@ -81,7 +81,7 @@ func Dhcpv6Client() {
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
 		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Topic:   dhcp.Dhcpv6Topic,
 	})
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)
@@ -92,7 +92,7 @@ func Dhcpv6Client() {
 			panic(err)
 			return
 		}
-		log.Println("Dhcpv4Client v6 message at offset %d: key: %s, value: %s\n", message.Offset,
+		log.Println("Dhcpv6Client v6 message at offset %d: key: %s, value: %s\n", message.Offset,
 			string(message.Key), string(message.Value))
 
 		switch string(message.Key) {
