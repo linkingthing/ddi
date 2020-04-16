@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+
 	"math"
 	"net"
 	"time"
@@ -180,6 +182,22 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return err
 	}
 	dbS4.ID = uint(id)
+
+	//added for new zone handler
+	if subnetv4.DnsEnable > 0 {
+		if len(subnetv4.ViewId) == 0 {
+			log.Println("Error viewId is null, return")
+			return fmt.Errorf("zone is enabled, viewId is null")
+		}
+		zone := dnsapi.Zone{Name: subnetv4.ZoneName, ZoneType: "master"}
+		log.Println("to create zone, name:", zone.Name)
+		dnsapi.DBCon.CreateZone(&zone, subnetv4.ViewId)
+
+		dbS4.ZoneName = subnetv4.ZoneName
+		dbS4.DhcpEnable = subnetv4.DhcpEnable
+		dbS4.DnsEnable = subnetv4.DnsEnable
+		dbS4.Notes = subnetv4.Notes
+	}
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
@@ -192,17 +210,17 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	}
 
 	//todo send kafka msg
-	req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
-	data, err := proto.Marshal(&req)
-	if err != nil {
-		log.Println("proto.Marshal error, ", err)
-		return err
-	}
-	log.Println("begin to call SendDhcpCmd, update subnetv4")
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
-		log.Println("SendCmdDhcpv4 error, ", err)
-		return err
-	}
+	//req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
+	//data, err := proto.Marshal(&req)
+	//if err != nil {
+	//	log.Println("proto.Marshal error, ", err)
+	//	return err
+	//}
+	//log.Println("begin to call SendDhcpCmd, update subnetv4")
+	//if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+	//	log.Println("SendCmdDhcpv4 error, ", err)
+	//	return err
+	//}
 
 	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
 	//}

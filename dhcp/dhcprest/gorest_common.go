@@ -130,6 +130,12 @@ type RestSubnetv4 struct {
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	Gateway               string `json:"gateway"`
+	//added for new zone handler
+	DhcpEnable int    `json:"dhcpEnable"`
+	DnsEnable  int    `json:"dnsEnable"`
+	ZoneName   string `json:"zoneName"`
+	ViewId     string `json:"viewId"`
+	Notes      string `json:"notes"`
 }
 
 func (s4 RestSubnetv4) GetActions() []resource.Action {
