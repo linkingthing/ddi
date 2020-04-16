@@ -264,22 +264,53 @@ func (r *Poolv6Handler) Create(ctx *resource.Context) (resource.Resource, *gores
 	return pool, nil
 }
 
-//func (r *Poolv6Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
-//	log.Println("into rest pool Update")
-//
-//	pool := ctx.Resource.(*RestPool)
-//	if err := r.UpdatePool(pool); err != nil {
-//		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
-//	}
-//
-//	return pool, nil
-//}
-//func (r *Poolv6Handler) Delete(ctx *resource.Context) *goresterr.APIError {
-//	pool := ctx.Resource.(*RestPool)
-//
-//	if err := r.DeletePool(pool); err != nil {
-//		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
-//	}
-//	return nil
-//
-//}
+func (r *Poolv6Handler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	log.Println("into rest pool Update")
+
+	pool := ctx.Resource.(*RestPoolv6)
+	if err := r.UpdatePoolv6(pool); err != nil {
+		return nil, goresterr.NewAPIError(goresterr.DuplicateResource, err.Error())
+	}
+
+	return pool, nil
+}
+func (r *Poolv6Handler) Delete(ctx *resource.Context) *goresterr.APIError {
+	pool := ctx.Resource.(*RestPoolv6)
+
+	if err := r.DeletePoolv6(pool); err != nil {
+		return goresterr.NewAPIError(goresterr.ServerError, err.Error())
+	}
+	return nil
+
+}
+
+func (r *Poolv6Handler) UpdatePoolv6(pool *RestPoolv6) error {
+	log.Println("into UpdatePoolv6")
+	log.Println(pool)
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	subnetId := pool.GetParent().GetID()
+	log.Println("+++subnetId")
+	log.Println(subnetId)
+	err := PGDBConn.OrmUpdatePoolv6(subnetId, pool)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (r *Poolv6Handler) DeletePoolv6(pool *RestPoolv6) error {
+	log.Println("into DeletePool, pool.ID: ", pool.ID)
+	//log.Println(pool)
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	err := PGDBConn.OrmDeletePoolv6(pool.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

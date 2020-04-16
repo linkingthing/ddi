@@ -16,6 +16,15 @@ import (
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 )
 
+func (handler *PGDB) GetSubnetv6ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv6 {
+	log.Println("in GetSubnetv6ByName, name: ", name)
+
+	var subnetv6 dhcporm.OrmSubnetv6
+	db.Where(&dhcporm.OrmSubnetv6{Subnet: name}).Find(&subnetv6)
+
+	return &subnetv6
+}
+
 func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
 	var subnetv6s []dhcporm.OrmSubnetv6
 
@@ -310,4 +319,110 @@ func (handler *PGDB) OrmCreatePoolv6(subnetv6_id string, r *RestPoolv6) (dhcporm
 	}
 
 	return ormPoolv6, nil
+}
+
+func (handler *PGDB) OrmUpdatePoolv6(subnetv6_id string, r *RestPoolv6) error {
+
+	log.Println("into dhcporm, OrmUpdatePool, id: ", r.GetID())
+
+	//get subnetv4 name
+	s6 := handler.GetSubnetv6ById(subnetv6_id)
+	subnetName := s6.Subnet
+
+	//oldPoolName := r.BeginAddress + "-" + r.EndAddress
+	//search subnet, if not exist, return error
+	oldPoolObj := handler.OrmGetPoolv6(subnetv6_id, r.GetID())
+	if oldPoolObj == nil {
+		return fmt.Errorf("Pool not exists, return")
+	}
+	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
+
+	ormPool := dhcporm.Poolv6{}
+	ormPool.ID = ConvertStringToUint(r.GetID())
+	ormPool.BeginAddress = r.BeginAddress
+	ormPool.EndAddress = r.EndAddress
+	ormPool.Subnetv6ID = ConvertStringToUint(subnetv6_id)
+	ormPool.ValidLifetime = r.ValidLifetime
+	ormPool.MaxValidLifetime = r.MaxValidLifetime
+
+	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv6id: ", ormPool.Subnetv6ID)
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormPool).Error; err != nil {
+		return err
+	}
+	//todo send kafka msg
+	req := pb.UpdateSubnetv6PoolReq{
+		Oldpool:          oldPoolName,
+		Subnet:           subnetName,
+		Pool:             ormPool.BeginAddress + "-" + ormPool.EndAddress,
+		Options:          []*pb.Option{},
+		ValidLifetime:    strconv.Itoa(ormPool.ValidLifetime),
+		MaxValidLifetime: strconv.Itoa(ormPool.MaxValidLifetime),
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	log.Println("begin to call SendDhcpv6Cmd, update subnetv4 pool, req: ", req)
+	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6Pool); err != nil {
+		log.Println("SendDhcpv6Cmd error, ", err)
+		return err
+	}
+
+	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
+	//}
+	//end of todo
+	//db.Model(subnet).Update(ormS4)
+
+	tx.Commit()
+	return nil
+	//db.Model(&ormPool).Updates(&ormPool)
+
+	return nil
+}
+
+func (handler *PGDB) OrmDeletePoolv6(id string) error {
+	log.Println("into dhcprest OrmDeletePoolv6, id ", id)
+
+	var ormSubnetv6 dhcporm.OrmSubnetv6
+	var ormPool dhcporm.Poolv6
+
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+
+	if err := tx.First(&ormPool, id).Error; err != nil {
+		return fmt.Errorf("unknown subnetv6pool with ID %s, %w", id, err)
+	}
+	log.Println("subnetv6 id: ", ormPool.Subnetv6ID)
+
+	if err := tx.First(&ormSubnetv6, ormPool.Subnetv6ID).Error; err != nil {
+		return fmt.Errorf("unknown subnetv6 with ID %s, %w", ormPool.Subnetv6ID, err)
+	}
+	num, err := strconv.Atoi(id)
+	if err != nil {
+		return err
+	}
+	ormPool.ID = uint(num)
+
+	if err := tx.Unscoped().Delete(&ormPool).Error; err != nil {
+		return err
+	}
+	req := pb.DeleteSubnetv6PoolReq{
+		Subnet: ormSubnetv6.Subnet,
+		Pool:   ormPool.BeginAddress + "-" + ormPool.EndAddress,
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6Pool); err != nil {
+		log.Println("SendDhcpv6Cmd error, ", err)
+		return err
+	}
+	tx.Commit()
+
+	return nil
 }
