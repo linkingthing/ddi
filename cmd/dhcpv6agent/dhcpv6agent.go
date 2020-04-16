@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
+	"strconv"
 
 	"github.com/linkingthing/ddi/utils/config"
 
@@ -41,6 +43,8 @@ const (
 )
 
 var dhcpv6Start bool = false
+var KafkaOffsetFileDhcpv6 = "/tmp/kafka-offset-dhcpv6.txt" // store kafka offset num into this file
+var KafkaOffsetDhcpv6 int64 = 0
 
 func Dhcpv6Client() {
 	log.Println("in dhcpv6agent/agent.go, utils.KafkaServerProm: ", utils.KafkaServerProm)
@@ -56,6 +60,19 @@ func Dhcpv6Client() {
 		Brokers: []string{utils.KafkaServerProm},
 		Topic:   dhcp.Dhcpv6Topic,
 	})
+
+	var KafkaOffsetDhcpv6 int64
+	size, err := ioutil.ReadFile(KafkaOffsetFileDhcpv6)
+	if err == nil {
+		offset, err2 := strconv.Atoi(string(size))
+		if err2 != nil {
+			log.Println(err2)
+		}
+		KafkaOffsetDhcpv6 = int64(offset)
+		kafkaReader.SetOffset(KafkaOffsetDhcpv6)
+	}
+	log.Println("kafka Offset: ", KafkaOffsetDhcpv6)
+
 	var message kg.Message
 	//ticker := time.NewTicker(checkPeriod * time.Second)
 	quit := make(chan int)
@@ -67,6 +84,16 @@ func Dhcpv6Client() {
 		}
 		log.Println("v6 message at offset %d: key: %s, value: %s\n", message.Offset, string(message.Key), string(message.Value))
 
+		//store curOffset into KafkaOffsetFile
+		curOffset := kafkaReader.Stats().Offset
+		if curOffset > KafkaOffsetDhcpv6 {
+			KafkaOffsetDhcpv6 = curOffset
+			byteOffset := []byte(strconv.Itoa(int(curOffset)))
+			err = ioutil.WriteFile(KafkaOffsetFileDhcpv6, byteOffset, 0644)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 		switch string(message.Key) {
 		case StartDHCPv6:
 			var target pb.StartDHCPv6Req
