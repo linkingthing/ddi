@@ -69,12 +69,7 @@ func GetKeaStatisticsAll() *CurlKeaStatsAll {
 	log.Println("in GetKeaStatisticsAll, keaServer: " + utils.KeaServer)
 	url := "http://" + dhcp.DhcpHost + ":" + dhcp.DhcpPort
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
-		`   {
-                "command": "statistic-get-all",
-                "service": ["dhcp4"],
-                "arguments": { }
-	        }
-	        ' 2>/dev/null`
+		`   { "command": "statistic-get-all", "service": ["dhcp4"], "arguments": { }}' 2>/dev/null`
 	log.Println("--- GetKeaStatisticsAll curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {

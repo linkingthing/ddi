@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	DhcpHost        = "127.0.0.1"
-	DhcpHost31      = "10.0.0.31"
+	DhcpHostlocal   = "127.0.0.1"
+	DhcpHost        = "10.0.0.31"
 	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
