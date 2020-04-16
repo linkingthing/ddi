@@ -5,10 +5,13 @@ package collector
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/linkingthing/ddi/utils"
 	"log"
 	"regexp"
 	"strconv"
+
+	"github.com/linkingthing/ddi/dhcp"
+
+	"github.com/linkingthing/ddi/utils"
 )
 
 // unmarshall data from kea statistics commands
@@ -31,7 +34,8 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 
 	//get packet statistics data, export it to prometheus
 	//todo move ip:port into conf
-	url := "http://10.0.0.31:8000"
+	log.Println("in GenerateDhcpPacketStatistics, keaServer: " + utils.KeaServer)
+	url := "http://" + dhcp.DhcpHost + ":" + dhcp.DhcpPort
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`   {
 	            "command": "statistic-get",
@@ -62,7 +66,8 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 
 func GetKeaStatisticsAll() *CurlKeaStatsAll {
 	//todo move ip:port into conf
-	url := "http://10.0.0.31:8000"
+	log.Println("in GetKeaStatisticsAll, keaServer: " + utils.KeaServer)
+	url := "http://" + dhcp.DhcpHost + ":" + dhcp.DhcpPort
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`   {
                 "command": "statistic-get-all",
@@ -70,7 +75,7 @@ func GetKeaStatisticsAll() *CurlKeaStatsAll {
                 "arguments": { }
 	        }
 	        ' 2>/dev/null`
-	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	log.Println("--- GetKeaStatisticsAll curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 	if err != nil {
 		log.Println("curl error: ", err)
@@ -119,7 +124,8 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 
 	//get packet statistics data, export it to prometheus
 	//todo move ip:port into conf
-	url := "http://10.0.0.31:8000"
+	log.Println("in GenerateDhcpUsageStatistics, keaServer: " + utils.KeaServer)
+	url := "http://" + dhcp.DhcpHost + ":" + dhcp.DhcpPort
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`   {
                 "command": "statistic-get-all",

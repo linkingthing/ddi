@@ -308,7 +308,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 
 func GetSubnetUsage() *BaseJsonDhcpAssign {
 
-	fmt.Println("into getSubnetUsage")
+	log.Println("into getSubnetUsage")
 
 	//get servers maintained by kafka server
 	result := NewBaseJsonDhcpAssign()
