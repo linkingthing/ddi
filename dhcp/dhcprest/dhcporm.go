@@ -137,6 +137,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		Subnet:        restSubnetv4.Subnet,
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
+		DnsServer:     restSubnetv4.DnsServer,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -155,6 +156,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		Id:            strconv.Itoa(int(last.ID)),
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
+		DnsServer:     restSubnetv4.DnsServer,
 	}
 	log.Println("pb.CreateSubnetv4Req req: ", req)
 
@@ -209,18 +211,24 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return err
 	}
 
-	//todo send kafka msg
-	//req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
-	//data, err := proto.Marshal(&req)
-	//if err != nil {
-	//	log.Println("proto.Marshal error, ", err)
-	//	return err
-	//}
-	//log.Println("begin to call SendDhcpCmd, update subnetv4")
-	//if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
-	//	log.Println("SendCmdDhcpv4 error, ", err)
-	//	return err
-	//}
+	//send msg to kafka queue, which is read by dhcp server
+	req := pb.UpdateSubnetv4Req{
+		Subnet:        subnetv4.Subnet,
+		Id:            subnetv4.ID,
+		ValidLifetime: subnetv4.ValidLifetime,
+		Gateway:       subnetv4.Gateway,
+		DnsServer:     subnetv4.DnsServer,
+	}
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		log.Println("proto.Marshal error, ", err)
+		return err
+	}
+	log.Println("begin to call SendDhcpCmd, update subnetv4")
+	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+		log.Println("SendCmdDhcpv4 error, ", err)
+		return err
+	}
 
 	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
 	//}

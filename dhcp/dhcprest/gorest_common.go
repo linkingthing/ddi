@@ -130,6 +130,7 @@ type RestSubnetv4 struct {
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	Gateway               string `json:"gateway"`
+	DnsServer             string `json:"dnsServer"`
 	//added for new zone handler
 	DhcpEnable int    `json:"dhcpEnable"`
 	DnsEnable  int    `json:"dnsEnable"`
@@ -417,6 +418,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 
 	v4.Gateway = v.Gateway
+	v4.DnsServer = v.DnsServer
 
 	return v4
 }

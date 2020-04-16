@@ -92,6 +92,7 @@ message CreateSubnetv4Req{
     string      validLifetime               = 5;
     repeated    Pools       pool            = 6;
     string      gateway                     = 7;
+    string      dnsServer = 8;
 }
 
 message UpdateSubnetv4Req{
@@ -101,6 +102,8 @@ message UpdateSubnetv4Req{
     repeated    Reservation reservations    = 4;
     string      validLifetime   = 5;
     repeated    Pools    pool = 6;
+    string      gateway                     = 7;
+    string      dnsServer = 8;
 }
 
 message DeleteSubnetv4Req{
@@ -116,6 +119,8 @@ message CreateSubnetv4PoolReq{
     repeated    Pools  pool = 4;
     string      validLifetime = 5;
     string      maxValidLifetime = 6;
+    string      gateway                     = 7;
+    string      dnsServer = 8;
 }
 
 message UpdateSubnetv4PoolReq{
@@ -126,6 +131,8 @@ message UpdateSubnetv4PoolReq{
     string      oldpool = 5;
     string      validLifetime = 6;
     string      maxValidLifetime = 7;
+    string      gateway = 9;
+    string      dnsServer = 10;
 }
 
 message DeleteSubnetv4PoolReq{

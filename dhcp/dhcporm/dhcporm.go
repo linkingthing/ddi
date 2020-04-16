@@ -28,6 +28,7 @@ type OrmSubnetv4 struct {
 	Pools           []Pool           `gorm:"foreignkey:Subnetv4ID"`
 	ManualAddresses []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
 	Gateway         string           `gorm:"gateway"`
+	DnsServer       string           `gorm:"dnsServer"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 	//added for new zone handler
 	DhcpEnable int    `gorm:"column:dhcpEnable"`

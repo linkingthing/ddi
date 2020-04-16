@@ -1,6 +1,8 @@
 package boltoper
 
 import (
+	"log"
+
 	kv "github.com/ben-han-cn/kvzoo"
 	"github.com/ben-han-cn/kvzoo/backend/bolt"
 )
@@ -11,6 +13,8 @@ type BoltHandler struct {
 }
 
 func NewBoltHandler(dbPath string, dbName string) *BoltHandler {
+	log.Println("in NewBoltHandler, dbPath: ", dbPath)
+	log.Println("in NewBoltHandler, dbName: ", dbName)
 	var tmpDBPath string
 	if dbPath[len(dbPath)-1] != '/' {
 		tmpDBPath = dbPath + "/"

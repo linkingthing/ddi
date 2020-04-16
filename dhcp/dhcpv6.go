@@ -282,20 +282,20 @@ func (handler *KEAv6Handler) UpdateSubnetv6Pool(req pb.UpdateSubnetv6PoolReq) er
 		log.Print("req.Subnet: ", req.Subnet)
 		if v.Subnet == req.Subnet {
 
-			//if len(req.ValidLifetime) > 0 {
-			//	if err != nil {
-			//		log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
-			//		return err
-			//	}
-			//	conf.Arguments.Dhcp6.Subnet6[k].ValidLifetime = json.Number(req.ValidLifetime)
-			//}
-			//if len(req.MaxValidLifetime) > 0 {
-			//	if err != nil {
-			//		log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
-			//		return err
-			//	}
-			//	conf.Arguments.Dhcp6.Subnet6[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
-			//}
+			if len(req.ValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp6.Subnet6[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp6.Subnet6[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
 
 			conf.Arguments.Dhcp6.Subnet6[k].Pools = []Pool{}
 
