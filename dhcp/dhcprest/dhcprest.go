@@ -661,8 +661,8 @@ func (r *PoolHandler) UpdateSubnetv4Server(subnetId string, pool *RestPool) erro
 	ormSubnetv4 := PGDBConn.GetSubnetv4ById(subnetId)
 	var s Dhcpv4
 	restSubnetv4 := s.ConvertSubnetv4FromOrmToRest(ormSubnetv4)
-	restSubnetv4.Gateway = pool.Gateway
-	restSubnetv4.DnsServer = pool.DnsServer
+	//restSubnetv4.Gateway = pool.Gateway
+	//restSubnetv4.DnsServer = pool.DnsServer
 	if err := s.UpdateSubnetv4(restSubnetv4); err != nil {
 		log.Println("in UpdatePool, update subnetv4 gateway error: ", err)
 		return err
@@ -685,6 +685,7 @@ func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 			return err
 		}
 	}
+	pool.Subnetv4Id = subnetId
 
 	err := PGDBConn.OrmUpdatePool(subnetId, pool)
 	if err != nil {
