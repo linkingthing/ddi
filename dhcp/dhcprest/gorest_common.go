@@ -108,6 +108,8 @@ type RestPool struct {
 	Usage                 float32      `json:"usage"`
 	AddressType           string       `json:"addressType"`
 	PoolName              string       `json:"poolName"`
+	Gateway               string       `json:"gateway"`
+	DnsServer             string       `json:"dnsServer"`
 }
 
 //type Subnetv4 struct {
@@ -395,26 +397,20 @@ func ConvertOptionsFromOrmToRest(ps []*dhcporm.Option) []*RestOption {
 }
 
 //tools func
-func ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
+func (r *PoolHandler) ConvertPoolsFromOrmToRest(ps []*dhcporm.Pool) []*RestPool {
 	log.Println("into ConvertPoolsFromOrmToRest")
 
 	var restPs []*RestPool
 	for _, v := range ps {
-		restP := RestPool{
-			BeginAddress: v.BeginAddress,
-			EndAddress:   v.EndAddress,
-		}
-		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
-		restP.ID = strconv.Itoa(int(v.ID))
+		//restP := RestPool{
+		//	BeginAddress: v.BeginAddress,
+		//	EndAddress:   v.EndAddress,
+		//}
+		restP := r.convertSubnetv4PoolFromOrmToRest(v)
 
-		// todo get usage of a pool, (put it to somewhere)
+		//todo get gateway dnsServer from ormSubnetv4
 
-		restP.Usage = 15.32
-		restP.AddressType = "resv"
-		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
-		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
-
-		restPs = append(restPs, &restP)
+		restPs = append(restPs, restP)
 
 	}
 
@@ -467,6 +463,7 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 	return rsv
 }
 func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
+	log.Println("into convertSubnetv4PoolFromOrmToRest, v.beginAddress: ", v.BeginAddress)
 	pool := &RestPool{}
 
 	if v == nil {
@@ -475,13 +472,33 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 
 	pool.SetID(strconv.Itoa(int(v.ID)))
 	pool.BeginAddress = v.BeginAddress
+	pool.EndAddress = v.EndAddress
+	pool.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
+	pool.ID = strconv.Itoa(int(v.ID))
+
+	// todo get usage of a pool, (put it to somewhere)
+	pool.Usage = 0
+	pool.AddressType = "resv"
+	pool.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+	pool.PoolName = v.BeginAddress + "-" + v.EndAddress
+
+	//get ormSubnetv4 from subnetv4Id
+	pgdb := NewPGDB(r.db)
+	subnetv4Id := strconv.Itoa(int(v.Subnetv4ID))
+
+	s4 := pgdb.GetSubnetv4ById(subnetv4Id)
+	pool.Gateway = s4.Gateway
+	pool.DnsServer = s4.DnsServer
+	pool.Subnetv4Id = subnetv4Id
 
 	return pool
 }
+
 func (n RestReservation) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into RestReservation GetParents")
 	return []resource.ResourceKind{RestSubnetv4{}}
 }
+
 func (n RestPool) GetParents() []resource.ResourceKind {
 	log.Println("dhcprest, into RestPool GetParents")
 	return []resource.ResourceKind{RestSubnetv4{}}
@@ -544,7 +561,7 @@ func (r *optionNameHandler) GetOptionNames() []*RestOptionName {
 
 func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
 	list := PGDBConn.OrmPoolList(subnetId)
-	pool := ConvertPoolsFromOrmToRest(list)
+	pool := r.ConvertPoolsFromOrmToRest(list)
 
 	return pool
 }

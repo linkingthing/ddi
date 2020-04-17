@@ -146,6 +146,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 	var last dhcporm.OrmSubnetv4
 	query.Last(&last)
 	log.Println("query.value: ", query.Value, ", id: ", last.ID)
+	restSubnetv4.ID = strconv.Itoa(int(last.ID))
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
@@ -196,6 +197,12 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		dbS4.DhcpEnable = subnetv4.DhcpEnable
 		dbS4.DnsEnable = subnetv4.DnsEnable
 		dbS4.Notes = subnetv4.Notes
+	}
+	if len(subnetv4.DnsServer) > 0 || len(subnetv4.Gateway) > 0 {
+		log.Println("OrmUpdateSubnetv4, gateway: ", subnetv4.Gateway)
+		log.Println("OrmUpdateSubnetv4, DnsServer: ", subnetv4.DnsServer)
+		dbS4.Gateway = subnetv4.Gateway
+		dbS4.DnsServer = subnetv4.DnsServer
 	}
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
