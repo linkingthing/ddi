@@ -56,8 +56,8 @@ var (
 	recursiveConKind   = resource.DefaultKindName(dnsapi.RecursiveConcurrent{})
 	sortListKind       = resource.DefaultKindName(dnsapi.SortList{})
 	dividedAddressKind = resource.DefaultKindName(ipam.DividedAddress{})
-	scanAddressKind    = resource.DefaultKindName(ipam.ScanAddress{})
-	subtreeKind        = resource.DefaultKindName(ipam.Subtree{})
+	//scanAddressKind    = resource.DefaultKindName(ipam.ScanAddress{})
+	subtreeKind = resource.DefaultKindName(ipam.Subtree{})
 )
 
 const (
@@ -112,6 +112,7 @@ func main() {
 	go node.RegisterNode("/etc/vanguard/vanguard.conf", "controller")
 	go physicalMetrics.NodeExporter()
 	dnsapi.DBCon = dnsapi.NewDBController(db)
+	ipamapi.DBCon = ipamapi.NewDBController(db)
 	defer dnsapi.DBCon.Close()
 	schemas := schema.NewSchemaManager()
 	aCLsState := dnsapi.NewACLsState()
@@ -135,14 +136,17 @@ func main() {
 	//ipam interfaces
 	devidedAddressState := ipamapi.NewDividedAddressState()
 	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
-	scanAddressState := ipamapi.NewScanAddressState()
-	schemas.MustImport(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
+	//scanAddressState := ipamapi.NewScanAddressState()
+	//schemas.MustImport(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
 	/*subtreeState := ipamapi.NewSubtreeState()
 	schemas.MustImport(&version, ipam.Subtree{}, ipamapi.NewSubtreeHandler(subtreeState))*/
+	ipAttrAppendState := ipamapi.NewIPAttrAppendState()
+	schemas.MustImport(&version, ipam.IPAttrAppend{}, ipamapi.NewIPAttrAppendHandler(ipAttrAppendState))
+
+	//go ipamapi.DBCon.KeepDetectAlive()
 
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
-	go dhcprest.PGDBConn.KeepDetectAlive()
 	defer dhcprest.PGDBConn.Close()
 
 	dhcpv4 := dhcprest.NewDhcpv4(db)
@@ -242,7 +246,7 @@ func main() {
 	router.POST("/apis/linkingthing.com/example/v1/login", authMiddleware.LoginHandler)
 	router.GET("/apis/linkingthing.com/example/v1/checkvalue", CheckValue)
 	auth := router.Group("/")
-	auth.Use(authMiddleware.MiddlewareFunc())
+	//auth.Use(authMiddleware.MiddlewareFunc())
 	{
 		adaptor.RegisterHandler(auth, gorest.NewAPIServer(schemas), schemas.GenerateResourceRoute())
 		auth.POST("/apis/linkingthing.com/example/v1/changepwd", ChangePWD)

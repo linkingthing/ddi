@@ -27,7 +27,7 @@ var (
 		Version: "example/v1",
 	}
 	dividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
-	scanAddressKind    = resource.DefaultKindName(res.ScanAddress{})
+	//scanAddressKind    = resource.DefaultKindName(res.ScanAddress{})
 	//subtreeKind        = resource.DefaultKindName(res.Subtree{})
 	db          *gorm.DB
 	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
@@ -52,13 +52,28 @@ func NewDividedAddressHandler(s *DividedAddressState) *dividedAddressHandler {
 	}
 }
 
-func (h *dividedAddressHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
-	var err error
-	var dividedAddress *res.DividedAddress
-	if dividedAddress, err = dhcprest.PGDBConn.GetDividedAddress(ctx.Resource.GetID()); err != nil {
+func (h *dividedAddressHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	dividedAddress := ctx.Resource.(*res.DividedAddress)
+	if err := DBCon.UpdateDividedAddress(dividedAddress); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return dividedAddress, nil
+}
+
+func (h *dividedAddressHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	var err error
+	var dividedAddresses []*res.DividedAddress
+	filter := ctx.GetFilters()
+	var subnetid string
+	if len(filter) == 0 {
+		return nil, nil
+	} else {
+		subnetid = filter[0].Values[0]
+	}
+	if dividedAddresses, err = DBCon.GetDividedAddresses(subnetid); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return dividedAddresses, nil
 }
 
 func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
@@ -150,7 +165,7 @@ func NewDividedAddressState() *DividedAddressState {
 	Dead                  []string `json:"acls"`
 }*/
 
-type scanAddressHandler struct {
+/*type scanAddressHandler struct {
 	scanAddresses *ScanAddressState
 }
 
@@ -176,6 +191,44 @@ type ScanAddressState struct {
 func NewScanAddressState() *ScanAddressState {
 	return &ScanAddressState{}
 }
+*/
+////////////////////
+type ipAttrAppendHandler struct {
+	ipAttrAppends *IPAttrAppendState
+}
+
+func NewIPAttrAppendHandler(s *IPAttrAppendState) *ipAttrAppendHandler {
+	return &ipAttrAppendHandler{
+		ipAttrAppends: s,
+	}
+}
+
+func (h *ipAttrAppendHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	var err error
+	var ipAttrAppend *res.IPAttrAppend
+	if ipAttrAppend, err = DBCon.GetIPAttrAppend(ctx.Resource.GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAttrAppend, nil
+}
+
+func (h *ipAttrAppendHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	ipAttrAppend := ctx.Resource.(*res.IPAttrAppend)
+	if err := DBCon.UpdateIPAttrAppend(ipAttrAppend); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAttrAppend, nil
+}
+
+type IPAttrAppendState struct {
+	IPAttrAppend []*res.IPAttrAppend
+}
+
+func NewIPAttrAppendState() *IPAttrAppendState {
+	return &IPAttrAppendState{}
+}
+
+//////////////////
 
 type ipv6Prefix struct {
 	Prefix string `json:"prefix"`

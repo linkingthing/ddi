@@ -103,12 +103,12 @@ type ManualAddress struct {
 	Subnetv4ID uint `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }
 
-type AliveAddress struct {
+/*type AliveAddress struct {
 	IPAddress     string `gorm:"primary_key"`
 	LastAliveTime int64
 	ScanTime      int64
 	Subnetv4ID    uint `sql:"type:integer REFERENCES subnetv4s(id)"`
-}
+}*/
 
 type Ipv6PlanedAddrTree struct {
 	gorm.Model

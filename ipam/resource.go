@@ -6,31 +6,63 @@ import (
 	"github.com/zdnscloud/gorest/resource"
 )
 
-type StatusAddress struct {
-	MacAddress      string `json:"macaddress"`
-	MacVender       string `json:"macvender"`
-	AddressType     string `json:"AddressType"`
-	OperSystem      string `json:"opersystem"`
-	NetBIOSName     string `json:"netbiosname"`
-	HostName        string `json:"hostname"`
-	InterfaceID     string `json:"interfaceid"`
-	ScanInterfaceID string `json:"scaninterfaceid"`
-	ScanTime        int64  `json:"scantime"`
-	LastAliveTime   int64  `json:"lastalivetime"`
-	FingerPrint     string `json:"fingerprint"`
-	LeaseStartTime  int64  `json:"leasestarttime"`
-	LeaseEndTime    int64  `json:"leaseendtime"`
-}
-
 type DividedAddress struct {
 	resource.ResourceBase `json:",inline"`
-	Data                  map[string]StatusAddress `json:"data"`
+	IP                    string `json:"ip"`
+	MacAddress            string `json:"macaddress"`
+	MacVender             string `json:"macvender"`
+	AddressType           string `json:"AddressType"`
+	OperSystem            string `json:"opersystem"`
+	NetBIOSName           string `json:"netbiosname"`
+	HostName              string `json:"hostname"`
+	InterfaceID           string `json:"interfaceid"`
+	ScanTime              int64  `json:"scantime"`
+	LastAliveTime         int64  `json:"lastalivetime"`
+	FingerPrint           string `json:"fingerprint"`
+	LeaseStartTime        int64  `json:"leasestarttime"`
+	LeaseEndTime          int64  `json:"leaseendtime"`
+	DeviceTypeFlag        bool   `json:"devicetypeflag"`
+	DeviceType            string `json:"devicetype"`
+	BusinessFlag          bool   `json:"businessflag"`
+	Business              string `json:"business"`
+	ChargePersonFlag      bool   `json:"chargepersonflag"`
+	ChargePerson          string `json:"chargeperson"`
+	TelFlag               bool   `json:"telflag"`
+	Tel                   string `json:"tel"`
+	DepartmentFlag        bool   `json:"departmentflag"`
+	Department            string `json:"department"`
+	PositionFlag          bool   `json:"positionflag"`
+	Position              string `json:"position"`
 }
 
+/*
 type ScanAddress struct {
 	resource.ResourceBase `json:",inline"`
-	DetectMethod          string                   `json:"detect method"`
-	Data                  map[string]StatusAddress `json:"data"`
+	DetectMethod          string                   `json:"detectmethod"`
+	IP                    string                   `json:"ip"`
+	MacAddress            string                   `json:"macaddress"`
+	MacVender             string                   `json:"macvender"`
+	AddressType           string                   `json:"AddressType"`
+	OperSystem            string                   `json:"opersystem"`
+	NetBIOSName           string                   `json:"netbiosname"`
+	HostName              string                   `json:"hostname"`
+	InterfaceID           string                   `json:"interfaceid"`
+	ScanInterfaceID       string                   `json:"scaninterfaceid"`
+	ScanTime              int64                    `json:"scantime"`
+	LastAliveTime         int64                    `json:"lastalivetime"`
+	FingerPrint           string                   `json:"fingerprint"`
+	LeaseStartTime        int64                    `json:"leasestarttime"`
+	LeaseEndTime          int64                    `json:"leaseendtime"`
+}*/
+
+type IPAttrAppend struct {
+	resource.ResourceBase `json:",inline"`
+	DeviceTypeFlag        bool
+	BusinessFlag          bool
+	ChargePersonFlag      bool
+	TelFlag               bool
+	DepartmentFlag        bool
+	PositionFlag          bool
 }
 
 /*type GenerationNode struct {

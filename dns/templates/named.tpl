@@ -5,7 +5,7 @@ options {
 	allow-query {any;};
 	dnssec-enable no;
 	dnssec-validation no;
-	querylog no;{{if .IPBlackHole}}
+	querylog yes;{{if .IPBlackHole}}
 	BlackHole{ {{range $k,$v := .IPBlackHole.ACLNames}}{{$v}}; {{end}}};{{end}}{{if .Concu}}
 	recursive-clients {{.Concu.RecursiveClients}};
 	fetches-per-zone {{.Concu.FetchesPerZone}};{{end}}{{if .SortList}}
