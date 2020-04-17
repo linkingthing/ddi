@@ -124,7 +124,7 @@ func GetDashDnsDomains(url string) (string, error) {
 	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {
-		log.Println("curl error: ", err)
+		log.Println("in GetDashDnsDomains curl error: ", err)
 		return "", err
 	}
 

@@ -634,7 +634,16 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 	//todo check whether it exists
 
 	subnetv4ID := pool.GetParent().GetID()
-	log.Println("before CreatePool, subnetv4ID, pool.getparent.getid: ", subnetv4ID)
+	log.Println("before CreatePool, subnetv4ID:", subnetv4ID)
+
+	if len(pool.Gateway) > 0 || len(pool.DnsServer) > 0 {
+		// set dns or gateway under subnet
+		//get Restsubnetv4 or RestSubnetv6
+		if err := r.UpdateSubnetv4Server(subnetv4ID, pool); err != nil {
+			return nil, err
+		}
+	}
+
 	pool2, err := PGDBConn.OrmCreatePool(subnetv4ID, pool)
 	if err != nil {
 		log.Println("OrmCreatePool error")
@@ -644,8 +653,21 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 
 	pool.SetID(strconv.Itoa(int(pool2.ID)))
 	pool.SetCreationTimestamp(pool2.CreatedAt)
+	pool.Subnetv4Id = subnetv4ID
 
 	return pool, nil
+}
+func (r *PoolHandler) UpdateSubnetv4Server(subnetId string, pool *RestPool) error {
+	ormSubnetv4 := PGDBConn.GetSubnetv4ById(subnetId)
+	var s Dhcpv4
+	restSubnetv4 := s.ConvertSubnetv4FromOrmToRest(ormSubnetv4)
+	restSubnetv4.Gateway = pool.Gateway
+	restSubnetv4.DnsServer = pool.DnsServer
+	if err := s.UpdateSubnetv4(restSubnetv4); err != nil {
+		log.Println("in UpdatePool, update subnetv4 gateway error: ", err)
+		return err
+	}
+	return nil
 }
 func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 	log.Println("into UpdatePool")
@@ -655,8 +677,15 @@ func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 	defer r.lock.Unlock()
 
 	subnetId := pool.GetParent().GetID()
-	log.Println("+++subnetId")
-	log.Println(subnetId)
+	log.Println("in UpdatePool, +++subnetId:", subnetId)
+	if len(pool.Gateway) > 0 || len(pool.DnsServer) > 0 {
+		// set dns or gateway under subnet
+		//get Restsubnetv4 or RestSubnetv6
+		if err := r.UpdateSubnetv4Server(subnetId, pool); err != nil {
+			return err
+		}
+	}
+
 	err := PGDBConn.OrmUpdatePool(subnetId, pool)
 	if err != nil {
 		return err
