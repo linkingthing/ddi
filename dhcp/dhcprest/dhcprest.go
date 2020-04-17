@@ -15,6 +15,74 @@ import (
 	"github.com/zdnscloud/gorest/resource"
 )
 
+func (s *Dhcpv4) ConvertV4sToV46s(v *RestSubnetv4) *RestSubnetv46 {
+
+	var v46 RestSubnetv46
+	v46.Type = "v4"
+	v46.Name = v.Name
+	v46.Subnet = v.Subnet
+	v46.SubnetId = v.SubnetId
+	v46.ValidLifetime = v.ValidLifetime
+	v46.Reservations = v.Reservations
+	v46.Pools = v.Pools
+	v46.SubnetTotal = v.SubnetTotal
+	v46.SubnetUsage = v.SubnetUsage
+	v46.Gateway = v.Gateway
+	v46.DnsServer = v.DnsServer
+	v46.DhcpEnable = v.DhcpEnable
+	v46.DnsEnable = v.DnsEnable
+	v46.ZoneName = v.ZoneName
+	v46.ViewId = v.ViewId
+	v46.Notes = v.Notes
+	v46.CreationTimestamp = v.CreationTimestamp
+
+	return &v46
+}
+
+func (s *Dhcpv4) ConvertV6sToV46s(v *RestSubnetv6) *RestSubnetv46 {
+
+	var v46 RestSubnetv46
+	v46.Type = "v6"
+	v46.Name = v.Name
+	v46.Subnet = v.Subnet
+	v46.SubnetId = v.SubnetId
+	v46.ValidLifetime = v.ValidLifetime
+	//v46.Reservations = v.Reservations
+	//v46.Pools = v.Pools
+	v46.SubnetTotal = v.SubnetTotal
+	v46.SubnetUsage = v.SubnetUsage
+	//v46.Gateway = v.Gateway
+	//v46.DnsServer = v.DnsServer
+	//v46.DhcpEnable = v.DhcpEnable
+	//v46.DnsEnable = v.DnsEnable
+	//v46.ZoneName = v.ZoneName
+	//v46.ViewId = v.ViewId
+	//v46.Notes = v.Notes
+
+	return &v46
+}
+func (s *Dhcpv4) GetSubnetv46s() []*RestSubnetv46 {
+	log.Println("into GetSubnetv46s()")
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	var all []*RestSubnetv46
+	v4s := s.GetSubnetv4s()
+	for _, v4 := range v4s {
+		all = append(all, s.ConvertV4sToV46s(v4))
+	}
+
+	dhcpv6 := NewDhcpv6(db)
+	v6s := dhcpv6.GetSubnetv6s()
+	for _, v6 := range v6s {
+		//log.Println("v6: ", v6)
+		all = append(all, s.ConvertV6sToV46s(v6))
+	}
+
+	log.Println("in GetSubnetv46s, all: ", all)
+	return all
+
+}
 func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 	return &Dhcpv4{db: db}
 }
@@ -204,11 +272,6 @@ func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *RestSubnetv4 {
 
 func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 	log.Println("into GetSubnetv4s()")
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	//var subnetv4Fronts []*dhcporm.OrmSubnetv4Front
-	//var subnetv4Front *dhcporm.OrmSubnetv4Front
 
 	//todo get subnet name, usage, totalIP
 	usage := server.GetSubnetUsage()
@@ -258,7 +321,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 
 	}
 
-	//log.Println("GetSubnetv4s, v4: ", v4)
+	log.Println("GetSubnetv4s, v4: ", v4)
 	return v4
 }
 
@@ -269,6 +332,16 @@ type subnetv4Handler struct {
 func NewSubnetv4Handler(s *Dhcpv4) *subnetv4Handler {
 	return &subnetv4Handler{
 		subnetv4s: s,
+	}
+}
+
+type subnetv46Handler struct {
+	subnetv46s *Dhcpv4
+}
+
+func NewSubnetv46Handler(s *Dhcpv4) *subnetv46Handler {
+	return &subnetv46Handler{
+		subnetv46s: s,
 	}
 }
 
@@ -321,9 +394,20 @@ func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 func (h *subnetv4Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go List")
 
-	return h.subnetv4s.GetSubnetv4s(), nil
+	all := h.subnetv4s.GetSubnetv4s()
+
+	log.Println("in list(), before all")
+	return all, nil
 }
 
+func (h *subnetv46Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	log.Println("into dhcprest.go List")
+	var all []*RestSubnetv46
+	all = h.subnetv46s.GetSubnetv46s()
+
+	log.Println("in list(), before all")
+	return all, nil
+}
 func (h *subnetv4Handler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 
 	return h.subnetv4s.GetSubnetv4ById(ctx.Resource.GetID()), nil

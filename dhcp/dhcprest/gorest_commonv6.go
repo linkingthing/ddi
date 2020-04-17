@@ -116,6 +116,8 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 	v6.Subnet = v.Subnet
 	v6.ValidLifetime = v.ValidLifetime
 	v6.Reservations = ConvertReservationv6sFromOrmToRest(v.Reservationv6s)
+
+	v6.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	return v6
 }
 
