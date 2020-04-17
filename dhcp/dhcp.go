@@ -200,6 +200,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
+		log.Println("getCmd error, getCmd: ", getCmd)
 		return err
 	}
 	//log.Println("config json: ", configJson)
