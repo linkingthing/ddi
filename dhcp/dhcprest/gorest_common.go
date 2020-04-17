@@ -119,6 +119,29 @@ type RestPool struct {
 //	Reservations          []*RestReservation
 //	Pools                 []*RestPool
 //}
+
+type RestSubnetv46 struct {
+	resource.ResourceBase `json:"embedded,inline"`
+	Type                  string `json:"type"` // v4 or v6
+
+	Name          string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	Subnet        string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	SubnetId      string `json:"subnet_id"`
+	ValidLifetime string `json:"validLifetime"`
+	Reservations  []*RestReservation
+	Pools         []*RestPool
+	SubnetTotal   string `json:"total"`
+	SubnetUsage   string `json:"usage"`
+	Gateway       string `json:"gateway"`
+	DnsServer     string `json:"dnsServer"`
+	//added for new zone handler
+	DhcpEnable int    `json:"dhcpEnable"`
+	DnsEnable  int    `json:"dnsEnable"`
+	ZoneName   string `json:"zoneName"`
+	ViewId     string `json:"viewId"`
+	Notes      string `json:"notes"`
+}
+
 type RestSubnetv4 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
@@ -130,6 +153,13 @@ type RestSubnetv4 struct {
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	Gateway               string `json:"gateway"`
+	DnsServer             string `json:"dnsServer"`
+	//added for new zone handler
+	DhcpEnable int    `json:"dhcpEnable"`
+	DnsEnable  int    `json:"dnsEnable"`
+	ZoneName   string `json:"zoneName"`
+	ViewId     string `json:"viewId"`
+	Notes      string `json:"notes"`
 }
 
 func (s4 RestSubnetv4) GetActions() []resource.Action {
@@ -195,9 +225,16 @@ type Subnetv4s struct {
 	Subnetv4s []*RestSubnetv4
 	db        *gorm.DB
 }
+type Subnetv46s struct {
+	Subnetv46s []*RestSubnetv46
+	db         *gorm.DB
+}
 
 func NewSubnetv4s(db *gorm.DB) *Subnetv4s {
 	return &Subnetv4s{db: db}
+}
+func NewSubnetv46s(db *gorm.DB) *Subnetv46s {
+	return &Subnetv46s{db: db}
 }
 
 type ReservationHandler struct {
@@ -411,6 +448,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 
 	v4.Gateway = v.Gateway
+	v4.DnsServer = v.DnsServer
 
 	return v4
 }

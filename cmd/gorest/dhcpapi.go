@@ -46,6 +46,7 @@ func main() {
 	//go dhcpv4agent.Dhcpv4Client()
 	dhcpv4 := dhcprest.NewDhcpv4(db)
 	schemas.MustImport(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
+	schemas.MustImport(&version, dhcprest.RestSubnetv46{}, dhcprest.NewSubnetv46Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))

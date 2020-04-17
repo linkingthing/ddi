@@ -200,6 +200,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	configJson, err := cmd(getCmd)
 
 	if err != nil {
+		log.Println("getCmd error, getCmd: ", getCmd)
 		return err
 	}
 	//log.Println("config json: ", configJson)
@@ -378,18 +379,26 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	newSubnet4.Pools = []Pool{}
 	//subnetv4 = append(subnetv4, newSubnet4)
 	//log.Println("---subnetv4: ", subnetv4)
-
+	options := []Option{}
 	log.Println("req.gateway: ", req.Gateway)
 	if len(req.Gateway) > 0 {
 		option := Option{
 			Name: "routers",
 			Data: req.Gateway,
 		}
-		options := []Option{}
+
 		options = append(options, option)
-		newSubnet4.OptionData = options
-		log.Println("new subnetv4 optionData: ", newSubnet4.OptionData)
+
 	}
+	if len(req.DnsServer) > 0 {
+		option := Option{
+			Name: "domain-name-servers",
+			Data: req.DnsServer,
+		}
+		options = append(options, option)
+	}
+	newSubnet4.OptionData = options
+	log.Println("new subnetv4 optionData: ", newSubnet4.OptionData)
 
 	conf.Arguments.Dhcp4.Subnet4 = append(conf.Arguments.Dhcp4.Subnet4, newSubnet4)
 	//log.Println("---2 subnetv4: ", conf.Arguments.Dhcp4.Subnet4)
@@ -422,6 +431,29 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 					},
 				}
 			}
+			options := []Option{}
+
+			log.Println("req.gateway: ", req.Gateway)
+			if len(req.Gateway) > 0 {
+
+				option := Option{
+					Name: "routers",
+					Data: req.Gateway,
+				}
+				options = append(options, option)
+
+			}
+			log.Println("req.DnsServer: ", req.DnsServer)
+			if len(req.DnsServer) > 0 {
+				option := Option{
+					Name: "domain-name-servers",
+					Data: req.DnsServer,
+				}
+				options = append(options, option)
+			}
+			conf.Arguments.Dhcp4.Subnet4[k].OptionData = options
+			log.Println("new subnetv4 optionData: ", conf.Arguments.Dhcp4.Subnet4[k].OptionData)
+
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
 				return err

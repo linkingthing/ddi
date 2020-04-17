@@ -101,7 +101,7 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 	return nil
 }
 func (handler *KEAv6Handler) getv6Config(conf *ParseDhcpv6Config) error {
-	if len(KeaDhcpv4Conf) == 0 {
+	if len(KeaDhcpv6Conf) == 0 {
 		log.Print("KeaDhcpv6Conf is nil")
 		err := handler.GetDhcpv6Config(KEADHCPv6Service, conf)
 		if err != nil {
@@ -110,7 +110,7 @@ func (handler *KEAv6Handler) getv6Config(conf *ParseDhcpv6Config) error {
 		}
 	} else {
 		log.Print("KeaDhcpv6Conf is not nil")
-		err := json.Unmarshal(KeaDhcpv4Conf, conf)
+		err := json.Unmarshal(KeaDhcpv6Conf, conf)
 		if err != nil {
 			return err
 		}
@@ -185,7 +185,7 @@ func (handler *KEAv6Handler) setDhcpv6Config(service string, conf *DHCPv6Conf) e
 	//
 	//}
 
-	KeaDhcpv4Conf = postStr
+	KeaDhcpv6Conf = postStr
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) er
 			if len(req.ValidLifetime) > 0 {
 
 				if err != nil {
-					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					log.Println("CreateSubnetv6Pool, validLifetime error, ", err)
 					return err
 				}
 
@@ -224,7 +224,7 @@ func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) er
 			if len(req.MaxValidLifetime) > 0 {
 
 				if err != nil {
-					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
+					log.Println("CreateSubnetv6Pool, validLifetime error, ", err)
 					return err
 				}
 
@@ -247,7 +247,7 @@ func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) er
 				conf.Arguments.Dhcp6.Subnet6[k].Pools = append(conf.Arguments.Dhcp6.Subnet6[k].Pools, p)
 			}
 			//log.Println("begin subnet\n")
-			//log.Println(conf.Arguments.Dhcp4)
+			//log.Println(conf.Arguments.Dhcp6)
 			//log.Println("end subnet\n")
 
 			err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
@@ -261,8 +261,81 @@ func (handler *KEAv6Handler) CreateSubnetv6Pool(req pb.CreateSubnetv6PoolReq) er
 	return fmt.Errorf("subnet do not exists, error")
 }
 
+func (handler *KEAv6Handler) UpdateSubnetv6Pool(req pb.UpdateSubnetv6PoolReq) error {
+	log.Println("into dhcp.go, UpdateSubnetv6Pool")
+	var conf ParseDhcpv6Config
+	err := handler.getv6Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	//log.Println("begin conf\n")
+	//log.Println(conf.Arguments.Dhcp6.Subnet6)
+	//log.Println("end conf\n")
+
+	changeFlag := false
+
+	//find current pool, and replace it with new pool
+	for k, v := range conf.Arguments.Dhcp6.Subnet6 {
+
+		log.Print("v.subnet: ", v.Subnet)
+		log.Print("req.Subnet: ", req.Subnet)
+		if v.Subnet == req.Subnet {
+
+			if len(req.ValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp6.Subnet6[k].ValidLifetime = json.Number(req.ValidLifetime)
+			}
+			if len(req.MaxValidLifetime) > 0 {
+				if err != nil {
+					log.Println("UpdateSubnetv6Pool, validLifetime error, ", err)
+					return err
+				}
+				conf.Arguments.Dhcp6.Subnet6[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
+			}
+
+			conf.Arguments.Dhcp6.Subnet6[k].Pools = []Pool{}
+
+			for _, p := range v.Pools {
+				log.Println("in range pools, pool name: ", p.Pool, ", req.oldPool: ", req.Oldpool)
+				if p.Pool == req.Oldpool {
+					changeFlag = true
+					log.Println("p.pool == req.pool")
+					p.Pool = req.Pool
+
+					var ops []*Option
+					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+						log.Println("ConvertOptionsFromPb error: ", err)
+						return err
+					}
+					p.OptionData = ops
+				}
+				conf.Arguments.Dhcp6.Subnet6[k].Pools = append(conf.Arguments.Dhcp6.Subnet6[k].Pools, p)
+			}
+
+			log.Println("begin subnet pools")
+			log.Println(conf.Arguments.Dhcp6.Subnet6[k].Pools)
+			log.Println("end subne poolst")
+
+			if changeFlag {
+				err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
+	}
+
+	return nil
+}
+
 func (handler *KEAv6Handler) CreateSubnetv6Reservation2(req pb.CreateSubnetv6ReservationReq) error {
-	log.Println("into dhcp.go, CreateSubnetv4Reservation, req: ", req)
+	log.Println("into dhcp.go, CreateSubnetv6Reservation, req: ", req)
 	var conf ParseDhcpv6Config
 	err := handler.getv6Config(&conf)
 	if err != nil {
@@ -305,13 +378,13 @@ func (handler *KEAv6Handler) CreateSubnetv6Reservation2(req pb.CreateSubnetv6Res
 
 			log.Println("new rsv: ", rsv)
 			conf.Arguments.Dhcp6.Subnet6[k].Reservations = append(conf.Arguments.Dhcp6.Subnet6[k].Reservations, rsv)
-			//log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp4.Subnet4[k].Reservations[0].HwAddress)
+			//log.Println("new Reservations 0 hwadderss: ", conf.Arguments.Dhcp6.Subnet6[k].Reservations[0].HwAddress)
 		}
 	}
 
-	log.Println("CreateSubnetv4Reservation begin subnet\n")
+	log.Println("CreateSubnetv6Reservation begin subnet\n")
 	log.Println(conf.Arguments.Dhcp6.Subnet6)
-	log.Println("CreateSubnetv4Reservation end subnet\n")
+	log.Println("CreateSubnetv6Reservation end subnet\n")
 	err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
 	if err != nil {
 		return err
@@ -359,8 +432,8 @@ func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 	//var subnetv6 []SubnetConfig
 	var maxId int
 	for k, v := range conf.Arguments.Dhcp6.Subnet6 {
-		//log.Println("conf Subnet4: ", v.Subnet)
-		//log.Println("conf Subnet4 id: ", v.Id, ", maxId: ", maxId)
+		//log.Println("conf Subnet6: ", v.Subnet)
+		//log.Println("conf Subnet6 id: ", v.Id, ", maxId: ", maxId)
 		curId, err := strconv.Atoi(string(v.Id))
 		if err != nil {
 			return err
@@ -390,7 +463,7 @@ func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 		//},
 	}
 	newSubnet6.Pools = []Pool{}
-	//subnetv4 = append(subnetv6, newSubnet4)
+	//subnetv6 = append(subnetv6, newSubnet6)
 	//log.Println("---subnetv6: ", subnetv6)
 
 	conf.Arguments.Dhcp6.Subnet6 = append(conf.Arguments.Dhcp6.Subnet6, newSubnet6)
@@ -471,11 +544,37 @@ func (handler *KEAv6Handler) CreateSubnetv6Reservation(req pb.CreateSubnetv6Rese
 	return nil
 }
 
-func (handler *KEAv6Handler) UpdateSubnetv6Pool(req pb.UpdateSubnetv6PoolReq) error {
-	return nil
-}
-
 func (handler *KEAv6Handler) DeleteSubnetv6Pool(req pb.DeleteSubnetv6PoolReq) error {
+	var conf ParseDhcpv6Config
+	err := handler.getv6Config(&conf)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	changeFlag := false
+
+	for k, v := range conf.Arguments.Dhcp6.Subnet6 {
+		if v.Subnet == req.Subnet {
+			tmp := []Pool{}
+
+			for _, p := range conf.Arguments.Dhcp6.Subnet6[k].Pools {
+				if p.Pool != req.Pool {
+					tmp = append(tmp, p)
+				}
+				if p.Pool == req.Pool {
+					changeFlag = true
+				}
+			}
+			conf.Arguments.Dhcp6.Subnet6[k].Pools = tmp
+			if changeFlag {
+				err = handler.setDhcpv6Config(KEADHCPv6Service, &conf.Arguments)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 
 	return nil
 }

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+
 	"math"
 	"net"
 	"time"
@@ -132,6 +134,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		Subnet:        restSubnetv4.Subnet,
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
+		DnsServer:     restSubnetv4.DnsServer,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -150,6 +153,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		Id:            strconv.Itoa(int(last.ID)),
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
+		DnsServer:     restSubnetv4.DnsServer,
 	}
 	log.Println("pb.CreateSubnetv4Req req: ", req)
 
@@ -177,6 +181,22 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return err
 	}
 	dbS4.ID = uint(id)
+
+	//added for new zone handler
+	if subnetv4.DnsEnable > 0 {
+		if len(subnetv4.ViewId) == 0 {
+			log.Println("Error viewId is null, return")
+			return fmt.Errorf("zone is enabled, viewId is null")
+		}
+		zone := dnsapi.Zone{Name: subnetv4.ZoneName, ZoneType: "master"}
+		log.Println("to create zone, name:", zone.Name)
+		dnsapi.DBCon.CreateZone(&zone, subnetv4.ViewId)
+
+		dbS4.ZoneName = subnetv4.ZoneName
+		dbS4.DhcpEnable = subnetv4.DhcpEnable
+		dbS4.DnsEnable = subnetv4.DnsEnable
+		dbS4.Notes = subnetv4.Notes
+	}
 	//if subnet.SubnetId == "" {
 	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
 	//}
@@ -188,8 +208,14 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return err
 	}
 
-	//todo send kafka msg
-	req := pb.UpdateSubnetv4Req{Id: subnetv4.ID, Subnet: subnetv4.Subnet, ValidLifetime: subnetv4.ValidLifetime}
+	//send msg to kafka queue, which is read by dhcp server
+	req := pb.UpdateSubnetv4Req{
+		Subnet:        subnetv4.Subnet,
+		Id:            subnetv4.ID,
+		ValidLifetime: subnetv4.ValidLifetime,
+		Gateway:       subnetv4.Gateway,
+		DnsServer:     subnetv4.DnsServer,
+	}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		log.Println("proto.Marshal error, ", err)

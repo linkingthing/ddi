@@ -34,7 +34,7 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 
 	//get packet statistics data, export it to prometheus
 	//todo move ip:port into conf
-	log.Println("in GenerateDhcpPacketStatistics, keaServer: " + utils.KeaServer)
+	//log.Println("in GenerateDhcpPacketStatistics, keaServer: " + utils.KeaServer)
 	url := "http://" + dhcp.DhcpHost + ":" + dhcp.DhcpPort
 	curlCmd := "curl -X POST \"" + url + "\"" + " -H 'Content-Type: application/json' -d '" +
 		`   {
@@ -45,7 +45,7 @@ func (c *Metrics) GenerateDhcpPacketStatistics() error {
 	            }
 	        }
 	        ' 2>/dev/null`
-	log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
+	//log.Println("--- GenerateDhcpPacketStatistics curlCmd: ", curlCmd)
 	out, err := utils.Cmd(curlCmd)
 
 	if err != nil {
@@ -98,11 +98,11 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 		rex := regexp.MustCompile(`^subnet\[(\d+)\]\.assigned-addresses`)
 		out := rex.FindAllStringSubmatch(k, -1)
 		if len(out) > 0 {
-			log.Println("+++ out: ", out)
-			for _, i := range out {
+			//log.Println("+++ out: ", out)
+			for range out {
 				//idx := i[1]
 				leaseNum += len(v)
-				log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
+				//log.Println("+++ i: ", i[1], ", len[v], ", len(v), ", leaseNum: ", leaseNum)
 			}
 		}
 	}
@@ -161,13 +161,13 @@ func (c *Metrics) GenerateDhcpUsageStatistics() error {
 			}
 		}
 	}
-	log.Println("leaseNum: ", leaseNum)
-	log.Println("totalNum: ", totalNum)
+	//log.Println("leaseNum: ", leaseNum)
+	//log.Println("totalNum: ", totalNum)
 	dhcpUsage := 0.0
 	if totalNum > 0 {
 		dhcpUsage = Decimal(float64(leaseNum) / float64(totalNum) * 100)
 	}
-	log.Println("dhcpUsage: ", dhcpUsage)
+	//log.Println("dhcpUsage: ", dhcpUsage)
 
 	//maps := curlRet.Arguments.Pkt4Received
 	c.gaugeMetricData["dhcpusage"] = Decimal(float64(dhcpUsage))

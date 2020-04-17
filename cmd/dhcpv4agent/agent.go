@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	businessMetrics "github.com/linkingthing/ddi/dns/metrics"
-
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 
 	"github.com/ben-han-cn/cement/shell"
@@ -215,8 +213,8 @@ func main() {
 	}
 
 	//according to dns module, added
-	handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
-	go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
+	//handler := businessMetrics.NewMetricsHandler("/root/bindtest", 10, 10, "/root/bindtest/")
+	//go handler.DNSExporter(dnsExporterPort, "/metrics", "dns")
 
 	log.Println("yamlConfig iscontroller: ", yamlConfig.Localhost.IsController)
 	if !yamlConfig.Localhost.IsController {
