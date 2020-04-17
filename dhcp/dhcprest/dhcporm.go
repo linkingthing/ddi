@@ -179,12 +179,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	dbS4.Subnet = subnetv4.Subnet
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
-	id, err := strconv.Atoi(subnetv4.ID)
-	if err != nil {
-		log.Println("subnetv4.ID error, id: ", subnetv4.ID)
-		return err
-	}
-	dbS4.ID = uint(id)
+	dbS4.ID = ConvertStringToUint(subnetv4.ID)
 
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
@@ -202,8 +197,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		dbS4.Notes = subnetv4.Notes
 	}
 	if len(subnetv4.DnsServer) > 0 || len(subnetv4.Gateway) > 0 {
-		log.Println("OrmUpdateSubnetv4, gateway: ", subnetv4.Gateway)
-		log.Println("OrmUpdateSubnetv4, DnsServer: ", subnetv4.DnsServer)
+
 		dbS4.Gateway = subnetv4.Gateway
 		dbS4.DnsServer = subnetv4.DnsServer
 	}
