@@ -59,6 +59,7 @@ func (s *Dhcpv4) ConvertV6sToV46s(v *RestSubnetv6) *RestSubnetv46 {
 	//v46.ViewId = v.ViewId
 	//v46.Notes = v.Notes
 
+	v46.CreationTimestamp = v.CreationTimestamp
 	return &v46
 }
 func (s *Dhcpv4) GetSubnetv46s() []*RestSubnetv46 {
