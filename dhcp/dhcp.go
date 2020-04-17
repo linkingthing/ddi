@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	DhcpHostlocal   = "127.0.0.1"
-	DhcpHost        = "10.0.0.31"
+	DhcpHostlocal = "127.0.0.1"
+
 	DhcpPort        = "8000"
 	DhcpConfigPath  = "/usr/local/etc/kea/"
 	Dhcp4ConfigFile = "kea-dhcp4.conf"
@@ -44,6 +44,8 @@ const (
 	IntfDeleteSubnetv4
 	postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
 )
+
+var DhcpHost = "10.0.0.31"
 
 var KeaDhcpv4Conf []byte // global var, stores config content of dhcpv4 in json format
 var KeaDhcpv6Conf []byte // same like dhcpv4 above
@@ -196,7 +198,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 
-	//log.Println("in GetDhcpv4config, getCmd: ", getCmd)
+	log.Println("in GetDhcpv4config, getCmd: ", getCmd)
 	configJson, err := cmd(getCmd)
 
 	if err != nil {

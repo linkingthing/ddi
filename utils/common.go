@@ -4,6 +4,8 @@ import (
 	"log"
 	"os/exec"
 
+	"github.com/linkingthing/ddi/dhcp"
+
 	"github.com/linkingthing/ddi/utils/config"
 )
 
@@ -21,6 +23,7 @@ func SetHostIPs(confPath string) {
 	DHCPGrpcServer = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
 	Dhcpv4AgentAddr = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
 	GrpcServer = "127.0.0.1:" + conf.Server.GrpcPort
+	dhcp.DhcpHost = conf.Localhost.IP
 	/*IsController = conf.Localhost.IsController
 	IsDHCP = conf.Localhost.IsDHCP
 	IsDNS = conf.Localhost.IsDNS*/
