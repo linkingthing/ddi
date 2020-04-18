@@ -2,6 +2,7 @@ package dns
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,6 +14,7 @@ import (
 	kv "github.com/ben-han-cn/kvzoo"
 	"github.com/ben-han-cn/kvzoo/backend/bolt"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils/random"
 	"github.com/linkingthing/ddi/utils/rrupdate"
 	"sort"
 )
@@ -49,8 +51,6 @@ const (
 	redirectTpl        = "redirect.tpl"
 	rpzTpl             = "rpz.tpl"
 	rndcPort           = "953"
-	rrKey              = "key1"
-	rrSecret           = "linking_encr"
 	opSuccess          = 0
 	opFail             = 1
 	checkPeriod        = 5
@@ -154,6 +154,7 @@ func NewBindHandler(dnsConfPath string, agentPath string) *BindHandler {
 		}
 		//add the default view.
 		viewkvs["name"] = []byte("default")
+		viewkvs["key"] = []byte(random.CreateRandomString(12))
 		if err := instance.addKVs(viewsPath+"1000000", viewkvs); err != nil {
 			panic(err)
 		}
@@ -215,6 +216,7 @@ type View struct {
 	Redirect *redierct
 	RPZ      *rpz
 	DNS64s   []dns64
+	Key      string
 }
 
 type redierct struct {
@@ -385,6 +387,8 @@ func (handler *BindHandler) CreateView(req pb.CreateViewReq) error {
 	}
 	//create table viewid and put name into the db.
 	namekvs := map[string][]byte{"name": []byte(req.ViewName)}
+	namekvs["key"] = []byte(random.CreateRandomString(12))
+	fmt.Println("view key:", string(namekvs["key"]))
 	if err := handler.addKVs(viewsPath+req.ViewID, namekvs); err != nil {
 		return err
 	}
@@ -532,9 +536,15 @@ func (handler *BindHandler) CreateRR(req pb.CreateRRReq) error {
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
+	var viewsmap map[string][]byte
+	if viewsmap, err = handler.tableKVs(viewsPath + req.ViewID); err != nil {
+		return err
+	}
+	key := viewsmap["key"]
+	fmt.Println("createrr key:", string(viewsmap["key"]))
 	var data string
 	data = req.Name + "." + string(names["name"]) + " " + req.TTL + " IN " + req.Type + " " + req.Value
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, data, string(names["name"]), true); err != nil {
+	if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), data, string(names["name"]), true); err != nil {
 		return err
 	}
 	if err := handler.rndcDumpJNLFile(); err != nil {
@@ -553,12 +563,18 @@ func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
-	oldData := string(rrsMap["name"]) + "." + string(names["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
-	newData := req.Name + "." + string(names["name"]) + " " + req.TTL + " IN " + req.Type + " " + req.Value
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, oldData, string(names["name"]), false); err != nil {
+	var viewsmap map[string][]byte
+	if viewsmap, err = handler.tableKVs(viewsPath + req.ViewID); err != nil {
 		return err
 	}
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, newData, string(names["name"]), true); err != nil {
+	key := viewsmap["key"]
+	fmt.Println("updaterr key:", string(viewsmap["key"]))
+	oldData := string(rrsMap["name"]) + "." + string(names["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
+	newData := req.Name + "." + string(names["name"]) + " " + req.TTL + " IN " + req.Type + " " + req.Value
+	if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), oldData, string(names["name"]), false); err != nil {
+		return err
+	}
+	if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), newData, string(names["name"]), true); err != nil {
 		return err
 	}
 	//add the old data by rrupdate cause the delete function of the rrupdate had deleted all the rrs.
@@ -579,7 +595,7 @@ func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 		}
 		var updateData string
 		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
-		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
+		if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), updateData, string(names["name"]), true); err != nil {
 			return err
 		}
 	}
@@ -606,8 +622,14 @@ func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 	if names, err = handler.tableKVs(viewsPath + req.ViewID + zonesPath + req.ZoneID); err != nil {
 		return err
 	}
+	var viewsmap map[string][]byte
+	if viewsmap, err = handler.tableKVs(viewsPath + req.ViewID); err != nil {
+		return err
+	}
+	key := viewsmap["key"]
+	fmt.Println("deleterr key:", string(viewsmap["key"]))
 	rrData := string(rrsMap["name"]) + "." + string(names["name"]) + " " + string(rrsMap["TTL"]) + " IN " + string(rrsMap["type"]) + " " + string(rrsMap["value"])
-	if err := rrupdate.UpdateRR(rrKey, rrSecret, rrData, string(names["name"]), false); err != nil { //string(rrData[:])
+	if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), rrData, string(names["name"]), false); err != nil { //string(rrData[:])
 		return err
 	}
 	if err := handler.db.DeleteTable(kv.TableName(viewsPath + req.ViewID + zonesPath + req.ZoneID + rRsPath + req.RRID)); err != nil {
@@ -628,7 +650,7 @@ func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 		}
 		var updateData string
 		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
-		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
+		if err := rrupdate.UpdateRR("key"+string(viewsmap["name"]), string(key), updateData, string(names["name"]), true); err != nil {
 			return err
 		}
 	}
@@ -874,6 +896,13 @@ func (handler *BindHandler) namedConfData() (namedData, error) {
 				view.Zones = append(view.Zones, tmp)
 			}
 		}
+		//get the base64 of the view's Key
+		keyMap, err := handler.tableKVs(viewsPath + string(viewid))
+		if err != nil {
+			return data, err
+		}
+		encodeString := base64.StdEncoding.EncodeToString(keyMap["key"])
+		view.Key = encodeString
 
 		data.Views = append(data.Views, view)
 	}
