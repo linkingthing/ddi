@@ -145,30 +145,10 @@ func (r *Poolv6Handler) ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*Res
 
 	var restPs []*RestPoolv6
 	for _, v := range ps {
-		restP := RestPoolv6{
-			BeginAddress: v.BeginAddress,
-			EndAddress:   v.EndAddress,
-		}
-		restP.Total = 0 //todo compute poolv6 addresses sum
-		restP.ID = strconv.Itoa(int(v.ID))
 
-		// todo get usage of a pool, (put it to somewhere)
+		restP := r.convertSubnetv6PoolFromOrmToRest(v)
 
-		restP.Usage = 0
-		restP.AddressType = "resv"
-		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
-		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
-
-		//get ormSubnetv6 from subnetv6Id
-		pgdb := NewPGDB(r.db)
-		subnetv6Id := strconv.Itoa(int(v.Subnetv6ID))
-		s6 := pgdb.GetSubnetv6ById(subnetv6Id)
-		restP.DnsServer = s6.DnsServer
-		restP.Subnetv6Id = subnetv6Id
-		restP.MaxValidLifetime = v.MaxValidLifetime
-		restP.ValidLifetime = v.ValidLifetime
-
-		restPs = append(restPs, &restP)
+		restPs = append(restPs, restP)
 
 	}
 
@@ -176,7 +156,7 @@ func (r *Poolv6Handler) ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*Res
 }
 func (r *Poolv6Handler) GetPoolv6s(subnetId string) []*RestPoolv6 {
 	list := PGDBConn.OrmPoolv6List(subnetId)
-	pool := ConvertPoolv6sFromOrmToRest(list)
+	pool := r.ConvertPoolv6sFromOrmToRest(list)
 
 	return pool
 }
@@ -199,7 +179,7 @@ func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Poolv6) *Res
 	pool.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	pool.PoolName = v.BeginAddress + "-" + v.EndAddress
 
-	//get ormSubnetv4 from subnetv4Id
+	//get ormSubnetv6 from subnetv6Id
 	pgdb := NewPGDB(r.db)
 	subnetv6Id := strconv.Itoa(int(v.Subnetv6ID))
 

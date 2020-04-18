@@ -102,10 +102,8 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 }
 
 func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
-	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
-	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
-	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
-	log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv6.Subnet)
+
+	log.Println("in UpdateSubnetv6(), subnetv6 subnet: ", subnetv6.Subnet)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -120,7 +118,7 @@ func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	}
 
 	subnetv6.CreationTimestamp = resource.ISOTime(subnetv6.GetCreationTimestamp())
-	log.Println("subnetv4.CreationTimestamp ", subnetv6.CreationTimestamp)
+	log.Println("subnetv6.CreationTimestamp ", subnetv6.CreationTimestamp)
 
 	return nil
 }
@@ -266,6 +264,7 @@ func (r *Poolv6Handler) CreatePoolv6(pool *RestPoolv6) (*RestPoolv6, error) {
 
 	pool.SetID(strconv.Itoa(int(pool2.ID)))
 	pool.SetCreationTimestamp(pool2.CreatedAt)
+	pool.Subnetv6Id = subnetv6ID
 
 	return pool, nil
 }
