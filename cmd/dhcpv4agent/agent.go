@@ -227,6 +227,7 @@ func main() {
 	s, err := server.NewDHCPv4GRPCServer(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
 	if err != nil {
 
+		log.Println("NewDHCPv4GRPCServer error")
 		log.Fatal(err)
 		return
 	}
