@@ -468,6 +468,10 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 	return rsv
 }
 func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
+	if v == nil {
+		log.Println("into convertSubnetv4PoolFromOrmToRest, v is null, error")
+		return nil
+	}
 	log.Println("into convertSubnetv4PoolFromOrmToRest, v.beginAddress: ", v.BeginAddress)
 	pool := &RestPool{}
 
@@ -574,6 +578,7 @@ func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
 }
 func (r *PoolHandler) GetSubnetv4Pool(subnetId string, pool_id string) *RestPool {
 	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+
 	pool := r.convertSubnetv4PoolFromOrmToRest(orm)
 
 	return pool

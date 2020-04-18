@@ -171,8 +171,8 @@ func (r *Poolv6Handler) GetPoolv6s(subnetId string) []*RestPoolv6 {
 
 	return pool
 }
-func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
-	pool := &RestPool{}
+func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Poolv6) *RestPoolv6 {
+	pool := &RestPoolv6{}
 
 	if v == nil {
 		return pool
@@ -181,11 +181,30 @@ func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Pool) *RestP
 	pool.SetID(strconv.Itoa(int(v.ID)))
 	pool.BeginAddress = v.BeginAddress
 	pool.EndAddress = v.EndAddress
+	pool.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
+	pool.ID = strconv.Itoa(int(v.ID))
+
+	// todo get usage of a pool, (put it to somewhere)
+	pool.Usage = 0
+	pool.AddressType = "resv"
+	pool.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+	pool.PoolName = v.BeginAddress + "-" + v.EndAddress
+
+	//get ormSubnetv4 from subnetv4Id
+	pgdb := NewPGDB(r.db)
+	subnetv6Id := strconv.Itoa(int(v.Subnetv6ID))
+
+	s6 := pgdb.GetSubnetv6ById(subnetv6Id)
+
+	pool.DnsServer = s6.DnsServer
+	pool.Subnetv6Id = subnetv6Id
+	pool.MaxValidLifetime = v.MaxValidLifetime
+	pool.ValidLifetime = v.ValidLifetime
 
 	return pool
 }
-func (r *Poolv6Handler) GetSubnetv6Pool(subnetId string, pool_id string) *RestPool {
-	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+func (r *Poolv6Handler) GetSubnetv6Pool(subnetId string, pool_id string) *RestPoolv6 {
+	orm := PGDBConn.OrmGetPoolv6(subnetId, pool_id)
 	pool := r.convertSubnetv6PoolFromOrmToRest(orm)
 
 	return pool
