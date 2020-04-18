@@ -126,16 +126,17 @@ type RestSubnetv46 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Type                  string `json:"type"` // v4 or v6
 
-	Name          string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	Subnet        string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	SubnetId      string `json:"subnet_id"`
-	ValidLifetime string `json:"validLifetime"`
-	Reservations  []*RestReservation
-	Pools         []*RestPool
-	SubnetTotal   string `json:"total"`
-	SubnetUsage   string `json:"usage"`
-	Gateway       string `json:"gateway"`
-	DnsServer     string `json:"dnsServer"`
+	Name             string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	Subnet           string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	SubnetId         string `json:"subnet_id"`
+	ValidLifetime    string `json:"validLifetime"`
+	MaxValidLifetime string `json:"maxValidLifetime"`
+	Reservations     []*RestReservation
+	Pools            []*RestPool
+	SubnetTotal      string `json:"total"`
+	SubnetUsage      string `json:"usage"`
+	Gateway          string `json:"gateway"`
+	DnsServer        string `json:"dnsServer"`
 	//added for new zone handler
 	DhcpEnable int    `json:"dhcpEnable"`
 	DnsEnable  int    `json:"dnsEnable"`
@@ -150,6 +151,7 @@ type RestSubnetv4 struct {
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifetime"`
+	MaxValidLifetime      string `json:"maxValidLifetime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
 	SubnetTotal           string `json:"total"`

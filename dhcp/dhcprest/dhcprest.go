@@ -52,12 +52,12 @@ func (s *Dhcpv4) ConvertV6sToV46s(v *RestSubnetv6) *RestSubnetv46 {
 	v46.SubnetTotal = v.SubnetTotal
 	v46.SubnetUsage = v.SubnetUsage
 	//v46.Gateway = v.Gateway
-	//v46.DnsServer = v.DnsServer
-	//v46.DhcpEnable = v.DhcpEnable
-	//v46.DnsEnable = v.DnsEnable
-	//v46.ZoneName = v.ZoneName
-	//v46.ViewId = v.ViewId
-	//v46.Notes = v.Notes
+	v46.DnsServer = v.DnsServer
+	v46.DhcpEnable = v.DhcpEnable
+	v46.DnsEnable = v.DnsEnable
+	v46.ZoneName = v.ZoneName
+	v46.ViewId = v.ViewId
+	v46.Notes = v.Notes
 
 	v46.CreationTimestamp = v.CreationTimestamp
 	return &v46

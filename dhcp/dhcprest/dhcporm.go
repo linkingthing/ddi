@@ -129,13 +129,14 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubnetv4, error) {
 	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ")
 	var s4 = dhcporm.OrmSubnetv4{
-		Dhcpv4ConfId:  1,
-		Name:          restSubnetv4.Name,
-		Subnet:        restSubnetv4.Subnet,
-		ValidLifetime: restSubnetv4.ValidLifetime,
-		Gateway:       restSubnetv4.Gateway,
-		DnsServer:     restSubnetv4.DnsServer,
-		DhcpEnable:    restSubnetv4.DhcpEnable,
+		Dhcpv4ConfId:     1,
+		Name:             restSubnetv4.Name,
+		Subnet:           restSubnetv4.Subnet,
+		ValidLifetime:    restSubnetv4.ValidLifetime,
+		MaxValidLifetime: restSubnetv4.MaxValidLifetime,
+		Gateway:          restSubnetv4.Gateway,
+		DnsServer:        restSubnetv4.DnsServer,
+		DhcpEnable:       restSubnetv4.DhcpEnable,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 

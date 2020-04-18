@@ -60,7 +60,9 @@ type RestPoolv6 struct {
 	Usage                 float32        `json:"usage"`
 	AddressType           string         `json:"addressType"`
 	PoolName              string         `json:"poolName"`
+	DnsServer             string         `json:"dnsServer"`
 }
+
 type Poolv6Handler struct {
 	subnetv6s *Subnetv6s
 	db        *gorm.DB
@@ -85,6 +87,7 @@ type RestSubnetv6 struct {
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifetime"`
+	MaxValidLifetime      string `json:"maxValidLifetime"`
 	Reservations          []*RestReservationv6
 	Pools                 []*RestPoolv6
 	SubnetTotal           string `json:"total"`
@@ -123,6 +126,7 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 	v6.SubnetId = strconv.Itoa(int(v.ID))
 	v6.Subnet = v.Subnet
 	v6.ValidLifetime = v.ValidLifetime
+	v6.MaxValidLifetime = v.MaxValidLifetime
 	v6.Reservations = ConvertReservationv6sFromOrmToRest(v.Reservationv6s)
 
 	v6.DnsServer = v.DnsServer

@@ -13,12 +13,13 @@ type Dhcpv6Conf struct {
 // table.
 type OrmSubnetv6 struct {
 	gorm.Model
-	Dhcpv6ConfId   uint
-	Name           string              `gorm:"column:name"`
-	Subnet         string              `gorm:"column:subnet"`
-	ValidLifetime  string              `gorm:"column:valid_life_time"`
-	Reservationv6s []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
-	Pools          []*Poolv6           `gorm:"foreignkey:Subnetv6ID"`
+	Dhcpv6ConfId     uint
+	Name             string              `gorm:"column:name"`
+	Subnet           string              `gorm:"column:subnet"`
+	ValidLifetime    string              `gorm:"column:valid_life_time"`
+	MaxValidLifetime string              `gorm:"column:max_valid_life_time"`
+	Reservationv6s   []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
+	Pools            []*Poolv6           `gorm:"foreignkey:Subnetv6ID"`
 
 	//ManualAddresses []ManualAddress    `gorm:"foreignkey:Subnetv6ID"`
 
