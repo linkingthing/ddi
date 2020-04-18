@@ -11,10 +11,12 @@ options {
 	fetches-per-zone {{.Concu.FetchesPerZone}};{{end}}{{if .SortList}}
 	sortlist{ {{range $k, $s := .SortList}}{{$s}};{{end}} };{{end}}
 };
-key key1 {
+{{range $k, $view := .Views}}
+key key{{$view.Name}} {
     algorithm hmac-md5;
-    secret "bGlua2luZ19lbmNy";
+    secret "{{$view.Key}}";
 };
+{{end}}
 
 logging{
 	channel query_log{
@@ -32,9 +34,9 @@ logging{
 view "{{$view.Name}}" {
 	match-clients {
 	{{range $kk, $acl := $view.ACLs}}{{$acl.Name}};{{end}}
-	key key1;
+	key key{{$view.Name}};
 	};
-	allow-update {key key1;};{{range $i, $zone := $view.Zones}}{{if $zone.Forwarder}}
+	allow-update {key key{{$view.Name}};};{{range $i, $zone := $view.Zones}}{{if $zone.Forwarder}}
 	zone "{{$zone.Name}}" { type forward; forward {{$zone.ForwardType}}; forwarders { {{range $ii,$ip := $zone.Forwarder.IPs}}{{$ip}}; {{end}}}; };{{end}}{{end}}{{range $k, $dns64:= .DNS64s}}
         dns64 {{$dns64.Prefix}} {
         clients { {{$dns64.ClientACLName}}; };
