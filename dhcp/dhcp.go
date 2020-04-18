@@ -45,8 +45,6 @@ const (
 	postgresqlAddress = "host=127.0.0.1 port=5432 user=ddi dbname=ddi password=linkingthing.com sslmode=disable"
 )
 
-var DhcpHost = "10.0.0.31"
-
 var KeaDhcpv4Conf []byte // global var, stores config content of dhcpv4 in json format
 var KeaDhcpv6Conf []byte // same like dhcpv4 above
 
@@ -196,7 +194,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 	postStr, _ := json.Marshal(postData)
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 
 	log.Println("in GetDhcpv4config, getCmd: ", getCmd)
 	configJson, err := cmd(getCmd)
@@ -206,7 +204,7 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 		return err
 	}
 	//log.Println("config json: ", configJson)
-	log.Println("dhcphost: ", DhcpHost)
+	log.Println("dhcphost: ", utils.DhcpHost)
 	log.Println("DhcpPort: ", DhcpPort)
 
 	KeaDhcpv4Conf = []byte(string(configJson[2 : len(configJson)-2]))
@@ -238,7 +236,7 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 
 	//log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	log.Println("curlCmd: ", curlCmd)
 	var cmdRet CmdRet
 	str, err := cmd(curlCmd)

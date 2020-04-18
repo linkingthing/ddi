@@ -80,7 +80,7 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 	postStr, _ := json.Marshal(postData)
 
 	getCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 
 	configJson, err := cmd(getCmd)
 
@@ -88,7 +88,7 @@ func (handler *KEAv6Handler) GetDhcpv6Config(service string, conf *ParseDhcpv6Co
 		return err
 	}
 	log.Println("dhcpv6 config json: ", configJson)
-	log.Println("dhcphost: ", DhcpHost)
+	log.Println("dhcphost: ", utils.DhcpHost)
 	log.Println("DhcpPort: ", DhcpPort)
 
 	KeaDhcpv6Conf = []byte(string(configJson[2 : len(configJson)-2]))
@@ -138,7 +138,7 @@ func (handler *KEAv6Handler) setDhcpv6Config(service string, conf *DHCPv6Conf) e
 
 	//log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
-		string(postStr) + "' http://" + DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	log.Println("curlCmd: ", curlCmd)
 	var cmdRet CmdRet
 	str, err := cmd(curlCmd)
