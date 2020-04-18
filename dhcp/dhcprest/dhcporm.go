@@ -129,12 +129,15 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubnetv4, error) {
 	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ")
 	var s4 = dhcporm.OrmSubnetv4{
-		Dhcpv4ConfId:  1,
-		Name:          restSubnetv4.Name,
-		Subnet:        restSubnetv4.Subnet,
-		ValidLifetime: restSubnetv4.ValidLifetime,
-		Gateway:       restSubnetv4.Gateway,
-		DnsServer:     restSubnetv4.DnsServer,
+		Dhcpv4ConfId:     1,
+		Name:             restSubnetv4.Name,
+		Subnet:           restSubnetv4.Subnet,
+		ValidLifetime:    restSubnetv4.ValidLifetime,
+		MaxValidLifetime: restSubnetv4.MaxValidLifetime,
+		Gateway:          restSubnetv4.Gateway,
+		DnsServer:        restSubnetv4.DnsServer,
+		DhcpEnable:       restSubnetv4.DhcpEnable,
+		ZoneName:         restSubnetv4.ZoneName,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 
@@ -178,6 +181,12 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
 	dbS4.ID = ConvertStringToUint(subnetv4.ID)
 
+	dbS4.DhcpEnable = subnetv4.DhcpEnable
+	dbS4.ZoneName = subnetv4.ZoneName
+	dbS4.DnsEnable = subnetv4.DnsEnable
+	dbS4.Notes = subnetv4.Notes
+	dbS4.Gateway = subnetv4.Gateway
+	dbS4.DnsServer = subnetv4.DnsServer
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
 		if len(subnetv4.ViewId) == 0 {
@@ -188,21 +197,8 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		log.Println("to create zone, name:", zone.Name)
 		dnsapi.DBCon.CreateZone(&zone, subnetv4.ViewId)
 
-		dbS4.ZoneName = subnetv4.ZoneName
-		dbS4.DhcpEnable = subnetv4.DhcpEnable
-		dbS4.DnsEnable = subnetv4.DnsEnable
-		dbS4.Notes = subnetv4.Notes
 	}
-	if len(subnetv4.DnsServer) > 0 || len(subnetv4.Gateway) > 0 {
 
-		dbS4.Gateway = subnetv4.Gateway
-		dbS4.DnsServer = subnetv4.DnsServer
-	}
-	//if subnet.SubnetId == "" {
-	//	subnet.SubnetId = strconv.Itoa(int(subnet.ID))
-	//}
-
-	log.Println("begin to save db, dbS4.ID: ", dbS4.ID)
 	tx := handler.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&dbS4).Error; err != nil {
@@ -222,16 +218,11 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		log.Println("proto.Marshal error, ", err)
 		return err
 	}
-	log.Println("begin to call SendDhcpCmd, update subnetv4")
+
 	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
-
-	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
-	//}
-	//end of todo
-	//db.Model(subnet).Update(ormS4)
 
 	tx.Commit()
 	return nil

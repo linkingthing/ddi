@@ -65,11 +65,13 @@ type LocalConf struct {
 }
 
 type ServerConf struct {
-	Kafka      KafkaConf      `yaml:"kafka"`
-	Prometheus PrometheusConf `yaml:"prometheus"`
-	Agent      string         `yaml:"agent"`
-	DHCPGrpc   string         `yaml:"dhcpgrpc"`
-	GrpcPort   string         `yaml:"grpcport"`
+	Kafka          KafkaConf      `yaml:"kafka"`
+	Prometheus     PrometheusConf `yaml:"prometheus"`
+	Agent          string         `yaml:"agent"`
+	DHCPGrpc       string         `yaml:"dhcpgrpc"`
+	GrpcPort       string         `yaml:"grpcport"`
+	GrpcDhcpv4Port string         `yaml:"grpcDhcpv4Port"`
+	GrpcDhcpv6Port string         `yaml:"grpcDhcpv6Port"`
 }
 
 type VanguardConf struct {

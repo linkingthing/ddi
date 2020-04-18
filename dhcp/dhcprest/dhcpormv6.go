@@ -5,6 +5,8 @@ import (
 	"log"
 	"strconv"
 
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv6agent"
 
 	"github.com/golang/protobuf/proto"
@@ -71,10 +73,11 @@ func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
 func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error) {
 	log.Println("into CreateSubnetv6, name, subnet, validLifetime: ")
 	var s6 = dhcporm.OrmSubnetv6{
-		Dhcpv6ConfId:  1,
-		Name:          s.Name,
-		Subnet:        s.Subnet,
-		ValidLifetime: s.ValidLifetime,
+		Dhcpv6ConfId: 1,
+		Name:         s.Name,
+		Subnet:       s.Subnet,
+		ZoneName:     s.Name,
+		//ValidLifetime: s.ValidLifetime,
 		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
@@ -121,6 +124,21 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 		return err
 	}
 	dbS6.ID = uint(id)
+	dbS6.DhcpEnable = subnetv6.DhcpEnable
+	dbS6.ZoneName = subnetv6.ZoneName
+
+	dbS6.DnsEnable = subnetv6.DnsEnable
+	dbS6.Notes = subnetv6.Notes
+	dbS6.DnsServer = subnetv6.DnsServer
+	if subnetv6.DnsEnable > 0 {
+		if len(subnetv6.ViewId) == 0 {
+			log.Println("Error viewId is null, return")
+			return fmt.Errorf("zone is enabled, viewId is null")
+		}
+		zone := dnsapi.Zone{Name: subnetv6.ZoneName, ZoneType: "master"}
+
+		dnsapi.DBCon.CreateZone(&zone, subnetv6.ViewId)
+	}
 
 	log.Println("begin to save db, dbS6.ID: ", dbS6.ID)
 	tx := handler.db.Begin()
@@ -147,7 +165,6 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 }
 
 func (handler *PGDB) DeleteSubnetv6(id string) error {
-	log.Println("into dhcprest DeleteSubnetv6, id ", id)
 
 	var ormS6 dhcporm.OrmSubnetv6
 
@@ -167,7 +184,7 @@ func (handler *PGDB) DeleteSubnetv6(id string) error {
 		return err
 	}
 	req := pb.DeleteSubnetv4Req{Id: id, Subnet: ormS6.Subnet}
-	log.Println("DeleteSubnetv6() req: ", req)
+
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err

@@ -84,10 +84,6 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 	r := ctx.Resource
 	dividedAddressData, _ := r.GetAction().Input.(*res.DividedAddressData)
 
-	log.Println("in Action, name: ", r.GetAction().Name)
-	log.Println("in Action, oper: ", dividedAddressData.Oper)
-	log.Println("in Action, data: ", dividedAddressData.Data)
-
 	var restRet dhcprest.BaseJsonOptionName
 	restRet.Status = "200"
 	restRet.Message = "操作成功"
@@ -95,10 +91,10 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 	switch r.GetAction().Name {
 	case "change":
 		if dividedAddressData.Oper == "tostable" {
-			log.Println("in Action, oper=tostable ")
+
 			//todo add one stable
 			changeData := dividedAddressData.Data
-			log.Println("in Action,changeData.IpAddress:", changeData.IpAddress)
+
 			if len(changeData.CircuitId) > 0 || len(changeData.HwAddress) > 0 {
 				//get subnetv4Id and build one restReservation object
 				subnetv4Id := changeData.Subnetv4Id
@@ -107,7 +103,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 				restRsv.CircuitId = changeData.CircuitId
 				restRsv.HwAddress = changeData.HwAddress
 				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
-					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
+
 					log.Println("newly created ormRsv.ID:", ormRsv.ID)
 					restRsv := dhcprest.ConvertReservationFromOrmToRest(&ormRsv)
 					log.Println("tostable, ret restRsv.IpAddress:", restRsv.IpAddress)

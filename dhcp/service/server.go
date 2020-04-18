@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net"
 
 	"fmt"
@@ -16,10 +17,13 @@ type DHCPv4GRPCServer struct {
 }
 
 func NewDHCPv4GRPCServer(ver string, ConfPath string, addr string) (*DHCPv4GRPCServer, error) {
-	fmt.Printf("ver: %s, confpath: %s, addr: %s\n", ver, ConfPath, addr)
+	log.Println("into NewDHCPv4GRPCServer, ver: ", ver)
+	log.Println("into NewDHCPv4GRPCServer, ConfPath: ", ConfPath)
+	log.Println("into NewDHCPv4GRPCServer, addr: ", addr)
 
 	server := grpc.NewServer()
 	servicev4 := NewDHCPv4Service(ver, addr, ConfPath)
+	log.Println("after NewDHCPv4Service")
 	pb.RegisterDhcpv4ManagerServer(server, servicev4)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {

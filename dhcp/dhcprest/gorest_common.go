@@ -126,16 +126,17 @@ type RestSubnetv46 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Type                  string `json:"type"` // v4 or v6
 
-	Name          string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	Subnet        string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	SubnetId      string `json:"subnet_id"`
-	ValidLifetime string `json:"validLifetime"`
-	Reservations  []*RestReservation
-	Pools         []*RestPool
-	SubnetTotal   string `json:"total"`
-	SubnetUsage   string `json:"usage"`
-	Gateway       string `json:"gateway"`
-	DnsServer     string `json:"dnsServer"`
+	Name             string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	Subnet           string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	SubnetId         string `json:"subnet_id"`
+	ValidLifetime    string `json:"validLifetime"`
+	MaxValidLifetime string `json:"maxValidLifetime"`
+	Reservations     []*RestReservation
+	Pools            []*RestPool
+	SubnetTotal      string `json:"total"`
+	SubnetUsage      string `json:"usage"`
+	Gateway          string `json:"gateway"`
+	DnsServer        string `json:"dnsServer"`
 	//added for new zone handler
 	DhcpEnable int    `json:"dhcpEnable"`
 	DnsEnable  int    `json:"dnsEnable"`
@@ -150,6 +151,7 @@ type RestSubnetv4 struct {
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifetime"`
+	MaxValidLifetime      string `json:"maxValidLifetime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
 	SubnetTotal           string `json:"total"`
@@ -445,7 +447,10 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 
 	v4.Gateway = v.Gateway
 	v4.DnsServer = v.DnsServer
-
+	v4.DhcpEnable = v.DhcpEnable
+	v4.DnsEnable = v.DnsEnable
+	v4.ViewId = v.ViewId
+	v4.Notes = v.Notes
 	return v4
 }
 func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
@@ -463,6 +468,10 @@ func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.
 	return rsv
 }
 func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
+	if v == nil {
+		log.Println("into convertSubnetv4PoolFromOrmToRest, v is null, error")
+		return nil
+	}
 	log.Println("into convertSubnetv4PoolFromOrmToRest, v.beginAddress: ", v.BeginAddress)
 	pool := &RestPool{}
 
@@ -490,6 +499,8 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.Gateway = s4.Gateway
 	pool.DnsServer = s4.DnsServer
 	pool.Subnetv4Id = subnetv4Id
+	pool.MaxValidLifetime = v.MaxValidLifetime
+	pool.ValidLifetime = v.ValidLifetime
 
 	return pool
 }
@@ -567,6 +578,7 @@ func (r *PoolHandler) GetPools(subnetId string) []*RestPool {
 }
 func (r *PoolHandler) GetSubnetv4Pool(subnetId string, pool_id string) *RestPool {
 	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+
 	pool := r.convertSubnetv4PoolFromOrmToRest(orm)
 
 	return pool

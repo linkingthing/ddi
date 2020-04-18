@@ -320,6 +320,12 @@ func GetSubnetUsage() *BaseJsonDhcpAssign {
 	// todo: get subnet total-address and assigned address from kea statistics api
 	// define a temprary variable stores subnet id and total and used
 	curlRet := collector.GetKeaStatisticsAll()
+	if curlRet == nil {
+		log.Println("in GetSubnetUsage, get kea statistics error")
+		result.Status = config.STATUS_ERROR
+		result.Message = "Kea Statistics error"
+		return result
+	}
 	maps := curlRet.Arguments
 	stats := make(map[string]map[string]int)
 	for k, v := range maps {

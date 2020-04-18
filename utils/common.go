@@ -19,9 +19,13 @@ func SetHostIPs(confPath string) {
 	KafkaServerProm = conf.Server.Kafka.Host + ":" + conf.Server.Kafka.Port
 
 	DHCPGrpcServer = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
-	Dhcpv4AgentAddr = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
+	if conf.Localhost.IP != "10.0.0.55" {
+		Dhcpv4AgentAddr = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcDhcpv4Port
+		Dhcpv6AgentAddr = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcDhcpv6Port
+	}
+
 	GrpcServer = "127.0.0.1:" + conf.Server.GrpcPort
-	DhcpHost = conf.Localhost.IP
+	DhcpHost = conf.Server.DHCPGrpc
 	/*IsController = conf.Localhost.IsController
 	IsDHCP = conf.Localhost.IsDHCP
 	IsDNS = conf.Localhost.IsDNS*/

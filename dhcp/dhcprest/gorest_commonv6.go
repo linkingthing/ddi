@@ -60,7 +60,9 @@ type RestPoolv6 struct {
 	Usage                 float32        `json:"usage"`
 	AddressType           string         `json:"addressType"`
 	PoolName              string         `json:"poolName"`
+	DnsServer             string         `json:"dnsServer"`
 }
+
 type Poolv6Handler struct {
 	subnetv6s *Subnetv6s
 	db        *gorm.DB
@@ -85,11 +87,19 @@ type RestSubnetv6 struct {
 	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifetime"`
+	MaxValidLifetime      string `json:"maxValidLifetime"`
 	Reservations          []*RestReservationv6
 	Pools                 []*RestPoolv6
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	//Gateway               string `json:"gateway"`
+	DnsServer string `json:"dnsServer"`
+	//added for new zone handler
+	DhcpEnable int    `json:"dhcpEnable"`
+	DnsEnable  int    `json:"dnsEnable"`
+	ZoneName   string `json:"zoneName"`
+	ViewId     string `json:"viewId"`
+	Notes      string `json:"notes"`
 }
 
 //tools func
@@ -116,33 +126,29 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 	v6.SubnetId = strconv.Itoa(int(v.ID))
 	v6.Subnet = v.Subnet
 	v6.ValidLifetime = v.ValidLifetime
+	v6.MaxValidLifetime = v.MaxValidLifetime
 	v6.Reservations = ConvertReservationv6sFromOrmToRest(v.Reservationv6s)
+
+	v6.DnsServer = v.DnsServer
+	v6.DhcpEnable = v.DhcpEnable
+	v6.DnsEnable = v.DnsEnable
+	v6.ViewId = v.ViewId
+	v6.Notes = v.Notes
 
 	v6.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	return v6
 }
 
 //tools func
-func ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
-	log.Println("into ConvertPoolsFromOrmToRest")
+func (r *Poolv6Handler) ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
+	log.Println("into ConvertPoolv6sFromOrmToRest")
 
 	var restPs []*RestPoolv6
 	for _, v := range ps {
-		restP := RestPoolv6{
-			BeginAddress: v.BeginAddress,
-			EndAddress:   v.EndAddress,
-		}
-		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
-		restP.ID = strconv.Itoa(int(v.ID))
 
-		// todo get usage of a pool, (put it to somewhere)
+		restP := r.convertSubnetv6PoolFromOrmToRest(v)
 
-		restP.Usage = 15.32
-		restP.AddressType = "resv"
-		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
-		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
-
-		restPs = append(restPs, &restP)
+		restPs = append(restPs, restP)
 
 	}
 
@@ -150,12 +156,12 @@ func ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
 }
 func (r *Poolv6Handler) GetPoolv6s(subnetId string) []*RestPoolv6 {
 	list := PGDBConn.OrmPoolv6List(subnetId)
-	pool := ConvertPoolv6sFromOrmToRest(list)
+	pool := r.ConvertPoolv6sFromOrmToRest(list)
 
 	return pool
 }
-func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Pool) *RestPool {
-	pool := &RestPool{}
+func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Poolv6) *RestPoolv6 {
+	pool := &RestPoolv6{}
 
 	if v == nil {
 		return pool
@@ -164,11 +170,30 @@ func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Pool) *RestP
 	pool.SetID(strconv.Itoa(int(v.ID)))
 	pool.BeginAddress = v.BeginAddress
 	pool.EndAddress = v.EndAddress
+	pool.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
+	pool.ID = strconv.Itoa(int(v.ID))
+
+	// todo get usage of a pool, (put it to somewhere)
+	pool.Usage = 0
+	pool.AddressType = "resv"
+	pool.CreationTimestamp = resource.ISOTime(v.CreatedAt)
+	pool.PoolName = v.BeginAddress + "-" + v.EndAddress
+
+	//get ormSubnetv6 from subnetv6Id
+	pgdb := NewPGDB(r.db)
+	subnetv6Id := strconv.Itoa(int(v.Subnetv6ID))
+
+	s6 := pgdb.GetSubnetv6ById(subnetv6Id)
+
+	pool.DnsServer = s6.DnsServer
+	pool.Subnetv6Id = subnetv6Id
+	pool.MaxValidLifetime = v.MaxValidLifetime
+	pool.ValidLifetime = v.ValidLifetime
 
 	return pool
 }
-func (r *Poolv6Handler) GetSubnetv6Pool(subnetId string, pool_id string) *RestPool {
-	orm := PGDBConn.OrmGetPool(subnetId, pool_id)
+func (r *Poolv6Handler) GetSubnetv6Pool(subnetId string, pool_id string) *RestPoolv6 {
+	orm := PGDBConn.OrmGetPoolv6(subnetId, pool_id)
 	pool := r.convertSubnetv6PoolFromOrmToRest(orm)
 
 	return pool

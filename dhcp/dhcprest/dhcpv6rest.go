@@ -83,8 +83,7 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 		errStr := "subnet " + subnetv6.Subnet + " already exist"
 		return fmt.Errorf(errStr)
 	}
-
-	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv6)
+	subnetv6.DhcpEnable = 1
 	s6, err := PGDBConn.CreateSubnetv6(subnetv6)
 	if err != nil {
 		return err
@@ -103,10 +102,8 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 }
 
 func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
-	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
-	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
-	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
-	log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv6.Subnet)
+
+	log.Println("in UpdateSubnetv6(), subnetv6 subnet: ", subnetv6.Subnet)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -121,7 +118,7 @@ func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	}
 
 	subnetv6.CreationTimestamp = resource.ISOTime(subnetv6.GetCreationTimestamp())
-	log.Println("subnetv4.CreationTimestamp ", subnetv6.CreationTimestamp)
+	log.Println("subnetv6.CreationTimestamp ", subnetv6.CreationTimestamp)
 
 	return nil
 }
@@ -225,6 +222,23 @@ func (r *Poolv6Handler) Get(ctx *resource.Context) (resource.Resource, *gorester
 	return r.GetSubnetv6Pool(pool.GetParent().GetID(), pool.GetID()), nil
 }
 
+func (r *Poolv6Handler) UpdateSubnetv6Server(subnetId string, pool *RestPoolv6) error {
+	ormSubnetv6 := PGDBConn.GetSubnetv6ById(subnetId)
+	//log.Println("into UpdateSubnetv4Server, pool.DnsServer: ", pool.DnsServer)
+	//log.Println("into UpdateSubnetv4Server, pool.Gateway: ", pool.Gateway)
+	ormSubnetv6.DnsServer = pool.DnsServer
+	ormSubnetv6.ValidLifetime = strconv.Itoa(pool.ValidLifetime)
+	ormSubnetv6.MaxValidLifetime = strconv.Itoa(pool.MaxValidLifetime)
+	var s Dhcpv6
+	restSubnetv6 := s.ConvertSubnetv6FromOrmToRest(ormSubnetv6)
+	//restSubnetv4.Gateway = pool.Gateway
+	//restSubnetv4.DnsServer = pool.DnsServer
+	if err := s.UpdateSubnetv6(restSubnetv6); err != nil {
+		log.Println("in UpdatePoolv6, update subnetv6 dnsServer error: ", err)
+		return err
+	}
+	return nil
+}
 func (r *Poolv6Handler) CreatePoolv6(pool *RestPoolv6) (*RestPoolv6, error) {
 	log.Println("into dhcprest/CreatePoolv6, pool: ", pool)
 
@@ -232,8 +246,14 @@ func (r *Poolv6Handler) CreatePoolv6(pool *RestPoolv6) (*RestPoolv6, error) {
 	defer r.lock.Unlock()
 
 	//todo check whether it exists
-
 	subnetv6ID := pool.GetParent().GetID()
+
+	log.Println("before CreatePool, subnetv6ID:", subnetv6ID)
+
+	if err := r.UpdateSubnetv6Server(subnetv6ID, pool); err != nil {
+		return nil, err
+	}
+
 	log.Println("before OrmCreatePoolv6, subnetv6ID, pool.getparent.getid: ", subnetv6ID)
 	pool2, err := PGDBConn.OrmCreatePoolv6(subnetv6ID, pool)
 	if err != nil {
@@ -244,6 +264,7 @@ func (r *Poolv6Handler) CreatePoolv6(pool *RestPoolv6) (*RestPoolv6, error) {
 
 	pool.SetID(strconv.Itoa(int(pool2.ID)))
 	pool.SetCreationTimestamp(pool2.CreatedAt)
+	pool.Subnetv6Id = subnetv6ID
 
 	return pool, nil
 }
