@@ -21,7 +21,7 @@ func SetHostIPs(confPath string) {
 	DHCPGrpcServer = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
 	Dhcpv4AgentAddr = conf.Server.DHCPGrpc + ":" + conf.Server.GrpcPort
 	GrpcServer = "127.0.0.1:" + conf.Server.GrpcPort
-	DhcpHost = conf.Localhost.IP
+	DhcpHost = conf.Server.DHCPGrpc
 	/*IsController = conf.Localhost.IsController
 	IsDHCP = conf.Localhost.IsDHCP
 	IsDNS = conf.Localhost.IsDNS*/
