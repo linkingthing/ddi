@@ -192,6 +192,7 @@ message CreateSubnetv6Req{
     repeated    Reservation reservations    = 4;
     string      validLifetime   = 5;
     repeated    Pools    pool = 6;
+    string      dnsServer = 7;
 }
 
 message UpdateSubnetv6Req{
@@ -201,6 +202,7 @@ message UpdateSubnetv6Req{
     repeated    Reservation reservations    = 4;
     string      validLifetime   = 5;
     repeated    Pools    pool = 6;
+    string      dnsServer = 7;
 }
 
 message DeleteSubnetv6Req{
@@ -217,6 +219,7 @@ message CreateSubnetv6PoolReq{
     string      validLifetime = 5;
     string      maxValidLifetime = 6;
     repeated    Reservation reservations    = 7;
+    string      dnsServer = 8;
 }
 
 message UpdateSubnetv6PoolReq{
@@ -227,6 +230,7 @@ message UpdateSubnetv6PoolReq{
     string      oldpool = 5;
     string      validLifetime = 6;
     string      maxValidLifetime = 7;
+    string      dnsServer = 8;
 }
 
 message DeleteSubnetv6PoolReq{

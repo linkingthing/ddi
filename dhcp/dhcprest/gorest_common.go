@@ -445,7 +445,10 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 
 	v4.Gateway = v.Gateway
 	v4.DnsServer = v.DnsServer
-
+	v4.DhcpEnable = v.DhcpEnable
+	v4.DnsEnable = v.DnsEnable
+	v4.ViewId = v.ViewId
+	v4.Notes = v.Notes
 	return v4
 }
 func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
