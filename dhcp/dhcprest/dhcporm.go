@@ -95,6 +95,9 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 		//	log.Println("options: ", options)
 		//}
 
+		if len(v.Name) > 0 && len(v.ZoneName) == 0 {
+			subnetv4s[k].ZoneName = v.Name
+		}
 		rsv := []dhcporm.OrmReservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
@@ -140,7 +143,9 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		ZoneName:         restSubnetv4.ZoneName,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
+	if len(s4.Name) > 0 && len(s4.ZoneName) == 0 {
+		s4.ZoneName = s4.Name
+	}
 	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
@@ -187,6 +192,9 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	dbS4.Notes = subnetv4.Notes
 	dbS4.Gateway = subnetv4.Gateway
 	dbS4.DnsServer = subnetv4.DnsServer
+	if len(dbS4.Name) > 0 && len(dbS4.ZoneName) == 0 {
+		dbS4.ZoneName = dbS4.Name
+	}
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
 		if len(subnetv4.ViewId) == 0 {

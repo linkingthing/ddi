@@ -38,7 +38,9 @@ func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
 	for k, v := range subnetv6s {
 		//log.Println("k: ", k, ", v: ", v)
 		//log.Println("in Subnetv4List, v.ID: ", v.ID)
-
+		if len(v.Name) > 0 && len(v.ZoneName) == 0 {
+			subnetv6s[k].ZoneName = v.Name
+		}
 		rsv6 := []*dhcporm.OrmReservationv6{}
 		if err := handler.db.Where("subnetv6_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv6).Error; err != nil {
 			log.Print(err)
@@ -81,7 +83,9 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
+	if len(s6.Name) > 0 && len(s6.ZoneName) == 0 {
+		s6.ZoneName = s6.Name
+	}
 	query := handler.db.Create(&s6)
 
 	if query.Error != nil {
@@ -126,7 +130,9 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	dbS6.ID = uint(id)
 	dbS6.DhcpEnable = subnetv6.DhcpEnable
 	dbS6.ZoneName = subnetv6.ZoneName
-
+	if len(dbS6.Name) > 0 && len(dbS6.ZoneName) == 0 {
+		dbS6.ZoneName = dbS6.Name
+	}
 	dbS6.DnsEnable = subnetv6.DnsEnable
 	dbS6.Notes = subnetv6.Notes
 	dbS6.DnsServer = subnetv6.DnsServer
