@@ -73,10 +73,11 @@ func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
 func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error) {
 	log.Println("into CreateSubnetv6, name, subnet, validLifetime: ")
 	var s6 = dhcporm.OrmSubnetv6{
-		Dhcpv6ConfId:  1,
-		Name:          s.Name,
-		Subnet:        s.Subnet,
-		ValidLifetime: s.ValidLifetime,
+		Dhcpv6ConfId: 1,
+		Name:         s.Name,
+		Subnet:       s.Subnet,
+		ZoneName:     s.Name,
+		//ValidLifetime: s.ValidLifetime,
 		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}

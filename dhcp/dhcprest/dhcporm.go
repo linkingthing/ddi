@@ -137,6 +137,7 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		Gateway:          restSubnetv4.Gateway,
 		DnsServer:        restSubnetv4.DnsServer,
 		DhcpEnable:       restSubnetv4.DhcpEnable,
+		ZoneName:         restSubnetv4.ZoneName,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 

@@ -389,6 +389,7 @@ func (h *subnetv4Handler) List(ctx *resource.Context) (interface{}, *goresterr.A
 
 func (h *subnetv46Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go List")
+	//filter := ctx.GetFilters()
 	var all []*RestSubnetv46
 	all = h.subnetv46s.GetSubnetv46s()
 
