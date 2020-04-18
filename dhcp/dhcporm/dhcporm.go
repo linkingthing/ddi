@@ -21,14 +21,15 @@ type OrmSubnetv4 struct {
 	Dhcpv4ConfId uint
 	Name         string `gorm:"column:name"`
 	//SubnetId        string          `gorm:"column:subnet_id"`
-	Subnet          string           `gorm:"column:subnet"`
-	ValidLifetime   string           `gorm:"column:valid_life_time"`
-	Options         []Option         `gorm:"foreignkey:Subnetv4ID"`
-	Reservations    []OrmReservation `gorm:"foreignkey:Subnetv4ID"`
-	Pools           []Pool           `gorm:"foreignkey:Subnetv4ID"`
-	ManualAddresses []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
-	Gateway         string           `gorm:"gateway"`
-	DnsServer       string           `gorm:"dnsServer"`
+	Subnet           string           `gorm:"column:subnet"`
+	ValidLifetime    string           `gorm:"column:valid_life_time"`
+	MaxValidLifetime string           `gorm:"column:max_valid_life_time"`
+	Options          []Option         `gorm:"foreignkey:Subnetv4ID"`
+	Reservations     []OrmReservation `gorm:"foreignkey:Subnetv4ID"`
+	Pools            []Pool           `gorm:"foreignkey:Subnetv4ID"`
+	ManualAddresses  []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
+	Gateway          string           `gorm:"gateway"`
+	DnsServer        string           `gorm:"dnsServer"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
 	//added for new zone handler
 	DhcpEnable int    `gorm:"column:dhcpEnable"`

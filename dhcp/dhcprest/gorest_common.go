@@ -493,6 +493,8 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.Gateway = s4.Gateway
 	pool.DnsServer = s4.DnsServer
 	pool.Subnetv4Id = subnetv4Id
+	pool.MaxValidLifetime = v.MaxValidLifetime
+	pool.ValidLifetime = v.ValidLifetime
 
 	return pool
 }
