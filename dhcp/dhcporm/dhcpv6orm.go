@@ -19,9 +19,17 @@ type OrmSubnetv6 struct {
 	ValidLifetime  string              `gorm:"column:valid_life_time"`
 	Reservationv6s []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
 	Pools          []*Poolv6           `gorm:"foreignkey:Subnetv6ID"`
-	//Gateway        string              `gorm:"gateway"`
+
 	//ManualAddresses []ManualAddress    `gorm:"foreignkey:Subnetv6ID"`
-	//DhcpVer       string `gorm:"column:dhcpver"`
+
+	DnsServer string `gorm:"dnsServer"`
+
+	//added for new zone handler
+	DhcpEnable int    `gorm:"column:dhcpEnable"`
+	DnsEnable  int    `gorm:"column:dnsEnable"`
+	ZoneName   string `gorm:"column:zoneName"`
+	ViewId     string `gorm:"column:viewId"`
+	Notes      string `gorm:"column:notes"`
 }
 
 func (OrmSubnetv6) TableName() string {
