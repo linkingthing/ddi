@@ -73,12 +73,18 @@ func (handler *PGDB) Close() {
 //	return nil
 //}
 
-func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
+func (handler *PGDB) Subnetv4List(search *SubnetSearch) []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
 
-	query := handler.db.Find(&subnetv4s)
-	if query.Error != nil {
-		log.Print(query.Error.Error())
+	if search != nil && search.DhcpVer != "" {
+		subnet := handler.getOrmSubnetv4BySubnet(search.Subnet)
+		subnetv4s = append(subnetv4s, subnet)
+		log.Println("in Subnetv4List, search ret subnet: ", subnet)
+	} else {
+		query := handler.db.Find(&subnetv4s)
+		if query.Error != nil {
+			log.Print(query.Error.Error())
+		}
 	}
 
 	for k, v := range subnetv4s {
@@ -108,13 +114,13 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 	return subnetv4s
 }
 
-func (handler *PGDB) getSubnetv4BySubnet(subnet string) *dhcporm.OrmSubnetv4 {
-	log.Println("in getSubnetv4BySubnet, subnet: ", subnet)
+func (handler *PGDB) getOrmSubnetv4BySubnet(subnet string) dhcporm.OrmSubnetv4 {
+	log.Println("in getOrmSubnetv4BySubnet, subnet: ", subnet)
 
 	var subnetv4 dhcporm.OrmSubnetv4
 	handler.db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
-
-	return &subnetv4
+	log.Println("in getOrmSubnetv4BySubnet, subnetv4: ", subnetv4)
+	return subnetv4
 }
 
 func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {

@@ -27,12 +27,17 @@ func (handler *PGDB) GetSubnetv6ByName(db *gorm.DB, name string) *dhcporm.OrmSub
 	return &subnetv6
 }
 
-func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
+func (handler *PGDB) Subnetv6List(search *SubnetSearch) []dhcporm.OrmSubnetv6 {
 	var subnetv6s []dhcporm.OrmSubnetv6
-
-	query := handler.db.Find(&subnetv6s)
-	if query.Error != nil {
-		log.Print(query.Error.Error())
+	if search != nil && search.DhcpVer != "" {
+		subnet := handler.getOrmSubnetv6BySubnet(search.Subnet)
+		subnetv6s = append(subnetv6s, subnet)
+		log.Println("in Subnetv6List, search ret subnet: ", subnet)
+	} else {
+		query := handler.db.Find(&subnetv6s)
+		if query.Error != nil {
+			log.Print(query.Error.Error())
+		}
 	}
 
 	for k, v := range subnetv6s {
@@ -51,13 +56,13 @@ func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
 	return subnetv6s
 }
 
-func (handler *PGDB) getSubnetv6BySubnet(subnet string) *dhcporm.OrmSubnetv6 {
-	log.Println("in getSubnetv6BySubnet, subnet: ", subnet)
+func (handler *PGDB) getOrmSubnetv6BySubnet(subnet string) dhcporm.OrmSubnetv6 {
+	log.Println("in getOrmSubnetv6BySubnet, subnet: ", subnet)
 
 	var subnetv6 dhcporm.OrmSubnetv6
 	handler.db.Where(&dhcporm.OrmSubnetv6{Subnet: subnet}).Find(&subnetv6)
 
-	return &subnetv6
+	return subnetv6
 }
 
 func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
@@ -79,6 +84,7 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 		Name:         s.Name,
 		Subnet:       s.Subnet,
 		ZoneName:     s.Name,
+		DhcpEnable:   1,
 		//ValidLifetime: s.ValidLifetime,
 		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,

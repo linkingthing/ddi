@@ -138,7 +138,7 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 	v6.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 
 	if len(v6.ZoneName) == 0 {
-		v6.ZoneName = v6.Name
+		v6.ZoneName = v.Name
 	}
 	return v6
 }
