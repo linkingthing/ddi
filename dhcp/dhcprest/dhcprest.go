@@ -289,10 +289,6 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 	list := PGDBConn.Subnetv4List()
 	var v4 []*RestSubnetv4
 	for _, v := range list {
-		//log.Println("v.name: ", v.Name)
-		//log.Println("v.ID: ", v.ID)
-		//log.Println("v.Subnet: ", v.Subnet)
-		//log.Println("v.CreatedAt: ", v.CreatedAt)
 
 		var subnet *RestSubnetv4
 		subnet = s.ConvertSubnetv4FromOrmToRest(&v)
@@ -304,23 +300,12 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 		if _, ok := getUsages[v.Subnet]; ok {
 			//存在
 
-			//log.Println("---- v.name: ", v.Name)
-			//log.Println("---- v.subnet: ", v.Subnet)
-			//subnet.Name = getUsages[v.Subnet].Name
 			subnet.SubnetTotal = strconv.Itoa(getUsages[v.Subnet].Total)
 			subnet.SubnetUsage = fmt.Sprintf("%.2f", getUsages[v.Subnet].Usage)
-			//subnet.SubnetUsage = strconv.Itoa(int((collector.Decimal(getUsages[v.Subnet].Usage))))
-			//strconv.FormatFloat(getUsages[v.Subnet].Usage, 'f', 5, 64)
-
-			log.Println("--- subnet.Subnet: ", subnet.Subnet)
-			log.Println("--- subnet.subnetTotal: ", subnet.SubnetTotal)
-			log.Println("--- subnet.SubnetUsage: ", subnet.SubnetUsage)
 		}
 
 		v4 = append(v4, subnet)
-
 		//subnetv4Front.DbS4 = *subnet
-
 	}
 
 	log.Println("GetSubnetv4s, v4: ", v4)
@@ -640,6 +625,7 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 	if len(pool.Gateway) > 0 || len(pool.DnsServer) > 0 {
 		// set dns or gateway under subnet
 		//get Restsubnetv4 or RestSubnetv6
+		//log.Println("before CreatePool, pool.DnsServer:", pool.DnsServer)
 		if err := r.UpdateSubnetv4Server(subnetv4ID, pool); err != nil {
 			return nil, err
 		}
@@ -660,6 +646,10 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 }
 func (r *PoolHandler) UpdateSubnetv4Server(subnetId string, pool *RestPool) error {
 	ormSubnetv4 := PGDBConn.GetSubnetv4ById(subnetId)
+	//log.Println("into UpdateSubnetv4Server, pool.DnsServer: ", pool.DnsServer)
+	//log.Println("into UpdateSubnetv4Server, pool.Gateway: ", pool.Gateway)
+	ormSubnetv4.DnsServer = pool.DnsServer
+	ormSubnetv4.Gateway = pool.Gateway
 	var s Dhcpv4
 	restSubnetv4 := s.ConvertSubnetv4FromOrmToRest(ormSubnetv4)
 	//restSubnetv4.Gateway = pool.Gateway
