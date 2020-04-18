@@ -238,8 +238,9 @@ func (s *Dhcpv4) MergeSubnetv4(ids string) (*RestSubnetv4, error) {
 		subnet := s.getSubnetv4ById(id).Subnet
 		subnetArr = append(subnetArr, subnet)
 	}
+	log.Println("subnetArr: ", subnetArr)
 	cidrs = strings.TrimSpace(strings.Join(subnetArr, "\n"))
-	//log.Println("cidrs:", cidrs, "__")
+	log.Println("cidrs:", cidrs, "__")
 
 	newSubnetName, err := GetMergedSubnetv4Name(cidrs)
 	if err != nil {
