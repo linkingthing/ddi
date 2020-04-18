@@ -341,6 +341,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 
 	subnetv4 := ctx.Resource.(*RestSubnetv4)
 	//subnetv4.SetID(subnetv4.Subnet)
+	subnetv4.ZoneName = subnetv4.Name
 	subnetv4.SetCreationTimestamp(time.Now())
 	log.Println("into dhcprest.go Create, subnetv4: ", subnetv4)
 	log.Println("into dhcprest.go Create, subnetv4 ValidLifetime: ", subnetv4.ValidLifetime)

@@ -96,6 +96,10 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 	subnetv6.ID = strconv.Itoa(int(s6.ID))
 	subnetv6.SubnetId = strconv.Itoa(int(s6.ID))
 	subnetv6.SetCreationTimestamp(s6.CreatedAt)
+	log.Println("in CreateSubnetv6, subnetv6.Name: ", subnetv6.Name)
+	log.Println("in CreateSubnetv6, subnetv6.ZoneName: ", subnetv6.ZoneName)
+	subnetv6.ZoneName = s6.Name
+
 	log.Println("newly inserted id: ", s6.ID)
 
 	return nil
@@ -116,7 +120,11 @@ func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	if err != nil {
 		return err
 	}
-
+	log.Println("in UpdateSubnetv6, subnetv6.Name: ", subnetv6.Name)
+	log.Println("in UpdateSubnetv6, subnetv6.ZoneName: ", subnetv6.ZoneName)
+	if len(subnetv6.ZoneName) == 0 {
+		subnetv6.ZoneName = subnetv6.Name
+	}
 	subnetv6.CreationTimestamp = resource.ISOTime(subnetv6.GetCreationTimestamp())
 	log.Println("subnetv6.CreationTimestamp ", subnetv6.CreationTimestamp)
 
