@@ -38,7 +38,7 @@ func (controller *DBController) Close() {
 	controller.db.Close()
 }
 
-func (controller *DBController) GetDividedAddresses(subNetID string) ([]*ipam.DividedAddress, error) {
+func (controller *DBController) GetDividedAddresses(subNetID string, ip string, hostName string, mac string) ([]*ipam.DividedAddress, error) {
 	log.Println("into dhcptb GetDividedAddress, subNetID ", subNetID)
 	//get the reservation address
 	reservData := dhcprest.PGDBConn.OrmReservationList(subNetID)
@@ -136,15 +136,50 @@ func (controller *DBController) GetDividedAddresses(subNetID string) ([]*ipam.Di
 		}
 	}
 	var err error
-	var ret []*ipam.DividedAddress
+	var data []*ipam.DividedAddress
+	var filterData []*ipam.DividedAddress
 	var input []tb.DividedAddress
 	for _, v := range allData {
 		input = append(input, v)
 	}
-	if ret, err = controller.UpdateDividedAddresses(input); err != nil {
+	if data, err = controller.UpdateDividedAddresses(input); err != nil {
 		return nil, err
 	}
-	return ret, nil
+	if ip != "" {
+		for _, v := range data {
+			if v.IP == ip {
+				filterData = append(filterData, v)
+			}
+		}
+		data = filterData
+		filterData = filterData[0:0]
+		fmt.Println("filterData:", filterData)
+	}
+
+	if hostName != "" {
+		for _, v := range data {
+			if v.HostName == hostName {
+				if v.IP == ip {
+					filterData = append(filterData, v)
+				}
+			}
+		}
+		data = filterData
+		filterData = filterData[0:0]
+		fmt.Println("filterData:", filterData)
+	}
+	if mac != "" {
+		for _, v := range data {
+			if v.MacAddress == mac {
+				if v.IP == ip {
+					filterData = append(filterData, v)
+				}
+			}
+		}
+		data = filterData
+	}
+
+	return data, nil
 }
 
 /*func (controller *DBController) GetScanAddress(id string) (*ipam.ScanAddress, error) {

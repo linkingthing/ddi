@@ -12,7 +12,6 @@ import (
 	"math"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
@@ -27,20 +26,8 @@ var (
 		Version: "example/v1",
 	}
 	dividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
-	//scanAddressKind    = resource.DefaultKindName(res.ScanAddress{})
-	//subtreeKind        = resource.DefaultKindName(res.Subtree{})
-	db          *gorm.DB
-	FormatError = goresterr.ErrorCode{"Unauthorized", 400}
+	FormatError        = goresterr.ErrorCode{"Unauthorized", 400}
 )
-
-/*type res.DividedAddress struct {
-	resource.ResourceBase `json:",inline"`
-	Reserved              []string `json:"-"`
-	Dynamic               []string `json:"-"`
-	Stable                []string `json:"-"`
-	Manual                []string `json:"-"`
-	Lease                 []string `json:"-"`
-}*/
 
 type dividedAddressHandler struct {
 	dividedAddresses *DividedAddressState
@@ -65,12 +52,27 @@ func (h *dividedAddressHandler) List(ctx *resource.Context) (interface{}, *gores
 	var dividedAddresses []*res.DividedAddress
 	filter := ctx.GetFilters()
 	var subnetid string
+	var ip string
+	var hostName string
+	var macAddr string
 	if len(filter) == 0 {
 		return nil, nil
-	} else {
-		subnetid = filter[0].Values[0]
 	}
-	if dividedAddresses, err = DBCon.GetDividedAddresses(subnetid); err != nil {
+	for _, v := range filter {
+		if v.Name == "subnetid" {
+			subnetid = v.Values[0]
+		}
+		if v.Name == "ip" {
+			ip = v.Values[0]
+		}
+		if v.Name == "hostname" {
+			hostName = v.Values[0]
+		}
+		if v.Name == "mac" {
+			macAddr = v.Values[0]
+		}
+	}
+	if dividedAddresses, err = DBCon.GetDividedAddresses(subnetid, ip, hostName, macAddr); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return dividedAddresses, nil
