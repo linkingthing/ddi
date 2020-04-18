@@ -76,9 +76,7 @@ func GetKeaStatisticsAll() *CurlKeaStatsAll {
 		log.Println("curl error: ", err)
 		return nil
 	}
-
 	var curlRet CurlKeaStatsAll
-
 	json.Unmarshal([]byte(out[1:len(out)-1]), &curlRet)
 	return &curlRet
 }
@@ -89,7 +87,10 @@ func (c *Metrics) GenerateDhcpLeasesStatistics() error {
 
 	//get packet statistics data, export it to prometheus
 	curlRet := GetKeaStatisticsAll()
-
+	if curlRet == nil {
+		c.gaugeMetricData["dhcplease"] = float64(0)
+		return fmt.Errorf("Get Kea Statistics All error")
+	}
 	leaseNum := 0
 	maps := curlRet.Arguments
 	for k, v := range maps {
