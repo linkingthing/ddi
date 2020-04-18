@@ -579,7 +579,6 @@ func (handler *BindHandler) UpdateRR(req pb.UpdateRRReq) error {
 		}
 		var updateData string
 		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
-		fmt.Println(data)
 		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
 			return err
 		}
@@ -629,7 +628,6 @@ func (handler *BindHandler) DeleteRR(req pb.DeleteRRReq) error {
 		}
 		var updateData string
 		updateData = string(data["name"]) + "." + string(names["name"]) + " " + string(data["TTL"]) + " IN " + string(data["type"]) + " " + string(data["value"])
-		fmt.Println(data)
 		if err := rrupdate.UpdateRR(rrKey, rrSecret, updateData, string(names["name"]), true); err != nil {
 			return err
 		}

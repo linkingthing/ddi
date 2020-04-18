@@ -114,7 +114,6 @@ func NewDBController(db *gorm.DB) *DBController {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(encryptText)
 		newOne.PWD = encryptText
 		if err := tx.Create(&newOne).Error; err != nil {
 			panic(err)
@@ -1894,7 +1893,6 @@ func (controller *DBController) GetUserPWD(user string) (*string, error) {
 		return nil, err
 	}
 	//rawText, err := myaes.Decrypt(controller.aesKey, one.PWD)
-	fmt.Println("get user pwd", one.PWD)
 	rawText, err := myaes.Decrypt([]byte("linkingthing.com"), one.PWD)
 	if err != nil {
 		return nil, err

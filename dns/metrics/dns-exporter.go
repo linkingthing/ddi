@@ -107,7 +107,6 @@ func (h *MetricsHandler) QueryStatics() error {
 			}
 		}
 	}
-	fmt.Println("into db:", string(curr), string(currQuery))
 	h.SaveToDB(string(curr), currQuery, ct.QuerysPath)
 	return nil
 }
@@ -152,10 +151,8 @@ func (h *MetricsHandler) MemHitStatics() error {
 		if num, err = strconv.Atoi(string(stringNum)); err != nil {
 			break
 		}
-		fmt.Println("cache hit's part of tatal:num", num)
 		total += num
 	}
-	fmt.Println("cache hit into db:", string(curr), total)
 	h.SaveToDB(string(curr), []byte(strconv.Itoa(total)), ct.MemHitPath)
 	return nil
 }
@@ -200,10 +197,8 @@ func (h *MetricsHandler) RecurQueryStatics() error {
 		if num, err = strconv.Atoi(string(stringNum)); err != nil {
 			break
 		}
-		fmt.Println("recursive query's part of tatal:num", num)
 		total += num
 	}
-	fmt.Println("recursive query into db:", string(curr), total)
 	h.SaveToDB(string(curr), []byte(strconv.Itoa(total)), ct.RecurQuerysPath)
 	return nil
 }
@@ -244,7 +239,6 @@ func (h *MetricsHandler) RetCodeStatics(retCode string, table string) error {
 			}
 		}
 	}
-	fmt.Println(retCode, "into db:", string(curr), string(currQuery))
 	h.SaveToDB(string(curr), currQuery, table)
 	return nil
 }
@@ -264,7 +258,6 @@ func (h *MetricsHandler) SaveToDB(key string, value []byte, table string) error 
 	i := 0
 	sort.Strings(timeStamps)
 	for i < count-h.HistoryLength+1 {
-		fmt.Println("del key:", timeStamps[i])
 		delKeys = append(delKeys, timeStamps[i])
 		i++
 	}

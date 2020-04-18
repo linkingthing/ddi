@@ -11,7 +11,6 @@
 package collector
 
 import (
-	"fmt"
 	"github.com/linkingthing/ddi/utils/boltoper"
 	"github.com/prometheus/client_golang/prometheus"
 	"sort"
@@ -145,7 +144,6 @@ func (c *Metrics) GenerateQPS() error {
 		if queryLast, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
 			return err
 		}
-		fmt.Println("read from db:", numPrev, queryPrev, numLast, queryLast)
 		c.gaugeMetricData["qps"] = float64(queryLast-queryPrev) / float64(numLast-numPrev)
 	}
 	return nil
@@ -166,7 +164,6 @@ func (c *Metrics) GenerateQuery() error {
 		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
 			return err
 		}
-		fmt.Println("querys read from db:", query)
 		c.counterMetricData["querys"] = float64(query)
 	}
 	return nil
@@ -187,7 +184,6 @@ func (c *Metrics) GenerateRecurQuery() error {
 		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
 			return err
 		}
-		fmt.Println("recursive querys read from db:", query)
 		c.counterMetricData["recurquerys"] = float64(query)
 	}
 	return nil
@@ -208,7 +204,6 @@ func (c *Metrics) GenerateMemHit() error {
 		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
 			return err
 		}
-		fmt.Println("cache hit read from db:", query)
 		c.counterMetricData["memhit"] = float64(query)
 	}
 	return nil
@@ -229,10 +224,8 @@ func (c *Metrics) GenerateRetCode(retCode string, table string) error {
 		if query, err = strconv.Atoi(string(kvs[timeStamps[len(timeStamps)-1]])); err != nil {
 			return err
 		}
-		fmt.Println(retCode, " read from db:", query)
 		c.counterMetricData[retCode] = float64(query)
 	} else if len(kvs) <= 1 {
-		fmt.Println(retCode, " read from db:0")
 		c.counterMetricData[retCode] = 0
 	}
 	return nil

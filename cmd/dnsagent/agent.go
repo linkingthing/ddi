@@ -130,7 +130,7 @@ func dnsClient(conn *grpc.ClientConn, kafkaServer string) {
 			return
 		}
 
-		fmt.Println(string(message.Key))
+		fmt.Println("kafka cmd:", string(message.Key))
 		switch string(message.Key) {
 		case STARTDNS:
 			var target pb.DNSStartReq
@@ -338,6 +338,7 @@ func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 				log.Println(err)
 			}
 		}
+		fmt.Println("kafka cmd:", string(message.Key))
 		switch string(message.Key) {
 		case StartDHCPv4:
 			var target pb.StartDHCPv4Req
