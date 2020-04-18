@@ -250,10 +250,9 @@ func (r *Poolv6Handler) CreatePoolv6(pool *RestPoolv6) (*RestPoolv6, error) {
 	//todo check whether it exists
 	subnetv6ID := pool.GetParent().GetID()
 
-	subnetv4ID := pool.GetParent().GetID()
-	log.Println("before CreatePool, subnetv4ID:", subnetv4ID)
+	log.Println("before CreatePool, subnetv6ID:", subnetv6ID)
 
-	if err := r.UpdateSubnetv6Server(subnetv4ID, pool); err != nil {
+	if err := r.UpdateSubnetv6Server(subnetv6ID, pool); err != nil {
 		return nil, err
 	}
 

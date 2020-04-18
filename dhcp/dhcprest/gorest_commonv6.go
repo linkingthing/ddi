@@ -140,8 +140,8 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 }
 
 //tools func
-func ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
-	log.Println("into ConvertPoolsFromOrmToRest")
+func (r *Poolv6Handler) ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
+	log.Println("into ConvertPoolv6sFromOrmToRest")
 
 	var restPs []*RestPoolv6
 	for _, v := range ps {
@@ -149,15 +149,24 @@ func ConvertPoolv6sFromOrmToRest(ps []*dhcporm.Poolv6) []*RestPoolv6 {
 			BeginAddress: v.BeginAddress,
 			EndAddress:   v.EndAddress,
 		}
-		restP.Total = ipv42Long(v.EndAddress) - ipv42Long(v.BeginAddress) + 1
+		restP.Total = 0 //todo compute poolv6 addresses sum
 		restP.ID = strconv.Itoa(int(v.ID))
 
 		// todo get usage of a pool, (put it to somewhere)
 
-		restP.Usage = 15.32
+		restP.Usage = 0
 		restP.AddressType = "resv"
 		restP.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 		restP.PoolName = v.BeginAddress + "-" + v.EndAddress
+
+		//get ormSubnetv6 from subnetv6Id
+		pgdb := NewPGDB(r.db)
+		subnetv6Id := strconv.Itoa(int(v.Subnetv6ID))
+		s6 := pgdb.GetSubnetv6ById(subnetv6Id)
+		restP.DnsServer = s6.DnsServer
+		restP.Subnetv6Id = subnetv6Id
+		restP.MaxValidLifetime = v.MaxValidLifetime
+		restP.ValidLifetime = v.ValidLifetime
 
 		restPs = append(restPs, &restP)
 
