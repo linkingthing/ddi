@@ -83,8 +83,7 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 		errStr := "subnet " + subnetv6.Subnet + " already exist"
 		return fmt.Errorf(errStr)
 	}
-
-	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv6)
+	subnetv6.DhcpEnable = 1
 	s6, err := PGDBConn.CreateSubnetv6(subnetv6)
 	if err != nil {
 		return err

@@ -90,6 +90,13 @@ type RestSubnetv6 struct {
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	//Gateway               string `json:"gateway"`
+	DnsServer string `json:"dnsServer"`
+	//added for new zone handler
+	DhcpEnable int    `json:"dhcpEnable"`
+	DnsEnable  int    `json:"dnsEnable"`
+	ZoneName   string `json:"zoneName"`
+	ViewId     string `json:"viewId"`
+	Notes      string `json:"notes"`
 }
 
 //tools func

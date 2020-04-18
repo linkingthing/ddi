@@ -103,6 +103,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return fmt.Errorf(errStr)
 	}
 
+	subnetv4.DhcpEnable = 1
 	log.Println("in dhcp/dhcprest CreateSubnetv4, subnetv4: ", subnetv4)
 	s4, err := PGDBConn.CreateSubnetv4(subnetv4)
 	if err != nil {
