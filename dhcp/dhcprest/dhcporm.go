@@ -165,12 +165,12 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
 		Subnet:        restSubnetv4.Subnet,
-		Id:            strconv.Itoa(int(last.ID)),
+		Id:            restSubnetv4.ID,
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
 		DnsServer:     restSubnetv4.DnsServer,
 	}
-	log.Println("pb.CreateSubnetv4Req req: ", req)
+	log.Println("pb.CreateSubnetv4Req req.id: ", req.Id)
 
 	data, err := proto.Marshal(&req)
 	if err != nil {

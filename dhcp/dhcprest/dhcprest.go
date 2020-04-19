@@ -723,12 +723,9 @@ func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 
 	subnetId := pool.GetParent().GetID()
 	log.Println("in UpdatePool, +++subnetId:", subnetId)
-	if len(pool.Gateway) > 0 || len(pool.DnsServer) > 0 {
-		// set dns or gateway under subnet
-		//get Restsubnetv4 or RestSubnetv6
-		if err := r.UpdateSubnetv4Server(subnetId, pool); err != nil {
-			return err
-		}
+
+	if err := r.UpdateSubnetv4Server(subnetId, pool); err != nil {
+		return err
 	}
 	pool.Subnetv4Id = subnetId
 

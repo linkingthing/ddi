@@ -101,8 +101,8 @@ type RestPool struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Subnetv4Id            string       `json:"subnetv4Id"`
 	OptionData            []RestOption `json:"optionData"`
-	BeginAddress          string       `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	EndAddress            string       `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
+	BeginAddress          string       `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=22"`
+	EndAddress            string       `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=22"`
 	MaxValidLifetime      string       `json:"maxValidLifetime,omitempty"`
 	ValidLifetime         string       `json:"validLifetime,omitempty"`
 	Total                 uint32       `json:"total"`
