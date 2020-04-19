@@ -441,6 +441,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		ClientId:   r.ClientId,
 		CircuitId:  r.CircuitId,
 		NextServer: r.NextServer,
+		ReservType: r.ResvType,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 	pbRsv := pb.Reservation{
@@ -451,6 +452,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		HwAddress:   r.HwAddress,
 		ClientId:    r.ClientId,
 		CircuitId:   r.CircuitId,
+		ResvType:    r.ResvType,
 		//OptData:     r.OptionData,
 	}
 

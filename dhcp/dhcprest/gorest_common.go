@@ -94,6 +94,7 @@ type RestReservation struct {
 	NextServer     string       `json:"nextServer"`
 	OptionData     []RestOption `json:"optionData"`
 	ServerHostname string       `json:"serverHostname"`
+	ResvType       string       `json:"resvType"` // resv or stable
 }
 
 type RestPool struct {

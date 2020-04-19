@@ -100,6 +100,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 				restRsv.IpAddress = changeData.IpAddress
 				restRsv.CircuitId = changeData.CircuitId
 				restRsv.HwAddress = changeData.HwAddress
+				restRsv.ResvType = "stable"
 				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
 
 					log.Println("newly created ormRsv.ID:", ormRsv.ID)
@@ -127,6 +128,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 				restRsv.Hostname = changeData.Hostname
 				restRsv.ClientId = changeData.ClientId
 				restRsv.IpAddress = changeData.IpAddress
+				restRsv.ResvType = "resv"
 
 				if ormRsv, err := dhcprest.PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
 					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
