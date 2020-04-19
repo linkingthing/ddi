@@ -58,11 +58,11 @@ func (s *Dhcpv6) getSubnetv6ByName(name string) *RestSubnetv6 {
 	return v6
 }
 
-func (s *Dhcpv6) GetSubnetv6s() []*RestSubnetv6 {
+func (s *Dhcpv6) GetSubnetv6s(search *SubnetSearch) []*RestSubnetv6 {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	list := PGDBConn.Subnetv6List()
+	list := PGDBConn.Subnetv6List(search)
 
 	var v6 []*RestSubnetv6
 	for _, v := range list {
@@ -96,6 +96,11 @@ func (s *Dhcpv6) CreateSubnetv6(subnetv6 *RestSubnetv6) error {
 	subnetv6.ID = strconv.Itoa(int(s6.ID))
 	subnetv6.SubnetId = strconv.Itoa(int(s6.ID))
 	subnetv6.SetCreationTimestamp(s6.CreatedAt)
+	log.Println("in CreateSubnetv6, subnetv6.Name: ", subnetv6.Name)
+	log.Println("in CreateSubnetv6, subnetv6.ZoneName: ", subnetv6.ZoneName)
+	log.Println("in CreateSubnetv6, subnetv6.dhcpenable: ", subnetv6.DhcpEnable)
+	subnetv6.ZoneName = s6.Name
+
 	log.Println("newly inserted id: ", s6.ID)
 
 	return nil
@@ -116,7 +121,11 @@ func (s *Dhcpv6) UpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	if err != nil {
 		return err
 	}
-
+	log.Println("in UpdateSubnetv6, subnetv6.Name: ", subnetv6.Name)
+	log.Println("in UpdateSubnetv6, subnetv6.ZoneName: ", subnetv6.ZoneName)
+	if len(subnetv6.ZoneName) == 0 {
+		subnetv6.ZoneName = subnetv6.Name
+	}
 	subnetv6.CreationTimestamp = resource.ISOTime(subnetv6.GetCreationTimestamp())
 	log.Println("subnetv6.CreationTimestamp ", subnetv6.CreationTimestamp)
 
@@ -180,8 +189,9 @@ func (h *subnetv6Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 
 func (h *subnetv6Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into subnetv6Handler dhcprest.go List")
-
-	return h.subnetv6s.GetSubnetv6s(), nil
+	var search *SubnetSearch
+	// no search now
+	return h.subnetv6s.GetSubnetv6s(search), nil
 }
 
 func (h *subnetv6Handler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
@@ -208,11 +218,11 @@ func (s *Dhcpv6) getSubnetv6ById(id string) *RestSubnetv6 {
 func (s *Dhcpv6) getSubnetv6BySubnet(subnet string) *RestSubnetv6 {
 	log.Println("In dhcprest getSubnetv6BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.getSubnetv6BySubnet(subnet)
+	v := PGDBConn.getOrmSubnetv6BySubnet(subnet)
 	if v.ID == 0 {
 		return nil
 	}
-	v6 := s.ConvertSubnetv6FromOrmToRest(v)
+	v6 := s.ConvertSubnetv6FromOrmToRest(&v)
 
 	return v6
 }

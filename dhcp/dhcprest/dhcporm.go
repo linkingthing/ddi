@@ -73,12 +73,18 @@ func (handler *PGDB) Close() {
 //	return nil
 //}
 
-func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
+func (handler *PGDB) Subnetv4List(search *SubnetSearch) []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
 
-	query := handler.db.Find(&subnetv4s)
-	if query.Error != nil {
-		log.Print(query.Error.Error())
+	if search != nil && search.DhcpVer != "" {
+		subnet := handler.getOrmSubnetv4BySubnet(search.Subnet)
+		subnetv4s = append(subnetv4s, subnet)
+		log.Println("in Subnetv4List, search ret subnet: ", subnet)
+	} else {
+		query := handler.db.Find(&subnetv4s)
+		if query.Error != nil {
+			log.Print(query.Error.Error())
+		}
 	}
 
 	for k, v := range subnetv4s {
@@ -95,6 +101,9 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 		//	log.Println("options: ", options)
 		//}
 
+		if len(v.Name) > 0 && len(v.ZoneName) == 0 {
+			subnetv4s[k].ZoneName = v.Name
+		}
 		rsv := []dhcporm.OrmReservation{}
 		if err := handler.db.Where("subnetv4_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv).Error; err != nil {
 			log.Print(err)
@@ -105,13 +114,13 @@ func (handler *PGDB) Subnetv4List() []dhcporm.OrmSubnetv4 {
 	return subnetv4s
 }
 
-func (handler *PGDB) getSubnetv4BySubnet(subnet string) *dhcporm.OrmSubnetv4 {
-	log.Println("in getSubnetv4BySubnet, subnet: ", subnet)
+func (handler *PGDB) getOrmSubnetv4BySubnet(subnet string) dhcporm.OrmSubnetv4 {
+	log.Println("in getOrmSubnetv4BySubnet, subnet: ", subnet)
 
 	var subnetv4 dhcporm.OrmSubnetv4
 	handler.db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
-
-	return &subnetv4
+	log.Println("in getOrmSubnetv4BySubnet, subnetv4: ", subnetv4)
+	return subnetv4
 }
 
 func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
@@ -140,7 +149,9 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		ZoneName:         restSubnetv4.ZoneName,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
+	if len(s4.Name) > 0 && len(s4.ZoneName) == 0 {
+		s4.ZoneName = s4.Name
+	}
 	query := handler.db.Create(&s4)
 
 	if query.Error != nil {
@@ -187,6 +198,9 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	dbS4.Notes = subnetv4.Notes
 	dbS4.Gateway = subnetv4.Gateway
 	dbS4.DnsServer = subnetv4.DnsServer
+	if len(dbS4.Name) > 0 && len(dbS4.ZoneName) == 0 {
+		dbS4.ZoneName = dbS4.Name
+	}
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
 		if len(subnetv4.ViewId) == 0 {
@@ -427,6 +441,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		ClientId:   r.ClientId,
 		CircuitId:  r.CircuitId,
 		NextServer: r.NextServer,
+		ReservType: r.ResvType,
 		//DhcpVer:       Dhcpv4Ver,
 	}
 	pbRsv := pb.Reservation{
@@ -437,6 +452,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		HwAddress:   r.HwAddress,
 		ClientId:    r.ClientId,
 		CircuitId:   r.CircuitId,
+		ResvType:    r.ResvType,
 		//OptData:     r.OptionData,
 	}
 
@@ -467,6 +483,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		CircuitId:  pbRsv.CircuitId,
 		ClientId:   pbRsv.ClientId,
 		NextServer: pbRsv.NextServer,
+		ResvType:   pbRsv.ResvType,
 	}
 	log.Println("OrmCreateReservation, req: ", req)
 	data, err := proto.Marshal(&req)

@@ -62,25 +62,49 @@ func (s *Dhcpv4) ConvertV6sToV46s(v *RestSubnetv6) *RestSubnetv46 {
 	v46.CreationTimestamp = v.CreationTimestamp
 	return &v46
 }
-func (s *Dhcpv4) GetSubnetv46s() []*RestSubnetv46 {
+
+type SubnetSearch struct {
+	DhcpVer string // v4 or v6
+	Subnet  string
+}
+
+func (s *Dhcpv4) GetSubnetv46s(search *SubnetSearch) []*RestSubnetv46 {
 	log.Println("into GetSubnetv46s()")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	var all []*RestSubnetv46
-	v4s := s.GetSubnetv4s()
+	if search.DhcpVer != "" && search.DhcpVer == "v4" {
+		log.Println("in GetSubnetv46s, v4 search.Subnet: ", search.Subnet)
+		v4s := s.GetSubnetv4s(search)
+		for _, v4 := range v4s {
+			all = append(all, s.ConvertV4sToV46s(v4))
+		}
+		return all
+	}
+	if search.DhcpVer != "" && search.DhcpVer == "v6" {
+		log.Println("in GetSubnetv46s, v6 search.Subnet: ", search.Subnet)
+		dhcpv6 := NewDhcpv6(db)
+		v6s := dhcpv6.GetSubnetv6s(search)
+		for _, v6 := range v6s {
+			//log.Println("v6: ", v6)
+			all = append(all, s.ConvertV6sToV46s(v6))
+		}
+		return all
+	}
+
+	v4s := s.GetSubnetv4s(search)
 	for _, v4 := range v4s {
+		log.Println("v4: ", v4)
 		all = append(all, s.ConvertV4sToV46s(v4))
 	}
-
 	dhcpv6 := NewDhcpv6(db)
-	v6s := dhcpv6.GetSubnetv6s()
+	v6s := dhcpv6.GetSubnetv6s(search)
 	for _, v6 := range v6s {
-		//log.Println("v6: ", v6)
+		log.Println("v6: ", v6)
 		all = append(all, s.ConvertV6sToV46s(v6))
 	}
-
-	log.Println("in GetSubnetv46s, all: ", all)
+	log.Println("in GetSubnetv46s, search is nil, all: ", all)
 	return all
 
 }
@@ -214,8 +238,9 @@ func (s *Dhcpv4) MergeSubnetv4(ids string) (*RestSubnetv4, error) {
 		subnet := s.getSubnetv4ById(id).Subnet
 		subnetArr = append(subnetArr, subnet)
 	}
+	log.Println("subnetArr: ", subnetArr)
 	cidrs = strings.TrimSpace(strings.Join(subnetArr, "\n"))
-	//log.Println("cidrs:", cidrs, "__")
+	log.Println("cidrs:", cidrs, "__")
 
 	newSubnetName, err := GetMergedSubnetv4Name(cidrs)
 	if err != nil {
@@ -263,16 +288,16 @@ func (s *Dhcpv4) getSubnetv4ById(id string) *RestSubnetv4 {
 func (s *Dhcpv4) getSubnetv4BySubnet(subnet string) *RestSubnetv4 {
 	log.Println("In dhcprest getSubnetv4BySubnet, subnet: ", subnet)
 
-	v := PGDBConn.getSubnetv4BySubnet(subnet)
+	v := PGDBConn.getOrmSubnetv4BySubnet(subnet)
 	if v.ID == 0 {
 		return nil
 	}
-	v4 := s.ConvertSubnetv4FromOrmToRest(v)
+	v4 := s.ConvertSubnetv4FromOrmToRest(&v)
 
 	return v4
 }
 
-func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
+func (s *Dhcpv4) GetSubnetv4s(search *SubnetSearch) []*RestSubnetv4 {
 	log.Println("into GetSubnetv4s()")
 
 	//todo get subnet name, usage, totalIP
@@ -286,7 +311,7 @@ func (s *Dhcpv4) GetSubnetv4s() []*RestSubnetv4 {
 	}
 	//log.Println("getUsages: ", getUsages)
 
-	list := PGDBConn.Subnetv4List()
+	list := PGDBConn.Subnetv4List(search)
 	var v4 []*RestSubnetv4
 	for _, v := range list {
 
@@ -341,6 +366,7 @@ func (h *subnetv4Handler) Create(ctx *resource.Context) (resource.Resource, *gor
 
 	subnetv4 := ctx.Resource.(*RestSubnetv4)
 	//subnetv4.SetID(subnetv4.Subnet)
+	subnetv4.ZoneName = subnetv4.Name
 	subnetv4.SetCreationTimestamp(time.Now())
 	log.Println("into dhcprest.go Create, subnetv4: ", subnetv4)
 	log.Println("into dhcprest.go Create, subnetv4 ValidLifetime: ", subnetv4.ValidLifetime)
@@ -380,8 +406,10 @@ func (h *subnetv4Handler) Delete(ctx *resource.Context) *goresterr.APIError {
 
 func (h *subnetv4Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go List")
-
-	all := h.subnetv4s.GetSubnetv4s()
+	//filter := ctx.GetFilters()
+	var search *SubnetSearch
+	// no search now
+	all := h.subnetv4s.GetSubnetv4s(search)
 
 	log.Println("in list(), before all")
 	return all, nil
@@ -389,9 +417,32 @@ func (h *subnetv4Handler) List(ctx *resource.Context) (interface{}, *goresterr.A
 
 func (h *subnetv46Handler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
 	log.Println("into dhcprest.go List")
-	//filter := ctx.GetFilters()
+	filters := ctx.GetFilters()
+	var search SubnetSearch
+	for _, filter := range filters {
+		log.Println("filter.name: ", filter.Name)
+		log.Println("filter.Values: ", filter.Values)
+		if len(filter.Values) > 0 {
+			subnet := filter.Values[0]
+			search.Subnet = subnet
+			//search this subnet
+			if strings.Contains(subnet, ":") {
+				//serach subnetv6
+
+				search.DhcpVer = "v6"
+			} else if strings.Contains(subnet, "/") {
+				//search subnetv4
+
+				search.DhcpVer = "v4"
+			} else {
+				// error occurs
+				log.Println("subnet search error")
+				return nil, nil
+			}
+		}
+	}
 	var all []*RestSubnetv46
-	all = h.subnetv46s.GetSubnetv46s()
+	all = h.subnetv46s.GetSubnetv46s(&search)
 
 	log.Println("in list(), before all")
 	return all, nil

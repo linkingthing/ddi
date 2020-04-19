@@ -27,18 +27,25 @@ func (handler *PGDB) GetSubnetv6ByName(db *gorm.DB, name string) *dhcporm.OrmSub
 	return &subnetv6
 }
 
-func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
+func (handler *PGDB) Subnetv6List(search *SubnetSearch) []dhcporm.OrmSubnetv6 {
 	var subnetv6s []dhcporm.OrmSubnetv6
-
-	query := handler.db.Find(&subnetv6s)
-	if query.Error != nil {
-		log.Print(query.Error.Error())
+	if search != nil && search.DhcpVer != "" {
+		subnet := handler.getOrmSubnetv6BySubnet(search.Subnet)
+		subnetv6s = append(subnetv6s, subnet)
+		log.Println("in Subnetv6List, search ret subnet: ", subnet)
+	} else {
+		query := handler.db.Find(&subnetv6s)
+		if query.Error != nil {
+			log.Print(query.Error.Error())
+		}
 	}
 
 	for k, v := range subnetv6s {
 		//log.Println("k: ", k, ", v: ", v)
 		//log.Println("in Subnetv4List, v.ID: ", v.ID)
-
+		if len(v.Name) > 0 && len(v.ZoneName) == 0 {
+			subnetv6s[k].ZoneName = v.Name
+		}
 		rsv6 := []*dhcporm.OrmReservationv6{}
 		if err := handler.db.Where("subnetv6_id = ?", strconv.Itoa(int(v.ID))).Find(&rsv6).Error; err != nil {
 			log.Print(err)
@@ -49,13 +56,13 @@ func (handler *PGDB) Subnetv6List() []dhcporm.OrmSubnetv6 {
 	return subnetv6s
 }
 
-func (handler *PGDB) getSubnetv6BySubnet(subnet string) *dhcporm.OrmSubnetv6 {
-	log.Println("in getSubnetv6BySubnet, subnet: ", subnet)
+func (handler *PGDB) getOrmSubnetv6BySubnet(subnet string) dhcporm.OrmSubnetv6 {
+	log.Println("in getOrmSubnetv6BySubnet, subnet: ", subnet)
 
 	var subnetv6 dhcporm.OrmSubnetv6
 	handler.db.Where(&dhcporm.OrmSubnetv6{Subnet: subnet}).Find(&subnetv6)
 
-	return &subnetv6
+	return subnetv6
 }
 
 func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
@@ -77,11 +84,14 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 		Name:         s.Name,
 		Subnet:       s.Subnet,
 		ZoneName:     s.Name,
+		DhcpEnable:   1,
 		//ValidLifetime: s.ValidLifetime,
 		//Gateway:       s.Gateway,
 		//DhcpVer:       Dhcpv4Ver,
 	}
-
+	if len(s6.Name) > 0 && len(s6.ZoneName) == 0 {
+		s6.ZoneName = s6.Name
+	}
 	query := handler.db.Create(&s6)
 
 	if query.Error != nil {
@@ -126,7 +136,9 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	dbS6.ID = uint(id)
 	dbS6.DhcpEnable = subnetv6.DhcpEnable
 	dbS6.ZoneName = subnetv6.ZoneName
-
+	if len(dbS6.Name) > 0 && len(dbS6.ZoneName) == 0 {
+		dbS6.ZoneName = dbS6.Name
+	}
 	dbS6.DnsEnable = subnetv6.DnsEnable
 	dbS6.Notes = subnetv6.Notes
 	dbS6.DnsServer = subnetv6.DnsServer

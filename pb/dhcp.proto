@@ -62,6 +62,7 @@ message Reservation{
     string clientId = 9;
     string serverHostname = 10;
     string bootFileName = 11;
+    string resvType = 12;
 }
 
 message Pools{
@@ -151,6 +152,7 @@ message CreateSubnetv4ReservationReq{
     string circuitId = 8;
     string clientId = 9;
     string hwAddress = 10;
+    string resvType = 11;
     //repeated string clientClasses = 8;
 }
 

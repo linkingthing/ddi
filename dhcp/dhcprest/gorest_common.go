@@ -94,6 +94,7 @@ type RestReservation struct {
 	NextServer     string       `json:"nextServer"`
 	OptionData     []RestOption `json:"optionData"`
 	ServerHostname string       `json:"serverHostname"`
+	ResvType       string       `json:"resvType"` // resv or stable
 }
 
 type RestPool struct {
@@ -451,6 +452,11 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.DnsEnable = v.DnsEnable
 	v4.ViewId = v.ViewId
 	v4.Notes = v.Notes
+
+	if len(v4.ZoneName) == 0 {
+		v4.ZoneName = v4.Name
+	}
+
 	return v4
 }
 func (r *ReservationHandler) convertSubnetv4ReservationFromOrmToRest(v *dhcporm.OrmReservation) *RestReservation {
@@ -502,6 +508,8 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.MaxValidLifetime = v.MaxValidLifetime
 	pool.ValidLifetime = v.ValidLifetime
 
+	log.Println("into convertSubnetv4PoolFromOrmToRest, v.MaxValidLifetime: ", v.MaxValidLifetime)
+	log.Println("into convertSubnetv4PoolFromOrmToRest, v.ValidLifetime: ", v.ValidLifetime)
 	return pool
 }
 
