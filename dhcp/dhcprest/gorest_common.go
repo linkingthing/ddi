@@ -23,8 +23,8 @@ import (
 
 var (
 	version = resource.APIVersion{
-		Group:   "linkingthing",
-		Version: "dhcp/v1",
+		Group:   "linkingthing.com",
+		Version: "example/v1",
 	}
 
 	subnetv4Kind    = resource.DefaultKindName(RestSubnetv4{})

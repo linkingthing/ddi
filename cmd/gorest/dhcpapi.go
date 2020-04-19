@@ -21,8 +21,8 @@ import (
 
 var (
 	version = resource.APIVersion{
-		Group:   "linkingthing",
-		Version: "dhcp/v1",
+		Group:   "linkingthing.com",
+		Version: "example/v1",
 	}
 )
 
