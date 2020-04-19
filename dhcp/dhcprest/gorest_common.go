@@ -443,6 +443,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.Name = v.Name
 	v4.SubnetId = strconv.Itoa(int(v.ID))
 	v4.ValidLifetime = v.ValidLifetime
+	v4.MaxValidLifetime = v.MaxValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 

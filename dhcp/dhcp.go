@@ -429,6 +429,7 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 		if v.Subnet == req.Subnet {
 			log.Println("v.Subnet: ", v.Subnet)
 			conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
 			if len(req.Pool) > 0 {
 				log.Println("req.pool: ", req.Pool)
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
