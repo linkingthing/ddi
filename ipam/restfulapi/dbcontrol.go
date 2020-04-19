@@ -109,14 +109,14 @@ func (controller *DBController) GetDividedAddresses(subNetID string, ip string, 
 		tmp := tb.DividedAddress{IP: l.IpAddress, MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
 		allData[l.IpAddress] = tmp
 	}
-	if len(pools) > 0 {
-		beginNums := strings.Split(pools[0].BeginAddress, ".")
-		prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
-		for i := 1; i < 256; i++ {
-			if allData[prefix+strconv.Itoa(i)].AddressType == "" {
-				tmp := tb.DividedAddress{IP: prefix + strconv.Itoa(i), AddressType: "unused"}
-				allData[prefix+strconv.Itoa(i)] = tmp
-			}
+	subnet := dhcprest.PGDBConn.GetSubnetv4ById(subNetID)
+	parts := strings.Split(subnet.Subnet, "/")
+	beginNums := strings.Split(parts[0], ".")
+	prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
+	for i := 1; i < 256; i++ {
+		if allData[prefix+strconv.Itoa(i)].AddressType == "" {
+			tmp := tb.DividedAddress{IP: prefix + strconv.Itoa(i), AddressType: "unused"}
+			allData[prefix+strconv.Itoa(i)] = tmp
 		}
 	}
 	var err error
