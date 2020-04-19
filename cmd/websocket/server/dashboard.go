@@ -279,7 +279,7 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 
 		var err error
 		var stat DhcpAssignStat
-		stat.ID = v.Id
+		stat.ID = json.Number(strconv.Itoa(int(v.Id)))
 		stat.Name = v.Subnet + ":" + string(v.Id)
 		stat.Addr = v.Subnet
 		stat.Total = stats[string(v.Id)]["total"]
@@ -372,7 +372,7 @@ func GetSubnetUsage() *BaseJsonDhcpAssign {
 
 		var err error
 		var stat DhcpAssignStat
-		stat.ID = v.Id
+		stat.ID = json.Number(strconv.Itoa(int(v.Id)))
 		stat.Name = v.Subnet // + ":" + string(v.Id)
 		stat.Addr = v.Subnet
 		stat.Total = stats[string(v.Id)]["total"]

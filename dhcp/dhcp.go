@@ -107,7 +107,7 @@ type SubnetConfig struct {
 	//Four4o6Subnet      string        `json:"4o6-subnet"`
 	//Authoritative     bool          `json:"authoritative"`
 	//CalculateTeeTimes bool          `json:"calculate-tee-times"`
-	Id json.Number `json:"id"`
+	Id int64 `json:"id"`
 	//MatchClientId   bool          `json:"match-client-id"`
 	//NextServer      string        `json:"next-server"`
 	OptionData []Option `json:"option-data,omitempty"`
@@ -344,17 +344,17 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	}
 
 	//var subnetv4 []SubnetConfig
-	var maxId int
+	//var maxId int
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Println("conf Subnet4: ", v.Subnet)
 		//log.Println("conf Subnet4 id: ", v.Id, ", maxId: ", maxId)
-		curId, err := strconv.Atoi(string(v.Id))
-		if err != nil {
-			return err
-		}
-		if curId >= maxId {
-			maxId = curId + 1
-		}
+		//curId, err := strconv.Atoi(string(v.Id))
+		//if err != nil {
+		//	return err
+		//}
+		//if curId >= maxId {
+		//	maxId = curId + 1
+		//}
 		if v.ReservationMode == "" {
 			log.Println("reserationMode == nil, subnet: ", v.Subnet)
 			conf.Arguments.Dhcp4.Subnet4[k].ReservationMode = "all"
@@ -365,17 +365,24 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		//subnetv4 = append(subnetv4, v)
 	}
 
+	id64, err := strconv.ParseInt(req.Id, 10, 64)
+	if err != nil {
+		log.Println("req.Id error")
+	}
+
+	log.Println("-- ia64: ", id64)
 	newSubnet4 := SubnetConfig{
 		ReservationMode: "all",
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
 		ValidLifetime:   json.Number(req.ValidLifetime),
-		Id:              json.Number(strconv.Itoa(maxId)),
+		Id:              id64,
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},
 		//},
 	}
+	log.Println("new subnetv4 id: ", newSubnet4.Id)
 	newSubnet4.Pools = []Pool{}
 	//subnetv4 = append(subnetv4, newSubnet4)
 	//log.Println("---subnetv4: ", subnetv4)

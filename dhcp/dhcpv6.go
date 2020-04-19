@@ -450,14 +450,19 @@ func (handler *KEAv6Handler) CreateSubnetv6(req pb.CreateSubnetv6Req) error {
 		}
 		//subnetv6 = append(subnetv6, v)
 	}
+	id64, err := strconv.ParseInt(req.Id, 10, 64)
+	if err != nil {
+		log.Println("req.Id error")
+	}
 
+	log.Println("-- ia64: ", id64)
 	newSubnet6 := SubnetConfig{
 		ReservationMode: "all",
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
 		ValidLifetime:   json.Number(req.ValidLifetime),
-		Id:              json.Number(strconv.Itoa(maxId)),
+		Id:              id64,
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},
 		//},
