@@ -205,7 +205,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	if subnetv4.DnsEnable > 0 {
 		if len(subnetv4.ViewId) == 0 {
 			log.Println("Error viewId is null, return")
-			return fmt.Errorf("zone is enabled, viewId is null")
+			//return fmt.Errorf("zone is enabled, viewId is null")
 		}
 		zone := dnsapi.Zone{Name: subnetv4.ZoneName, ZoneType: "master"}
 		log.Println("to create zone, name:", zone.Name)

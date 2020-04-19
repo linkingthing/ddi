@@ -144,8 +144,8 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	dbS6.DnsServer = subnetv6.DnsServer
 	if subnetv6.DnsEnable > 0 {
 		if len(subnetv6.ViewId) == 0 {
-			log.Println("Error viewId is null, return")
-			return fmt.Errorf("zone is enabled, viewId is null")
+			log.Println("Error subnetv6 viewId is null, return")
+			//return fmt.Errorf("zone is enabled, viewId is null")
 		}
 		zone := dnsapi.Zone{Name: subnetv6.ZoneName, ZoneType: "master"}
 
