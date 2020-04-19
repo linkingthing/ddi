@@ -237,8 +237,8 @@ func (r *Poolv6Handler) UpdateSubnetv6Server(subnetId string, pool *RestPoolv6) 
 	//log.Println("into UpdateSubnetv4Server, pool.DnsServer: ", pool.DnsServer)
 	//log.Println("into UpdateSubnetv4Server, pool.Gateway: ", pool.Gateway)
 	ormSubnetv6.DnsServer = pool.DnsServer
-	ormSubnetv6.ValidLifetime = strconv.Itoa(pool.ValidLifetime)
-	ormSubnetv6.MaxValidLifetime = strconv.Itoa(pool.MaxValidLifetime)
+	ormSubnetv6.ValidLifetime = pool.ValidLifetime
+	ormSubnetv6.MaxValidLifetime = pool.MaxValidLifetime
 	var s Dhcpv6
 	restSubnetv6 := s.ConvertSubnetv6FromOrmToRest(ormSubnetv6)
 	//restSubnetv4.Gateway = pool.Gateway

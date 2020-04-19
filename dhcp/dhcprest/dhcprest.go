@@ -698,12 +698,12 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 }
 func (r *PoolHandler) UpdateSubnetv4Server(subnetId string, pool *RestPool) error {
 	ormSubnetv4 := PGDBConn.GetSubnetv4ById(subnetId)
-	//log.Println("into UpdateSubnetv4Server, pool.DnsServer: ", pool.DnsServer)
+	log.Println("into UpdateSubnetv4Server, pool.DnsServer: ", pool.DnsServer)
 	//log.Println("into UpdateSubnetv4Server, pool.Gateway: ", pool.Gateway)
 	ormSubnetv4.DnsServer = pool.DnsServer
 	ormSubnetv4.Gateway = pool.Gateway
-	ormSubnetv4.ValidLifetime = strconv.Itoa(pool.ValidLifetime)
-	ormSubnetv4.MaxValidLifetime = strconv.Itoa(pool.MaxValidLifetime)
+	ormSubnetv4.ValidLifetime = pool.ValidLifetime
+	ormSubnetv4.MaxValidLifetime = pool.MaxValidLifetime
 	var s Dhcpv4
 	restSubnetv4 := s.ConvertSubnetv4FromOrmToRest(ormSubnetv4)
 	//restSubnetv4.Gateway = pool.Gateway
