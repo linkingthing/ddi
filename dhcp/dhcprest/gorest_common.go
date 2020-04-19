@@ -103,8 +103,8 @@ type RestPool struct {
 	OptionData            []RestOption `json:"optionData"`
 	BeginAddress          string       `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	EndAddress            string       `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	MaxValidLifetime      int          `json:"maxValidLifetime,omitempty"`
-	ValidLifetime         int          `json:"validLifetime,omitempty"`
+	MaxValidLifetime      string       `json:"maxValidLifetime,omitempty"`
+	ValidLifetime         string       `json:"validLifetime,omitempty"`
 	Total                 uint32       `json:"total"`
 	Usage                 float32      `json:"usage"`
 	AddressType           string       `json:"addressType"`
@@ -505,8 +505,8 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.Gateway = s4.Gateway
 	pool.DnsServer = s4.DnsServer
 	pool.Subnetv4Id = subnetv4Id
-	pool.MaxValidLifetime = v.MaxValidLifetime
-	pool.ValidLifetime = v.ValidLifetime
+	pool.MaxValidLifetime = strconv.Itoa(v.MaxValidLifetime)
+	pool.ValidLifetime = strconv.Itoa(v.ValidLifetime)
 
 	log.Println("into convertSubnetv4PoolFromOrmToRest, v.MaxValidLifetime: ", v.MaxValidLifetime)
 	log.Println("into convertSubnetv4PoolFromOrmToRest, v.ValidLifetime: ", v.ValidLifetime)

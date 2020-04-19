@@ -54,8 +54,8 @@ type RestPoolv6 struct {
 	OptionData            []RestOptionv6 `json:"optionData"`
 	BeginAddress          string         `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
 	EndAddress            string         `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=12"`
-	MaxValidLifetime      int            `json:"maxValidLifetime,omitempty"`
-	ValidLifetime         int            `json:"validLifetime,omitempty"`
+	MaxValidLifetime      string         `json:"maxValidLifetime,omitempty"`
+	ValidLifetime         string         `json:"validLifetime,omitempty"`
 	Total                 uint32         `json:"total"`
 	Usage                 float32        `json:"usage"`
 	AddressType           string         `json:"addressType"`
@@ -191,8 +191,8 @@ func (r *Poolv6Handler) convertSubnetv6PoolFromOrmToRest(v *dhcporm.Poolv6) *Res
 
 	pool.DnsServer = s6.DnsServer
 	pool.Subnetv6Id = subnetv6Id
-	pool.MaxValidLifetime = v.MaxValidLifetime
-	pool.ValidLifetime = v.ValidLifetime
+	pool.MaxValidLifetime = strconv.Itoa(v.MaxValidLifetime)
+	pool.ValidLifetime = strconv.Itoa(v.ValidLifetime)
 
 	return pool
 }

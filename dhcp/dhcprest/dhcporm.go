@@ -749,15 +749,15 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 		BeginAddress:     r.BeginAddress,
 		EndAddress:       r.EndAddress,
 		OptionData:       []dhcporm.Option{},
-		ValidLifetime:    r.ValidLifetime,
-		MaxValidLifetime: r.MaxValidLifetime,
+		ValidLifetime:    ConvertStringToInt(r.ValidLifetime),
+		MaxValidLifetime: ConvertStringToInt(r.MaxValidLifetime),
 	}
 
 	var pool = pb.Pools{
 		Pool:             r.BeginAddress + "-" + r.EndAddress,
 		Options:          []*pb.Option{},
-		ValidLifetime:    strconv.Itoa(r.ValidLifetime),
-		MaxValidLifetime: strconv.Itoa(r.MaxValidLifetime),
+		ValidLifetime:    r.ValidLifetime,
+		MaxValidLifetime: r.MaxValidLifetime,
 
 		//DhcpVer:       Dhcpv4Ver,
 	}
@@ -817,8 +817,8 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	ormPool.BeginAddress = r.BeginAddress
 	ormPool.EndAddress = r.EndAddress
 	ormPool.Subnetv4ID = ConvertStringToUint(subnetv4_id)
-	ormPool.ValidLifetime = r.ValidLifetime
-	ormPool.MaxValidLifetime = r.MaxValidLifetime
+	ormPool.ValidLifetime = ConvertStringToInt(r.ValidLifetime)
+	ormPool.MaxValidLifetime = ConvertStringToInt(r.MaxValidLifetime)
 
 	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
 
