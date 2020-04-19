@@ -1,12 +1,15 @@
 package grpcserver
 
 import (
+	"log"
+
 	dhcpservice "github.com/linkingthing/ddi/dhcp/service"
 	dnsservice "github.com/linkingthing/ddi/dns/service"
 	"github.com/linkingthing/ddi/pb"
-	//"github.com/linkingthing/ddi/utils"
-	"google.golang.org/grpc"
+
 	"net"
+
+	"google.golang.org/grpc"
 )
 
 type GRPCServer struct {
@@ -32,10 +35,12 @@ func NewGRPCServer(addr string, ConfPath string, agentPath string, dhcp4Ver stri
 	if isDhcpOpen {
 		dhcp4Service = dhcpservice.NewDHCPv4Service(dhcp4Ver, dhcp4Addr, dhcp4ConfPath)
 	}
+	log.Println("in server.go, to register")
 	pb.RegisterAgentManagerServer(server, dnsService)
 	pb.RegisterDhcpv4ManagerServer(server, dhcp4Service)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
+		log.Println("in server.go, error to listen")
 		return nil, err
 	}
 	return &GRPCServer{

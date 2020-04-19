@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -84,11 +85,13 @@ func ConsumerProm() {
 			}
 			//put Role struct into OnlinePromHosts map
 			Role.OnTime = time.Now().Unix()
-			OnlinePromHosts[Role.IP+Role.Role] = Role
+			Role.IP = strings.TrimSpace(Role.IP)
+			Role.Role = strings.TrimSpace(Role.Role)
+			OnlinePromHosts[Role.IP+"_"+Role.Role] = Role
 
-			//log.Println("+++ OnlinePromHosts")
-			//log.Println(OnlinePromHosts)
-			//log.Println("--- OnlinePromHosts")
+			log.Println("+++ OnlinePromHosts")
+			log.Println(OnlinePromHosts)
+			log.Println("--- OnlinePromHosts")
 		}
 
 		//store curOffset into KafkaOffsetFile

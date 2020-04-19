@@ -89,6 +89,8 @@ func main() {
 	go server.SocketServer(port)
 
 	log.Println("Starting dhcp gorest controller")
+
+	router.GET("/apis/linkingthing.com/example/v1/servers", nodeListServer)
 	router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
 	router.GET("/apis/linkingthing/dashboard/v1/dhcpassign", nodeGetDhcpAssign)
 
@@ -96,7 +98,9 @@ func main() {
 	//router.GET("/apis/linkingthing/dashboard/v1/dashdns", nodeGetDashDns)
 
 }
-
+func nodeListServer(c *gin.Context) {
+	server.List_server(c.Writer, c.Request)
+}
 func nodeGetDashDns(c *gin.Context) {
 	server.GetDashDns(c.Writer, c.Request)
 }

@@ -58,6 +58,7 @@ type LocalConf struct {
 	IP           string `yaml:"ip"`
 	Hostname     string `yaml:"hostname"`
 	ParentIP     string `yaml:"parent_ip"`
+	Role         string `yaml:"role"` //3 roles: controller, dhcp, dns
 	//PromHost string `yaml:"prom_host"`
 	//PromPort string `yaml:"prom_port"`
 	//State  uint  `yaml:"state"`   // 1 online 0 offline
@@ -167,14 +168,14 @@ func GetConfig(confPath string) *VanguardConf {
 	if err != nil {
 		panic(PANIC_CONFIG_FILE + err.Error())
 	}
-	log.Println("this host ip: ", conf.Localhost.IP)
+	log.Println("GetConfig(), this host ip: ", conf.Localhost.IP)
 	return conf
 }
 
 func GetLocalIP(confPath string) string {
 
 	ip := GetConfig(confPath).Localhost.IP
-	log.Println("in GetLocalIP(), localhost ip: ")
+	log.Println("in GetLocalIP(), localhost ip: ", ip)
 
 	return ip
 }

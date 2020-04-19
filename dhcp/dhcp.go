@@ -175,6 +175,7 @@ func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 		log.Println("in NewKEAv4Handler, use db:  utils.DBAddr")
 		instance.db, err = gorm.Open("postgres", utils.DBAddr)
 		if err != nil {
+			log.Println("in NewKEAv4Handler, err to open postgres")
 			log.Fatal(err)
 		}
 	}
