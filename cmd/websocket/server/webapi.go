@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -13,6 +11,9 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 type Metric struct {
@@ -440,9 +441,9 @@ func List_server(w http.ResponseWriter, r *http.Request) {
 		result.Data = append(result.Data, s)
 	}
 
-	log.Println("+++ result")
-	log.Println(result)
-	log.Println("--- result")
+	//log.Println("+++ result")
+	//log.Println(result)
+	//log.Println("--- result")
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))
