@@ -52,8 +52,8 @@ type RestPoolv6 struct {
 	resource.ResourceBase `json:"embedded,inline"`
 	Subnetv6Id            string         `json:"subnetv6Id"`
 	OptionData            []RestOptionv6 `json:"optionData"`
-	BeginAddress          string         `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=22"`
-	EndAddress            string         `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=22"`
+	BeginAddress          string         `json:"beginAddress,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	EndAddress            string         `json:"endAddress,omitempty" rest:"required=true,minLen=1,maxLen=255"`
 	MaxValidLifetime      string         `json:"maxValidLifetime,omitempty"`
 	ValidLifetime         string         `json:"validLifetime,omitempty"`
 	Total                 uint32         `json:"total"`
