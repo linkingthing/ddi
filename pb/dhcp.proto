@@ -152,6 +152,7 @@ message CreateSubnetv4ReservationReq{
     string circuitId = 8;
     string clientId = 9;
     string hwAddress = 10;
+    string resvType = 11;
     //repeated string clientClasses = 8;
 }
 

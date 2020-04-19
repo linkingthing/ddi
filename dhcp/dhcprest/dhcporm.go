@@ -483,6 +483,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 		CircuitId:  pbRsv.CircuitId,
 		ClientId:   pbRsv.ClientId,
 		NextServer: pbRsv.NextServer,
+		ResvType:   pbRsv.ResvType,
 	}
 	log.Println("OrmCreateReservation, req: ", req)
 	data, err := proto.Marshal(&req)
