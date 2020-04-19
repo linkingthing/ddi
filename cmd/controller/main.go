@@ -134,16 +134,10 @@ func main() {
 	schemas.MustImport(&version, dnsapi.Redirection{}, dnsapi.NewRedirectionHandler(state))
 	schemas.MustImport(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
 	//ipam interfaces
-	devidedAddressState := ipamapi.NewDividedAddressState()
-	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
-	//scanAddressState := ipamapi.NewScanAddressState()
-	//schemas.MustImport(&version, ipam.ScanAddress{}, ipamapi.NewScanAddressHandler(scanAddressState))
-	/*subtreeState := ipamapi.NewSubtreeState()
-	schemas.MustImport(&version, ipam.Subtree{}, ipamapi.NewSubtreeHandler(subtreeState))*/
+	dividedAddressState := ipamapi.NewDividedAddressState()
+	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(dividedAddressState))
 	ipAttrAppendState := ipamapi.NewIPAttrAppendState()
 	schemas.MustImport(&version, ipam.IPAttrAppend{}, ipamapi.NewIPAttrAppendHandler(ipAttrAppendState))
-
-	//go ipamapi.DBCon.KeepDetectAlive()
 
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
@@ -156,8 +150,6 @@ func main() {
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
-	//devidedAddressState := ipamapi.NewDividedAddressState()
-	//schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
 
 	dhcpv6 := dhcprest.NewDhcpv6(db)
 	schemas.MustImport(&version, dhcprest.RestSubnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
