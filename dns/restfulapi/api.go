@@ -56,10 +56,16 @@ type Zone struct {
 	ForwarderSize         int     `json:"forwardsize"`
 }
 
+type EmbededACL struct {
+	Name  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	ACLID string `json:"aclid"`
+	Type  string `json:"type" rest:"required=true,options=ip|acl"`
+}
+
 type ACL struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	IPs                   []string `json:"IP" rest:"required=true"`
+	Name                  string       `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	ACLs                  []EmbededACL `json:"list"`
 }
 
 type RR struct {
