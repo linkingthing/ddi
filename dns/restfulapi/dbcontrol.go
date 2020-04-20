@@ -8,6 +8,7 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	myaes "github.com/linkingthing/ddi/utils/aes"
 	kfkcli "github.com/linkingthing/ddi/utils/kafkaclient"
+	"regexp"
 	"strconv"
 )
 
@@ -156,25 +157,33 @@ func (controller *DBController) Close() {
 	controller.db.Close()
 }
 
-func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
+func (controller *DBController) CreateACL(aCL *ACL) (*tb.ACL, error) {
 	//create new data in the database
 	var one tb.ACL
+	matched, _ := regexp.MatchString(`^\d+$`, aCL.Name)
+	if matched {
+		return nil, fmt.Errorf("name cann't be number at all.")
+	}
+	matched, _ = regexp.MatchString(`[\da-zA-Z_-]+`, aCL.Name)
+	if !matched {
+		return nil, fmt.Errorf("name is not legal.")
+	}
 	one.Name = aCL.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var dbACLs []tb.ACL
 	if err := tx.Where("name = ?", aCL.Name).Find(&dbACLs).Error; err != nil {
-		return tb.ACL{}, err
+		return nil, err
 	}
 	if len(dbACLs) > 0 {
-		return tb.ACL{}, fmt.Errorf("the name %s of acl exists", aCL.Name)
+		return nil, fmt.Errorf("the name %s of acl exists", aCL.Name)
 	}
 	for _, iP := range aCL.IPs {
 		ip := tb.IP{IP: iP}
 		one.IPs = append(one.IPs, ip)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.ACL{}, err
+		return nil, err
 	}
 	var last tb.ACL
 	tx.Last(&last)
@@ -185,13 +194,13 @@ func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
 	req := pb.CreateACLReq{Name: aCL.Name, ID: strconv.Itoa(int(last.ID)), IPs: iPs}
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return last, err
+		return nil, err
 	}
 	if err := kfkcli.KafkaClient.SendCmd(data, CREATEACL); err != nil {
-		return last, err
+		return nil, err
 	}
 	tx.Commit()
-	return last, nil
+	return &last, nil
 }
 
 func (controller *DBController) DeleteACL(id string) error {
@@ -349,16 +358,21 @@ func (controller *DBController) GetACLs() []*ACL {
 	return aCLs
 }
 
-func (controller *DBController) CreateView(view *View) (tb.View, error) {
+func (controller *DBController) CreateView(view *View) (*tb.View, error) {
 	//create new data in the database
 	var one tb.View
+	//check the name's content. If the name contains "!@#￥%^&*()",return nil
+	matched, _ := regexp.MatchString(`[\da-zA-Z_-]+`, view.Name)
+	if !matched {
+		return nil, fmt.Errorf("name is not legal.")
+	}
 	one.Name = view.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//adjust the priority
 	var allView []tb.View
 	if err := tx.Find(&allView).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	one.Priority = view.Priority
 	if view.Priority > len(allView) {
@@ -375,16 +389,16 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 	}
 	for _, viewDB := range tmpView {
 		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
-			return tb.View{}, err
+			return nil, err
 		}
 	}
 	var dbViews []tb.View
 	//check wether the view is exists.
 	if err := tx.Where("name = ?", view.Name).Find(&dbViews).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	if len(dbViews) > 0 {
-		return tb.View{}, fmt.Errorf("the name %s of view has exists!", view.Name)
+		return nil, fmt.Errorf("the name %s of view has exists!", view.Name)
 	}
 	//add the acls to the view
 	var err error
@@ -394,32 +408,32 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 		tmp := tb.ACL{}
 		var index int
 		if index, err = strconv.Atoi(id); err != nil {
-			return tb.View{}, err
+			return nil, err
 		}
 		tmp.ID = uint(index)
 		//check wether the acl is valid
 		var tmpACL tb.ACL
 		if err := tx.First(&tmpACL, id).Error; err != nil {
-			return tb.View{}, fmt.Errorf("id %s of acl not exists, %w", id, err)
+			return nil, fmt.Errorf("id %s of acl not exists, %w", id, err)
 		}
 		tmp.Name = tmpACL.Name
 		one.ACLs = append(one.ACLs, tmp)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	var last tb.View
 	tx.Last(&last)
 	req := pb.CreateViewReq{ViewName: view.Name, ViewID: strconv.Itoa(int(last.ID)), Priority: int32(view.Priority), ACLIDs: aclids}
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	if err := kfkcli.KafkaClient.SendCmd(data, CREATEVIEW); err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	tx.Commit()
-	return last, nil
+	return &last, nil
 }
 
 func (controller *DBController) DeleteView(id string) error {
@@ -482,6 +496,10 @@ func (controller *DBController) UpdateView(view *View) error {
 		return err
 	}
 	one.ID = uint(num)
+	matched, _ := regexp.MatchString(`[\da-zA-Z_-]+`, view.Name)
+	if !matched {
+		return fmt.Errorf("name is not legal.")
+	}
 	one.Name = view.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()

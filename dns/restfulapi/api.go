@@ -158,7 +158,7 @@ func (d DNS64) GetParents() []resource.ResourceKind {
 
 func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
-	var one tb.ACL
+	var one *tb.ACL
 	var err error
 	if one, err = DBCon.CreateACL(aCL); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -221,7 +221,7 @@ func NewViewHandler(s *ViewsState) *viewHandler {
 
 func (h *viewHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	view := ctx.Resource.(*View)
-	var one tb.View
+	var one *tb.View
 	var err error
 	if one, err = DBCon.CreateView(view); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
