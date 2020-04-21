@@ -378,6 +378,7 @@ func (controller *DBController) GetACLs() []*ACL {
 				var a EmbededACL
 				a.Name = v.Name
 				a.ACLID = strconv.Itoa(int(v.ID))
+				a.Type = v.Type
 				aCL.ACLs = append(aCL.ACLs, a)
 			}
 		}
