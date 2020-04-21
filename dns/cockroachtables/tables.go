@@ -7,14 +7,15 @@ import (
 type ACL struct {
 	gorm.Model
 	Name  string
-	Views []View `gorm:"many2many:view_acls;"`
-	IPs   []IP   `gorm:"foreignkey:ACLID"`
-	//SortLists []SortList `gorm:"many2many:sortlist_acls;"`
+	Views []View       `gorm:"many2many:view_acls;"`
+	ACLs  []EmbededACL `gorm:"foreignkey:ParentID"`
 }
 
-type IP struct {
-	IP    string
-	ACLID uint `sql:"type:integer REFERENCES acls(id) on update cascade on delete cascade"`
+type EmbededACL struct {
+	Name     string
+	Type     string
+	ID       uint `sql:"type:integer REFERENCES acls(id)"`
+	ParentID uint `sql:"type:integer REFERENCES acls(id) on update cascade on delete cascade"`
 }
 
 type View struct {

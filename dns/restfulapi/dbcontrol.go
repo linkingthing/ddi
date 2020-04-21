@@ -8,6 +8,7 @@ import (
 	"github.com/linkingthing/ddi/pb"
 	myaes "github.com/linkingthing/ddi/utils/aes"
 	kfkcli "github.com/linkingthing/ddi/utils/kafkaclient"
+	"regexp"
 	"strconv"
 )
 
@@ -71,7 +72,7 @@ func NewDBController(db *gorm.DB) *DBController {
 	if err := tx.AutoMigrate(&tb.ACL{}).Error; err != nil {
 		panic(err)
 	}
-	if err := tx.AutoMigrate(&tb.IP{}).Error; err != nil {
+	if err := tx.AutoMigrate(&tb.EmbededACL{}).Error; err != nil {
 		panic(err)
 	}
 	if err := tx.AutoMigrate(&tb.Forwarder{}).Error; err != nil {
@@ -156,42 +157,61 @@ func (controller *DBController) Close() {
 	controller.db.Close()
 }
 
-func (controller *DBController) CreateACL(aCL *ACL) (tb.ACL, error) {
+func (controller *DBController) CreateACL(aCL *ACL) (*tb.ACL, error) {
 	//create new data in the database
 	var one tb.ACL
+	matched, _ := regexp.MatchString(`^\d+$`, aCL.Name)
+	if matched {
+		return nil, fmt.Errorf("name cann't be number at all.")
+	}
+	matched, _ = regexp.MatchString(`^[0-9a-zA-Z_-]+$`, aCL.Name)
+	if !matched {
+		return nil, fmt.Errorf("name is not legal.")
+	}
 	one.Name = aCL.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var dbACLs []tb.ACL
 	if err := tx.Where("name = ?", aCL.Name).Find(&dbACLs).Error; err != nil {
-		return tb.ACL{}, err
+		return nil, err
 	}
 	if len(dbACLs) > 0 {
-		return tb.ACL{}, fmt.Errorf("the name %s of acl exists", aCL.Name)
+		return nil, fmt.Errorf("the name %s of acl exists", aCL.Name)
 	}
-	for _, iP := range aCL.IPs {
-		ip := tb.IP{IP: iP}
-		one.IPs = append(one.IPs, ip)
+	var err error
+	for _, v := range aCL.ACLs {
+		ip := tb.EmbededACL{Name: v.Name}
+		ip.Type = v.Type
+		if v.Type == "ip" {
+			ip.ID = 1 //use the 1 temporary.
+		} else if v.Type == "acl" {
+			var num int
+			if num, err = strconv.Atoi(v.ACLID); err != nil {
+				return nil, err
+			}
+			ip.ID = uint(num)
+		}
+		one.ACLs = append(one.ACLs, ip)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.ACL{}, err
+		return nil, err
 	}
 	var last tb.ACL
 	tx.Last(&last)
 	var iPs []string
-	for _, iP := range aCL.IPs {
-		iPs = append(iPs, iP)
+	for _, v := range aCL.ACLs {
+		iPs = append(iPs, v.Name)
 	}
 	req := pb.CreateACLReq{Name: aCL.Name, ID: strconv.Itoa(int(last.ID)), IPs: iPs}
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return last, err
+		return nil, err
 	}
 	if err := kfkcli.KafkaClient.SendCmd(data, CREATEACL); err != nil {
-		return last, err
+		return nil, err
 	}
 	tx.Commit()
-	return last, nil
+	return &last, nil
 }
 
 func (controller *DBController) DeleteACL(id string) error {
@@ -256,12 +276,16 @@ func (controller *DBController) GetACL(id string) (*ACL, error) {
 	aCL := ACL{}
 	aCL.SetID(id)
 	aCL.Name = a.Name
-	var iPs []tb.IP
-	if err := tx.Where("acl_id = ?", id).Find(&iPs).Error; err != nil {
+	var acls []tb.EmbededACL
+	if err := tx.Where("parent_id = ?", id).Find(&acls).Error; err != nil {
 		return nil, err
 	}
-	for _, dBIP := range iPs {
-		aCL.IPs = append(aCL.IPs, dBIP.IP)
+	for _, v := range acls {
+		var one EmbededACL
+		one.Name = v.Name
+		one.ACLID = strconv.Itoa(int(v.ID))
+		one.Type = v.Type
+		aCL.ACLs = append(aCL.ACLs, one)
 	}
 	aCL.Type = "acl"
 	aCL.SetCreationTimestamp(a.CreatedAt)
@@ -296,23 +320,33 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 			return fmt.Errorf("the name of the acl: %s is exists!", aCL.Name)
 		}
 	}
-	//delete the old ips data.
-	if err := tx.Where("acl_id = ?", aCL.GetID()).Delete(&tb.IP{}).Error; err != nil {
+	//delete the old acls data.
+	if err := tx.Where("parent_id = ?", aCL.GetID()).Delete(&tb.EmbededACL{}).Error; err != nil {
 		return err
 	}
-	//add new ips to the acl
-	for _, iP := range aCL.IPs {
-		ip := tb.IP{IP: iP}
-		one.IPs = append(one.IPs, ip)
+	//add new acls
+	for _, v := range aCL.ACLs {
+		ip := tb.EmbededACL{Name: v.Name}
+		ip.Type = v.Type
+		if v.Type == "ip" {
+			ip.ID = 1 //use the 1 temporary.
+		} else if v.Type == "acl" {
+			var num int
+			if num, err = strconv.Atoi(v.ACLID); err != nil {
+				return err
+			}
+			ip.ID = uint(num)
+		}
+		one.ACLs = append(one.ACLs, ip)
 	}
 	if err := tx.Save(&one).Error; err != nil {
 		return err
 	}
-	var iPs []string
-	for _, iP := range aCL.IPs {
-		iPs = append(iPs, iP)
+	var acls []string
+	for _, acl := range aCL.ACLs {
+		acls = append(acls, acl.Name)
 	}
-	req := pb.UpdateACLReq{ID: aCL.ID, Name: aCL.Name, NewIPs: iPs}
+	req := pb.UpdateACLReq{ID: aCL.ID, Name: aCL.Name, NewIPs: acls}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err
@@ -338,10 +372,13 @@ func (controller *DBController) GetACLs() []*ACL {
 		aCL.SetID(strconv.Itoa(int(aCLDB.ID)))
 		aCL.Name = aCLDB.Name
 		aCL.SetCreationTimestamp(aCLDB.CreatedAt)
-		var iPDBs []tb.IP
-		if err := tx.Where("acl_id = ?", aCLDB.ID).Find(&iPDBs).Error; err == nil {
-			for _, iP := range iPDBs {
-				aCL.IPs = append(aCL.IPs, iP.IP)
+		var acls []tb.EmbededACL
+		if err := tx.Where("parent_id = ?", aCLDB.ID).Find(&acls).Error; err == nil {
+			for _, v := range acls {
+				var a EmbededACL
+				a.Name = v.Name
+				a.ACLID = strconv.Itoa(int(v.ID))
+				aCL.ACLs = append(aCL.ACLs, a)
 			}
 		}
 		aCLs = append(aCLs, &aCL)
@@ -349,16 +386,21 @@ func (controller *DBController) GetACLs() []*ACL {
 	return aCLs
 }
 
-func (controller *DBController) CreateView(view *View) (tb.View, error) {
+func (controller *DBController) CreateView(view *View) (*tb.View, error) {
 	//create new data in the database
 	var one tb.View
+	//check the name's content. If the name contains "!@#￥%^&*()",return nil
+	matched, _ := regexp.MatchString(`[\da-zA-Z_-]+`, view.Name)
+	if !matched {
+		return nil, fmt.Errorf("name is not legal.")
+	}
 	one.Name = view.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	//adjust the priority
 	var allView []tb.View
 	if err := tx.Find(&allView).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	one.Priority = view.Priority
 	if view.Priority > len(allView) {
@@ -375,16 +417,16 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 	}
 	for _, viewDB := range tmpView {
 		if err := tx.Model(&viewDB).UpdateColumn("priority", viewDB.Priority).Error; err != nil {
-			return tb.View{}, err
+			return nil, err
 		}
 	}
 	var dbViews []tb.View
 	//check wether the view is exists.
 	if err := tx.Where("name = ?", view.Name).Find(&dbViews).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	if len(dbViews) > 0 {
-		return tb.View{}, fmt.Errorf("the name %s of view has exists!", view.Name)
+		return nil, fmt.Errorf("the name %s of view has exists!", view.Name)
 	}
 	//add the acls to the view
 	var err error
@@ -394,32 +436,32 @@ func (controller *DBController) CreateView(view *View) (tb.View, error) {
 		tmp := tb.ACL{}
 		var index int
 		if index, err = strconv.Atoi(id); err != nil {
-			return tb.View{}, err
+			return nil, err
 		}
 		tmp.ID = uint(index)
 		//check wether the acl is valid
 		var tmpACL tb.ACL
 		if err := tx.First(&tmpACL, id).Error; err != nil {
-			return tb.View{}, fmt.Errorf("id %s of acl not exists, %w", id, err)
+			return nil, fmt.Errorf("id %s of acl not exists, %w", id, err)
 		}
 		tmp.Name = tmpACL.Name
 		one.ACLs = append(one.ACLs, tmp)
 	}
 	if err := tx.Create(&one).Error; err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	var last tb.View
 	tx.Last(&last)
 	req := pb.CreateViewReq{ViewName: view.Name, ViewID: strconv.Itoa(int(last.ID)), Priority: int32(view.Priority), ACLIDs: aclids}
 	data, err := proto.Marshal(&req)
 	if err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	if err := kfkcli.KafkaClient.SendCmd(data, CREATEVIEW); err != nil {
-		return tb.View{}, err
+		return nil, err
 	}
 	tx.Commit()
-	return last, nil
+	return &last, nil
 }
 
 func (controller *DBController) DeleteView(id string) error {
@@ -482,6 +524,10 @@ func (controller *DBController) UpdateView(view *View) error {
 		return err
 	}
 	one.ID = uint(num)
+	matched, _ := regexp.MatchString(`[\da-zA-Z_-]+`, view.Name)
+	if !matched {
+		return fmt.Errorf("name is not legal.")
+	}
 	one.Name = view.Name
 	tx := controller.db.Begin()
 	defer tx.Rollback()

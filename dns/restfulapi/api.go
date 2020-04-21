@@ -56,10 +56,16 @@ type Zone struct {
 	ForwarderSize         int     `json:"forwardsize"`
 }
 
+type EmbededACL struct {
+	Name  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	ACLID string `json:"aclid"`
+	Type  string `json:"type" rest:"required=true,options=ip|acl"`
+}
+
 type ACL struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string   `json:"name" rest:"required=true,minLen=1,maxLen=20"`
-	IPs                   []string `json:"IP" rest:"required=true"`
+	Name                  string       `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	ACLs                  []EmbededACL `json:"list"`
 }
 
 type RR struct {
@@ -158,7 +164,7 @@ func (d DNS64) GetParents() []resource.ResourceKind {
 
 func (h *aCLHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	aCL := ctx.Resource.(*ACL)
-	var one tb.ACL
+	var one *tb.ACL
 	var err error
 	if one, err = DBCon.CreateACL(aCL); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
@@ -221,7 +227,7 @@ func NewViewHandler(s *ViewsState) *viewHandler {
 
 func (h *viewHandler) Create(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	view := ctx.Resource.(*View)
-	var one tb.View
+	var one *tb.View
 	var err error
 	if one, err = DBCon.CreateView(view); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
