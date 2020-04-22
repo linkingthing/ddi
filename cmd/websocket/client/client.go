@@ -44,8 +44,13 @@ func main() {
 
 	//get promServer from yaml config file
 	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
-	ip := yamlConfig.Localhost.IP
+	ip := yamlConfig.Localhost.ParentIP
 	role := yamlConfig.Localhost.Role
+	if yamlConfig.Localhost.IsDHCP {
+		role = "dhcp"
+	} else if yamlConfig.Localhost.IsDNS {
+		role = "dns"
+	}
 	port := utils.WebSocket_Port
 
 	for {
