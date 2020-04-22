@@ -21,6 +21,7 @@ type DHCPv4Service struct {
 
 func NewDHCPv4Service(ver string, addr string, dhcpConfPath string) *DHCPv4Service {
 
+	log.Println("into NewDHCPv4Service")
 	return &DHCPv4Service{dhcp.NewKEAv4Handler(ver, dhcpConfPath, addr)}
 }
 

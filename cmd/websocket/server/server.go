@@ -69,23 +69,32 @@ ILOOP:
 	for {
 		n, err := r.Read(buf)
 		data := string(buf[:n])
-
 		switch err {
 		case io.EOF:
 			break ILOOP
 		case nil:
-			log.Println("Receive:", data)
-			if isTransportOver(data) {
-				break ILOOP
-			}
+			//log.Println("Receive:", data)
+			//log.Println("utils.OnlinePromHosts:", utils.OnlinePromHosts)
 
 			for ip, host := range utils.OnlinePromHosts {
-				log.Println("-- ip: ", ip, ", -- data: ", data)
-				if ip == data {
-					now := time.Now().Unix()
-					log.Println("+++ hbtime: ", host.HbTime, " +++ now: ", now)
+				ipRole := strings.TrimSpace(data)
+				ip = strings.TrimSpace(ip)
+				//log.Println("-- ip: [", ip, "], -- ipRole: [", ipRole, "]")
+				if ip == ipRole {
 					host.HbTime = time.Now().Unix()
+					if host.State == 0 {
+						log.Println("change host.State = 1")
+						host.State = 1 //online
+					}
+					utils.OnlinePromHosts[ip] = host
 				}
+				//log.Println("utils.online prom hosts HbTime: ", utils.OnlinePromHosts[ip].HbTime)
+				//log.Println("utils.online prom hosts Hostname: ", utils.OnlinePromHosts[ip].Hostname)
+				//log.Println("utils.online prom hosts state: ", utils.OnlinePromHosts[ip].State)
+
+			}
+			if isTransportOver(data) {
+				break ILOOP
 			}
 
 		default:
@@ -96,7 +105,7 @@ ILOOP:
 	}
 	w.Write([]byte(Message))
 	w.Flush()
-	log.Printf("Send: %s", Message)
+	//log.Printf("Send: %s", Message)
 
 }
 

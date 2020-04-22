@@ -190,6 +190,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	dbS4.Subnet = subnetv4.Subnet
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
+	dbS4.MaxValidLifetime = subnetv4.MaxValidLifetime
 	dbS4.ID = ConvertStringToUint(subnetv4.ID)
 
 	dbS4.DhcpEnable = subnetv4.DhcpEnable
@@ -221,11 +222,12 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.UpdateSubnetv4Req{
-		Subnet:        subnetv4.Subnet,
-		Id:            subnetv4.ID,
-		ValidLifetime: subnetv4.ValidLifetime,
-		Gateway:       subnetv4.Gateway,
-		DnsServer:     subnetv4.DnsServer,
+		Subnet:           subnetv4.Subnet,
+		Id:               subnetv4.ID,
+		ValidLifetime:    subnetv4.ValidLifetime,
+		MaxValidLifetime: subnetv4.MaxValidLifetime,
+		Gateway:          subnetv4.Gateway,
+		DnsServer:        subnetv4.DnsServer,
 	}
 	data, err := proto.Marshal(&req)
 	if err != nil {

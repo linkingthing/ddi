@@ -263,7 +263,6 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 			//log.Println("get kea all stats: ", stats)
 		}
 	}
-	log.Println("stats: ", stats)
 
 	//get subnet name and id from dhcp config
 	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
@@ -296,9 +295,9 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		result.Data = append(result.Data, stat)
 	}
 
-	log.Println("+++ result")
-	log.Println(result)
-	log.Println("--- result")
+	//log.Println("+++ result")
+	//log.Println(result)
+	//log.Println("--- result")
 
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
@@ -356,7 +355,6 @@ func GetSubnetUsage() *BaseJsonDhcpAssign {
 			//log.Println("get kea all stats: ", stats)
 		}
 	}
-	log.Println("stats: ", stats)
 
 	//get subnet name and id from dhcp config
 	k := dhcp.NewKEAv4Handler(dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr)
@@ -393,9 +391,9 @@ func GetSubnetUsage() *BaseJsonDhcpAssign {
 		result.Data = append(result.Data, stat)
 	}
 
-	log.Println("+++ result")
-	log.Println(result)
-	log.Println("--- result")
+	//log.Println("+++ result")
+	//log.Println(result)
+	//log.Println("--- result")
 
 	return result
 

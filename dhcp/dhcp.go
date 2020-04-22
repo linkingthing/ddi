@@ -175,6 +175,7 @@ func NewKEAv4Handler(ver string, ConfPath string, addr string) *KEAv4Handler {
 		log.Println("in NewKEAv4Handler, use db:  utils.DBAddr")
 		instance.db, err = gorm.Open("postgres", utils.DBAddr)
 		if err != nil {
+			log.Println("in NewKEAv4Handler, err to open postgres")
 			log.Fatal(err)
 		}
 	}
@@ -429,6 +430,7 @@ func (handler *KEAv4Handler) UpdateSubnetv4(req pb.UpdateSubnetv4Req) error {
 		if v.Subnet == req.Subnet {
 			log.Println("v.Subnet: ", v.Subnet)
 			conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
+			conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
 			if len(req.Pool) > 0 {
 				log.Println("req.pool: ", req.Pool)
 				conf.Arguments.Dhcp4.Subnet4[k].Pools = []Pool{
