@@ -124,7 +124,7 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 	log.Println("into dhcporm, OrmUpdateSubnetv6, Subnet: ", subnetv6.Subnet)
 
 	dbS6 := dhcporm.OrmSubnetv6{}
-		dbS6.Name = subnetv6.Name
+	dbS6.Name = subnetv6.Name
 	dbS6.ValidLifetime = subnetv6.ValidLifetime
 	id, err := strconv.Atoi(subnetv6.ID)
 	if err != nil {
@@ -138,7 +138,7 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 		dbS6.ZoneName = dbS6.Name
 	}
 	dbS6.DnsEnable = subnetv6.DnsEnable
-	dbS6.Notes = subnetv6.Notes
+	dbS6.Note = subnetv6.Note
 	dbS6.DnsServer = subnetv6.DnsServer
 
 	//get subnet name from db

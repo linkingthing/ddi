@@ -143,7 +143,7 @@ type RestSubnetv46 struct {
 	DnsEnable  int    `json:"dnsEnable"`
 	ZoneName   string `json:"zoneName"`
 	ViewId     string `json:"viewId"`
-	Notes      string `json:"notes"`
+	Note       string `json:"note"`
 }
 
 type RestSubnetv4 struct {
@@ -164,7 +164,7 @@ type RestSubnetv4 struct {
 	DnsEnable  int    `json:"dnsEnable"`
 	ZoneName   string `json:"zoneName"`
 	ViewId     string `json:"viewId"`
-	Notes      string `json:"notes"`
+	Note       string `json:"note"`
 }
 
 func (s4 RestSubnetv4) GetActions() []resource.Action {

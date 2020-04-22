@@ -30,7 +30,7 @@ type OrmSubnetv6 struct {
 	DnsEnable  int    `gorm:"column:dnsEnable"`
 	ZoneName   string `gorm:"column:zoneName"`
 	ViewId     string `gorm:"column:viewId"`
-	Notes      string `gorm:"column:notes"`
+	Note       string `gorm:"column:note"`
 }
 
 func (OrmSubnetv6) TableName() string {

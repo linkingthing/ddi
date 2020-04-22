@@ -33,7 +33,7 @@ func (s *Dhcpv4) ConvertV4sToV46s(v *RestSubnetv4) *RestSubnetv46 {
 	v46.DnsEnable = v.DnsEnable
 	v46.ZoneName = v.ZoneName
 	v46.ViewId = v.ViewId
-	v46.Notes = v.Notes
+	v46.Note = v.Note
 	v46.CreationTimestamp = v.CreationTimestamp
 
 	return &v46
@@ -57,7 +57,7 @@ func (s *Dhcpv4) ConvertV6sToV46s(v *RestSubnetv6) *RestSubnetv46 {
 	v46.DnsEnable = v.DnsEnable
 	v46.ZoneName = v.ZoneName
 	v46.ViewId = v.ViewId
-	v46.Notes = v.Notes
+	v46.Note = v.Note
 
 	v46.CreationTimestamp = v.CreationTimestamp
 	return &v46

@@ -439,10 +439,6 @@ func List_server(w http.ResponseWriter, r *http.Request) {
 	result.Status = config.STATUS_SUCCCESS
 	result.Message = config.MSG_OK
 	for ip, s := range utils.OnlinePromHosts {
-		hbTime := s.HbTime
-		log.Println("hbTime: ", hbTime)
-		log.Println("time now: ", time.Now().Unix())
-		log.Println("2*checkDuration: ", int64(2*checkDuration/time.Second))
 
 		if time.Now().Unix()-s.HbTime > int64(2*checkDuration/time.Second) {
 			log.Println("host changed to offline, host ip: ", s.IP)
@@ -452,9 +448,6 @@ func List_server(w http.ResponseWriter, r *http.Request) {
 		result.Data = append(result.Data, s)
 	}
 
-	//log.Println("+++ result")
-	//log.Println(result)
-	//log.Println("--- result")
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))

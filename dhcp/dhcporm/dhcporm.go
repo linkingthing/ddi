@@ -36,7 +36,7 @@ type OrmSubnetv4 struct {
 	DnsEnable  int    `gorm:"column:dnsEnable"`
 	ZoneName   string `gorm:"column:zoneName"`
 	ViewId     string `gorm:"column:viewId"`
-	Notes      string `gorm:"column:notes"`
+	Note       string `gorm:"column:note"`
 }
 type OrmSubnetv4Front struct {
 	DbS4    OrmSubnetv4

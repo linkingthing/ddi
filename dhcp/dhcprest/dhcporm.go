@@ -159,21 +159,14 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	log.Println("into dhcporm, OrmUpdateSubnetv4, Subnet: ", subnetv4.Subnet)
 
 	dbS4 := dhcporm.OrmSubnetv4{}
-	//dbS4.SubnetId = subnetv4.ID
-	//dbS4.Subnet = subnetv4.Subnet
-	//if subnetv4.Subnet == "" {
-	//	log.Println("in OrmUpdateSubnetv4, subnet is nil, use name:", subnetv4.Name)
-	//	dbS4.Subnet = subnetv4.Name
-	//}
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
 	dbS4.MaxValidLifetime = subnetv4.MaxValidLifetime
 	dbS4.ID = ConvertStringToUint(subnetv4.ID)
-
 	dbS4.DhcpEnable = subnetv4.DhcpEnable
 	dbS4.ZoneName = subnetv4.ZoneName
 	dbS4.DnsEnable = subnetv4.DnsEnable
-	dbS4.Notes = subnetv4.Notes
+	dbS4.Note = subnetv4.Note
 	dbS4.Gateway = subnetv4.Gateway
 	dbS4.DnsServer = subnetv4.DnsServer
 	if len(dbS4.Name) > 0 && len(dbS4.ZoneName) == 0 {

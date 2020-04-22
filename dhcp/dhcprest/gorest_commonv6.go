@@ -99,7 +99,7 @@ type RestSubnetv6 struct {
 	DnsEnable  int    `json:"dnsEnable"`
 	ZoneName   string `json:"zoneName"`
 	ViewId     string `json:"viewId"`
-	Notes      string `json:"notes"`
+	Note       string `json:"note"`
 }
 
 //tools func
@@ -133,7 +133,7 @@ func (s *Dhcpv6) ConvertSubnetv6FromOrmToRest(v *dhcporm.OrmSubnetv6) *RestSubne
 	v6.DhcpEnable = v.DhcpEnable
 	v6.DnsEnable = v.DnsEnable
 	v6.ViewId = v.ViewId
-	v6.Notes = v.Notes
+	v6.Note = v.Note
 
 	v6.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 
