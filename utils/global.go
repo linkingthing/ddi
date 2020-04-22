@@ -7,7 +7,7 @@ var (
 	PromLocalhost     = "localhost" //prometheus localhost ip, server is localhost, node is ip
 	PromLocalPort     = "9100"      //prometheus localhost ip
 	PromLocalInstance = PromLocalhost + ":" + PromLocalPort
-	WebSocket_Port    = 3333 //ping pong check port
+	WebSocket_Port    = 13333 //ping pong check port
 
 	EsServer = "10.0.0.69" //elasticsearch server
 	EsPort   = "9200"      //elasticsearch port
