@@ -17,8 +17,8 @@ const (
 	StopCharacter = "\r\n\r\n"
 )
 
-func SocketClient(ip string, port int, role string) {
-	addr := strings.Join([]string{ip, strconv.Itoa(port)}, ":")
+func SocketClient(parentIp string, ip string, port int, role string) {
+	addr := strings.Join([]string{parentIp, strconv.Itoa(port)}, ":")
 	conn, err := net.Dial("tcp", addr)
 
 	if err != nil {
@@ -45,11 +45,17 @@ func main() {
 	//get promServer from yaml config file
 	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
 	ip := yamlConfig.Localhost.IP
+	parentIp := yamlConfig.Localhost.ParentIP
 	role := yamlConfig.Localhost.Role
+	if yamlConfig.Localhost.IsDHCP {
+		role = "dhcp"
+	} else if yamlConfig.Localhost.IsDNS {
+		role = "dns"
+	}
 	port := utils.WebSocket_Port
 
 	for {
-		SocketClient(ip, port, role)
+		SocketClient(parentIp, ip, port, role)
 		time.Sleep(5 * time.Second)
 	}
 
