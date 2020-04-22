@@ -187,7 +187,11 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 
 	dbS4 := dhcporm.OrmSubnetv4{}
 	//dbS4.SubnetId = subnetv4.ID
-	dbS4.Subnet = subnetv4.Subnet
+	//dbS4.Subnet = subnetv4.Subnet
+	//if subnetv4.Subnet == "" {
+	//	log.Println("in OrmUpdateSubnetv4, subnet is nil, use name:", subnetv4.Name)
+	//	dbS4.Subnet = subnetv4.Name
+	//}
 	dbS4.Name = subnetv4.Name
 	dbS4.ValidLifetime = subnetv4.ValidLifetime
 	dbS4.MaxValidLifetime = subnetv4.MaxValidLifetime
@@ -202,6 +206,11 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	if len(dbS4.Name) > 0 && len(dbS4.ZoneName) == 0 {
 		dbS4.ZoneName = dbS4.Name
 	}
+
+	//get subnet name from db
+	getOrmS4 := handler.GetSubnetv4ById(subnetv4.ID)
+	dbS4.Subnet = getOrmS4.Subnet
+
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
 		if len(subnetv4.ViewId) == 0 {
