@@ -311,7 +311,6 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
 	for _, v := range newSubs {
-		log.Println("in for loop, v: ", v)
 
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
@@ -324,36 +323,13 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 		}
 		ormS4s = append(ormS4s, &newS4)
 	}
-	log.Println("in OrmSplitSubnetv4, ormS4s: ", ormS4s)
-	//todo delte ormSubnet4
 	s4ID := strconv.Itoa(int(s4.ID))
 	if err := handler.DeleteSubnetv4(s4ID); err != nil {
 		log.Println("delete subnetv4 error, ", err)
 		return ormS4s, err
 	}
-	log.Println("in OrmSplitSubnetv4, after delete ormS4s: ", ormS4s)
+
 	return ormS4s, nil
-	//todo
-
-	//var last dhcporm.OrmSubnetv4
-	//query.Last(&last)
-	//log.Println("query.value: ", query.Value, ", id: ", last.ID)
-	//
-	////send msg to kafka queue, which is read by dhcp server
-	//req := pb.CreateSubnetv4Req{
-	//	Subnet:        subnet,
-	//	Id:            strconv.Itoa(int(last.ID)),
-	//	ValidLifetime: validLifetime,
-	//}
-	//log.Println("pb.CreateSubnetv4Req req: ", req)
-	//
-	//data, err := proto.Marshal(&req)
-	//if err != nil {
-	//	return last, err
-	//}
-	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
-
-	//return restS4s, nil
 }
 
 /*
