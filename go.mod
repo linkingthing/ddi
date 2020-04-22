@@ -14,6 +14,7 @@ require (
 	github.com/jinzhu/gorm v1.9.12
 	github.com/lib/pq v1.3.0
 	github.com/lifei6671/gocaptcha v0.0.0-20190301083731-c467a25bc100
+	github.com/mdlayher/arp v0.0.0-20191213142603-f72070a231fc
 	github.com/paulstuart/ping v0.0.0-20140925212352-0345a9703e43
 	github.com/prometheus/client_golang v1.5.1
 	github.com/prometheus/common v0.9.1
