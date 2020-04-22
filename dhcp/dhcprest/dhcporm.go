@@ -40,13 +40,7 @@ type PGDB struct {
 
 func NewPGDB(db *gorm.DB) *PGDB {
 	p := &PGDB{}
-	//var err error
-	/*p.db, err = gorm.Open("postgres", CRDBAddr)
-	if err != nil {
-		log.Fatal(err)
-	}*/
 	p.db = db
-
 	p.db.AutoMigrate(&dhcporm.OrmSubnetv4{})
 	p.db.AutoMigrate(&dhcporm.OrmReservation{})
 	p.db.AutoMigrate(&dhcporm.Option{})
@@ -68,18 +62,12 @@ func (handler *PGDB) Close() {
 	handler.db.Close()
 }
 
-//func GetDhcpv4Conf(db *gorm.DB) interface{} {
-//
-//	return nil
-//}
-
 func (handler *PGDB) Subnetv4List(search *SubnetSearch) []dhcporm.OrmSubnetv4 {
 	var subnetv4s []dhcporm.OrmSubnetv4
 
 	if search != nil && search.DhcpVer != "" {
 		subnet := handler.getOrmSubnetv4BySubnet(search.Subnet)
 		subnetv4s = append(subnetv4s, subnet)
-		log.Println("in Subnetv4List, search ret subnet: ", subnet)
 	} else {
 		query := handler.db.Find(&subnetv4s)
 		if query.Error != nil {
@@ -88,18 +76,6 @@ func (handler *PGDB) Subnetv4List(search *SubnetSearch) []dhcporm.OrmSubnetv4 {
 	}
 
 	for k, v := range subnetv4s {
-		//log.Println("k: ", k, ", v: ", v)
-		//log.Println("in Subnetv4List, v.ID: ", v.ID)
-		//if len(v.Gateway) > 0 {
-		//	option := dhcporm.Option{
-		//		Name: v.Name,
-		//		Data: v.Gateway,
-		//	}
-		//	options := []dhcporm.Option{}
-		//	options = append(options, option)
-		//	subnetv4s[k].Options = options
-		//	log.Println("options: ", options)
-		//}
 
 		if len(v.Name) > 0 && len(v.ZoneName) == 0 {
 			subnetv4s[k].ZoneName = v.Name
@@ -115,16 +91,13 @@ func (handler *PGDB) Subnetv4List(search *SubnetSearch) []dhcporm.OrmSubnetv4 {
 }
 
 func (handler *PGDB) getOrmSubnetv4BySubnet(subnet string) dhcporm.OrmSubnetv4 {
-	log.Println("in getOrmSubnetv4BySubnet, subnet: ", subnet)
 
 	var subnetv4 dhcporm.OrmSubnetv4
 	handler.db.Where(&dhcporm.OrmSubnetv4{Subnet: subnet}).Find(&subnetv4)
-	log.Println("in getOrmSubnetv4BySubnet, subnetv4: ", subnetv4)
 	return subnetv4
 }
 
 func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
-	log.Println("in dhcp/dhcprest/GetSubnetv4ById, id: ", id)
 	dbId := ConvertStringToUint(id)
 
 	subnetv4 := dhcporm.OrmSubnetv4{}
@@ -311,7 +284,6 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
 	for _, v := range newSubs {
-		log.Println("in for loop, v: ", v)
 
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
@@ -324,36 +296,13 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 		}
 		ormS4s = append(ormS4s, &newS4)
 	}
-	log.Println("in OrmSplitSubnetv4, ormS4s: ", ormS4s)
-	//todo delte ormSubnet4
 	s4ID := strconv.Itoa(int(s4.ID))
 	if err := handler.DeleteSubnetv4(s4ID); err != nil {
 		log.Println("delete subnetv4 error, ", err)
 		return ormS4s, err
 	}
-	log.Println("in OrmSplitSubnetv4, after delete ormS4s: ", ormS4s)
+
 	return ormS4s, nil
-	//todo
-
-	//var last dhcporm.OrmSubnetv4
-	//query.Last(&last)
-	//log.Println("query.value: ", query.Value, ", id: ", last.ID)
-	//
-	////send msg to kafka queue, which is read by dhcp server
-	//req := pb.CreateSubnetv4Req{
-	//	Subnet:        subnet,
-	//	Id:            strconv.Itoa(int(last.ID)),
-	//	ValidLifetime: validLifetime,
-	//}
-	//log.Println("pb.CreateSubnetv4Req req: ", req)
-	//
-	//data, err := proto.Marshal(&req)
-	//if err != nil {
-	//	return last, err
-	//}
-	//dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
-
-	//return restS4s, nil
 }
 
 /*
@@ -378,7 +327,6 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 		}
 		log.Println("delete subnetv4 ok, s4id: ", s4ID)
 	}
-	log.Println("-- s4Objs: ", s4Objs)
 
 	// 2 create new subnet with subnet: newSubnet, if some properties will be heritated further, fill them
 	restS4 := RestSubnetv4{}
