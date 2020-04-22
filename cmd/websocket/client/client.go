@@ -32,11 +32,11 @@ func SocketClient(parentIp string, ip string, port int, role string) {
 	msg := ip + "_" + role
 	conn.Write([]byte(msg))
 	conn.Write([]byte(StopCharacter))
-	log.Printf("Send: %s", msg)
+	//log.Printf("Send: %s", msg)
 
-	buff := make([]byte, 128)
-	n, _ := conn.Read(buff)
-	log.Printf("Receive: %s", buff[:n])
+	//buff := make([]byte, 128)
+	//n, _ := conn.Read(buff)
+	//log.Printf("Receive: %s", buff[:n])
 
 }
 
