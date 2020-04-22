@@ -139,6 +139,11 @@ func main() {
 	ipAttrAppendState := ipamapi.NewIPAttrAppendState()
 	schemas.MustImport(&version, ipam.IPAttrAppend{}, ipamapi.NewIPAttrAppendHandler(ipAttrAppendState))
 
+	// web socket server, consume kafka topic prom and check ping/pong msg
+	port := utils.WebSocket_Port
+	go metric.SocketServer(port)
+	log.Println("Starting dhcp gorest controller")
+
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
 	defer dhcprest.PGDBConn.Close()
