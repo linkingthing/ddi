@@ -201,15 +201,8 @@ type MergeSplitData struct {
 	IPs                   string `json:"ips" rest:"required=true"`
 }
 
-type Subnetv4State struct {
-	Subnetv4s []*RestSubnetv4
-}
 type Subnetv4Handler struct {
-	subnetv4s *Subnetv4State
-}
-
-func NewSubnetv4State() *Subnetv4State {
-	return &Subnetv4State{}
+	subnetv4s *Subnetv4s
 }
 
 type PoolsState struct {
