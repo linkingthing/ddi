@@ -502,8 +502,6 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.MaxValidLifetime = strconv.Itoa(v.MaxValidLifetime)
 	pool.ValidLifetime = strconv.Itoa(v.ValidLifetime)
 
-	log.Println("into convertSubnetv4PoolFromOrmToRest, v.MaxValidLifetime: ", v.MaxValidLifetime)
-	log.Println("into convertSubnetv4PoolFromOrmToRest, v.ValidLifetime: ", v.ValidLifetime)
 	return pool
 }
 
