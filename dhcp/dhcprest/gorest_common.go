@@ -205,13 +205,13 @@ type Subnetv4Handler struct {
 	subnetv4s *Subnetv4s
 }
 
-type PoolsState struct {
-	Pools []*RestPool
-}
+//type PoolsState struct {
+//	Pools []*RestPool
+//}
 
-func NewPoolsState() *PoolsState {
-	return &PoolsState{}
-}
+//func NewPoolsState() *PoolsState {
+//	return &PoolsState{}
+//}
 
 type Dhcpv4 struct {
 	db        *gorm.DB
