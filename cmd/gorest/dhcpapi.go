@@ -22,7 +22,7 @@ import (
 var (
 	version = resource.APIVersion{
 		Group:   "linkingthing.com",
-		Version: "example/v1",
+		Version: "dhcp/v1",
 	}
 )
 

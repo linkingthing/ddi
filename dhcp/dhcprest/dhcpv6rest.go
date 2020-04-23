@@ -11,9 +11,9 @@ import (
 	"github.com/zdnscloud/gorest/resource"
 )
 
-var (
-	subnetv6Kind = resource.DefaultKindName(RestSubnetv6{})
-)
+//var (
+//	subnetv6Kind = resource.DefaultKindName(RestSubnetv6{})
+//)
 
 func NewDhcpv6(db *gorm.DB) *Dhcpv6 {
 	return &Dhcpv6{db: db}

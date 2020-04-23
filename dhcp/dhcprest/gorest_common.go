@@ -22,27 +22,8 @@ import (
 )
 
 var (
-	version = resource.APIVersion{
-		Group:   "linkingthing.com",
-		Version: "example/v1",
-	}
-
-	subnetv4Kind    = resource.DefaultKindName(RestSubnetv4{})
-	ReservationKind = resource.DefaultKindName(RestReservation{})
-	PoolKind        = resource.DefaultKindName(RestPool{})
-	OptionKind      = resource.DefaultKindName(RestOption{})
-	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
-
-	//DividedAddressKind = resource.DefaultKindName(res.DividedAddress{})
-	//OptionNameConfigKind = resource.DefaultKindName(RestOptionNameConfig{})
-
 	db *gorm.DB
 )
-
-//type Dhcpv4Serv struct {
-//	resource.ResourceBase `json:",inline"`
-//	ConfigJson            string `json:"configJson" rest:"required=true,minLen=1,maxLen=1000000"`
-//}
 
 // added for option list v4 or v6
 type RestOptionName struct {
@@ -112,16 +93,6 @@ type RestPool struct {
 	Gateway               string       `json:"gateway"`
 	DnsServer             string       `json:"dnsServer"`
 }
-
-//type Subnetv4 struct {
-//	resource.ResourceBase `json:"embedded,inline"`
-//	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-//	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-//	SubnetId              string `json:"subnet_id"`
-//	ValidLifetime         string `json:"validLifetime"`
-//	Reservations          []*RestReservation
-//	Pools                 []*RestPool
-//}
 
 type RestSubnetv46 struct {
 	resource.ResourceBase `json:"embedded,inline"`
@@ -205,14 +176,6 @@ type Subnetv4Handler struct {
 	subnetv4s *Subnetv4s
 }
 
-//type PoolsState struct {
-//	Pools []*RestPool
-//}
-
-//func NewPoolsState() *PoolsState {
-//	return &PoolsState{}
-//}
-
 type Dhcpv4 struct {
 	db        *gorm.DB
 	subnetv4s []*RestSubnetv4
@@ -231,9 +194,10 @@ type Subnetv46s struct {
 func NewSubnetv4s(db *gorm.DB) *Subnetv4s {
 	return &Subnetv4s{db: db}
 }
-func NewSubnetv46s(db *gorm.DB) *Subnetv46s {
-	return &Subnetv46s{db: db}
-}
+
+//func NewSubnetv46s(db *gorm.DB) *Subnetv46s {
+//	return &Subnetv46s{db: db}
+//}
 
 type ReservationHandler struct {
 	subnetv4s *Subnetv4s
