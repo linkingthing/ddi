@@ -445,7 +445,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.DhcpEnable = v.DhcpEnable
 	v4.DnsEnable = v.DnsEnable
 	v4.ViewId = v.ViewId
-	v4.Notes = v.Notes
+	v4.Note = v.Note
 
 	if len(v4.ZoneName) == 0 {
 		v4.ZoneName = v4.Name
