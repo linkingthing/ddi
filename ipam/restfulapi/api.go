@@ -90,7 +90,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 
 	switch r.GetAction().Name {
 	case "change":
-		if dividedAddressData.Oper == "tostable" {
+		if dividedAddressData.Oper == "toresv" {
 
 			//todo add one stable
 			changeData := dividedAddressData.Data
@@ -117,7 +117,7 @@ func (h *dividedAddressHandler) Action(ctx *resource.Context) (interface{}, *gor
 			}
 
 		}
-		if dividedAddressData.Oper == "toresv" {
+		if dividedAddressData.Oper == "tostable" {
 			log.Println("in Action, oper=toresv ")
 			//todo add one resv
 			changeData := dividedAddressData.Data
