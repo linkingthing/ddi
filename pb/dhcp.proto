@@ -43,7 +43,7 @@ service Dhcpv6Manager {
 
 message Option{
     bool alwaysSend = 1;
-    uint64   code            = 2;
+    uint64   code           = 2;
     bool    csvFormat       = 3;
     string  data            = 4;
     string  name            = 5;
@@ -70,12 +70,16 @@ message Pools{
                 string pool     = 2;
                 string validLifetime = 3;
                 string maxValidLifetime = 4;
+                string gateway = 5;
+                string dnsServer = 6;
 }
 message Poolv6s{
     repeated    Option options  = 1;
                 string pool     = 2;
                 string validLifetime = 3;
                 string maxValidLifetime = 4;
+                string gateway = 5;
+                string dnsServer = 6;
 }
 message startDHCPv4Req{
     string      config      = 1;
@@ -93,19 +97,19 @@ message CreateSubnetv4Req{
     string      validLifetime               = 5;
     repeated    Pools       pool            = 6;
     string      gateway                     = 7;
-    string      dnsServer = 8;
+    string      dnsServer                   = 8;
     string      maxValidLifetime            = 9;
 }
 
 message UpdateSubnetv4Req{
-    string      id          = 1;
-    string      subnet      = 2;
-    repeated    Option      options     = 3;
+    string      id                          = 1;
+    string      subnet                      = 2;
+    repeated    Option      options         = 3;
     repeated    Reservation reservations    = 4;
-    string      validLifetime   = 5;
-    repeated    Pools    pool = 6;
+    string      validLifetime               = 5;
+    repeated    Pools    pool               = 6;
     string      gateway                     = 7;
-    string      dnsServer = 8;
+    string      dnsServer                   = 8;
     string      maxValidLifetime            = 9;
 }
 
@@ -119,7 +123,7 @@ message CreateSubnetv4PoolReq{
     string      id = 1;
     string      subnet = 2;
     repeated    Option options = 3;
-    repeated    Pools  pool = 4;
+    string      pool = 4;
     string      validLifetime = 5;
     string      maxValidLifetime = 6;
     string      gateway                     = 7;

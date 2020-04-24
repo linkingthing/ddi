@@ -929,3 +929,18 @@ func IPv4RangeSplit(addr uint32, prefix uint, lo, hi uint32, cidrs *[]*net.IPNet
 		return IPv4RangeSplit(upperHalf, prefix, upperHalf, hi, cidrs)
 	}
 }
+func ConvertRestPool2OrmPool(r *RestPool) (o *dhcporm.Pool) {
+
+	var ormPool dhcporm.Pool
+	ormPool = dhcporm.Pool{
+		Subnetv4ID:   uint(ConvertStringToInt(r.GetParent().GetID())),
+		BeginAddress: r.BeginAddress,
+		EndAddress:   r.EndAddress,
+		//OptionData:       []dhcporm.Option{},
+		ValidLifetime:    ConvertStringToInt(r.ValidLifetime),
+		MaxValidLifetime: ConvertStringToInt(r.MaxValidLifetime),
+		Gateway:          r.Gateway,
+		DnsServer:        r.DnsServer,
+	}
+	return &ormPool
+}

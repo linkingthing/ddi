@@ -97,6 +97,8 @@ type Pool struct {
 	Subnetv4ID       uint   `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 	MaxValidLifetime int    `json:"max-valid-lifetime"`
 	ValidLifetime    int    `json:"valid-lifetime"`
+	Gateway          string `gorm:"gateway"`
+	DnsServer        string `gorm:"dnsServer"`
 }
 
 type OrmUser struct {

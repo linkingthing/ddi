@@ -688,45 +688,37 @@ func (handler *PGDB) OrmGetPool(subnetId string, pool_id string) *dhcporm.Pool {
 	return &pool
 }
 
-func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Pool, error) {
+func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (*dhcporm.Pool, error) {
 	log.Println("into OrmCreatePool, r: ", r, ", subnetv4_id: ", subnetv4_id)
 
-	sid, err := strconv.Atoi(subnetv4_id)
-	if err != nil {
-		log.Println("OrmCreatePool, sid error: ", subnetv4_id)
-	}
-	var ormPool dhcporm.Pool
-	ormPool = dhcporm.Pool{
-		Subnetv4ID:       uint(sid),
-		BeginAddress:     r.BeginAddress,
-		EndAddress:       r.EndAddress,
-		OptionData:       []dhcporm.Option{},
-		ValidLifetime:    ConvertStringToInt(r.ValidLifetime),
-		MaxValidLifetime: ConvertStringToInt(r.MaxValidLifetime),
-	}
+	ormPool := ConvertRestPool2OrmPool(r)
 
-	var pool = pb.Pools{
-		Pool:             r.BeginAddress + "-" + r.EndAddress,
-		Options:          []*pb.Option{},
-		ValidLifetime:    r.ValidLifetime,
-		MaxValidLifetime: r.MaxValidLifetime,
-
-		//DhcpVer:       Dhcpv4Ver,
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	if err := tx.Save(&ormPool).Error; err != nil {
+		return ormPool, err
 	}
 
 	//get subnet by subnetv4_id
 	ormSubnetv4 := handler.GetSubnetv4ById(subnetv4_id)
 	s4Subnet := ormSubnetv4.Subnet
 
-	//todo: post kafka msg to dhcp agent
-	pools := []*pb.Pools{}
-	pools = append(pools, &pool)
+	// post kafka msg to dhcp agent
+	var options []*dhcp.Option
+	var err error
+	options, err = dhcp.CreateOptionsFromPb(r.Gateway, r.DnsServer)
+	if err != nil {
+		log.Println("error to CreateOptionsFromPb, gateway: ", r.Gateway)
+	}
+	pbOptions := dhcp.CreatePbOptions(options)
+
 	req := pb.CreateSubnetv4PoolReq{
 		Id:               subnetv4_id,
 		Subnet:           s4Subnet,
-		Pool:             pools,
-		ValidLifetime:    pool.ValidLifetime,
-		MaxValidLifetime: pool.MaxValidLifetime,
+		Pool:             r.BeginAddress + "-" + r.EndAddress,
+		Options:          pbOptions,
+		ValidLifetime:    r.ValidLifetime,
+		MaxValidLifetime: r.MaxValidLifetime,
 	}
 	log.Println("OrmCreatePool, req: ", req)
 	data, err := proto.Marshal(&req)
@@ -737,49 +729,41 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (dhcporm.Poo
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return ormPool, err
 	}
-	//end of todo
+	//end of kafka
 
-	query := handler.db.Create(&ormPool)
-	if query.Error != nil {
-		return dhcporm.Pool{}, fmt.Errorf("CreatePool error, begin address: " +
-			r.BeginAddress + ", end adderss: " + r.EndAddress)
-	}
-
+	tx.Commit()
 	return ormPool, nil
 }
 
 func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 
-	log.Println("into dhcporm, OrmUpdatePool, id: ", r.GetID())
-
 	//get subnetv4 name
 	s4 := handler.GetSubnetv4ById(subnetv4_id)
 	subnetName := s4.Subnet
 
-	//oldPoolName := r.BeginAddress + "-" + r.EndAddress
-	//search subnet, if not exist, return error
 	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
 	if oldPoolObj == nil {
 		return fmt.Errorf("Pool not exists, return")
 	}
 	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
 
-	ormPool := dhcporm.Pool{}
-	ormPool.ID = ConvertStringToUint(r.GetID())
-	ormPool.BeginAddress = r.BeginAddress
-	ormPool.EndAddress = r.EndAddress
-	ormPool.Subnetv4ID = ConvertStringToUint(subnetv4_id)
-	ormPool.ValidLifetime = ConvertStringToInt(r.ValidLifetime)
-	ormPool.MaxValidLifetime = ConvertStringToInt(r.MaxValidLifetime)
+	ormPool := dhcporm.Pool{
+		Subnetv4ID:       ConvertStringToUint(r.GetParent().GetID()),
+		BeginAddress:     r.BeginAddress,
+		EndAddress:       r.EndAddress,
+		ValidLifetime:    ConvertStringToInt(r.ValidLifetime),
+		MaxValidLifetime: ConvertStringToInt(r.MaxValidLifetime),
+		Gateway:          r.Gateway,
+		DnsServer:        r.DnsServer,
+	}
 
-	log.Println("begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
-
+	log.Println(" *** begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
 	tx := handler.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&ormPool).Error; err != nil {
 		return err
 	}
-	//todo send kafka msg
+	//send kafka msg
 	req := pb.UpdateSubnetv4PoolReq{
 		Oldpool:          oldPoolName,
 		Subnet:           subnetName,
@@ -787,6 +771,8 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 		Options:          []*pb.Option{},
 		ValidLifetime:    strconv.Itoa(ormPool.ValidLifetime),
 		MaxValidLifetime: strconv.Itoa(ormPool.MaxValidLifetime),
+		Gateway:          r.Gateway,
+		DnsServer:        r.DnsServer,
 	}
 	data, err := proto.Marshal(&req)
 	if err != nil {
@@ -799,15 +785,7 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 		return err
 	}
 
-	//if err := restfulapi.SendCmdDhcpv4(data, dhcpv4agent.UpdateSubnetv4); err != nil { //
-	//}
-	//end of todo
-	//db.Model(subnet).Update(ormS4)
-
 	tx.Commit()
-	return nil
-	//db.Model(&ormPool).Updates(&ormPool)
-
 	return nil
 }
 

@@ -349,13 +349,7 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	for k, v := range conf.Arguments.Dhcp4.Subnet4 {
 		//log.Println("conf Subnet4: ", v.Subnet)
 		//log.Println("conf Subnet4 id: ", v.Id, ", maxId: ", maxId)
-		//curId, err := strconv.Atoi(string(v.Id))
-		//if err != nil {
-		//	return err
-		//}
-		//if curId >= maxId {
-		//	maxId = curId + 1
-		//}
+
 		if v.ReservationMode == "" {
 			log.Println("reserationMode == nil, subnet: ", v.Subnet)
 			conf.Arguments.Dhcp4.Subnet4[k].ReservationMode = "all"
@@ -528,39 +522,31 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 			log.Println("req.validlifetime: ", req.ValidLifetime)
 			log.Println("req.MaxValidLifetime: ", req.MaxValidLifetime)
 			if len(req.ValidLifetime) > 0 {
-
 				if err != nil {
 					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
 					return err
 				}
-
 				conf.Arguments.Dhcp4.Subnet4[k].ValidLifetime = json.Number(req.ValidLifetime)
 			}
 			if len(req.MaxValidLifetime) > 0 {
-
 				if err != nil {
 					log.Println("CreateSubnetv4Pool, validLifetime error, ", err)
 					return err
 				}
-
 				conf.Arguments.Dhcp4.Subnet4[k].MaxValidLifetime = json.Number(req.MaxValidLifetime)
 			}
-			for _, pool := range req.Pool {
-
-				var p Pool
-				p.Pool = pool.Pool
-				p.OptionData = []*Option{}
-
-				//p.OptionData = ops
-				var ops []*Option
-				if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
-					log.Println("ConvertOptionsFromPb error: ", err)
-					return err
-				}
-				p.OptionData = ops
-
-				conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
+			var p Pool
+			p.Pool = req.Pool
+			var ops []*Option
+			for _, option := range req.Options {
+				var op Option
+				op.Name = option.Name
+				op.Data = option.Data
+				ops = append(ops, &op)
 			}
+			p.OptionData = ops
+			conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
+
 			//log.Println("begin subnet\n")
 			//log.Println(conf.Arguments.Dhcp4)
 			//log.Println("end subnet\n")
@@ -622,8 +608,8 @@ func (handler *KEAv4Handler) UpdateSubnetv4Pool(req pb.UpdateSubnetv4PoolReq) er
 					p.Pool = req.Pool
 
 					var ops []*Option
-					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
-						log.Println("ConvertOptionsFromPb error: ", err)
+					if ops, err = CreateOptionsFromPb(req.Gateway, req.DnsServer); err != nil {
+						log.Println("CreateOptionsFromPb error: ", err)
 						return err
 					}
 					p.OptionData = ops
@@ -787,20 +773,17 @@ func (handler *KEAv4Handler) UpdateSubnetv4Reservation(req pb.UpdateSubnetv4Rese
 						log.Println("set duid")
 						newRsv.Hostname = req.Hostname
 					}
-					//if len(req.) > 0 {
-					//	log.Println("set duid")
-					//	newRsv.Hostname = req.Hostname
-					//}
+
 					if len(req.NextServer) > 0 {
 						log.Println("req.NextServer: ", req.NextServer)
 						newRsv.NextServer = req.NextServer
 					}
 
 					var ops []*Option
-					if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
-						log.Println("ConvertOptionsFromPb error: ", err)
-						return err
-					}
+					//if ops, err = ConvertOptionsFromPb(req.Options); err != nil {
+					//	log.Println("ConvertOptionsFromPb error: ", err)
+					//	return err
+					//}
 					newRsv.OptionData = ops
 
 					conf.Arguments.Dhcp4.Subnet4[k].Reservations = append(conf.Arguments.Dhcp4.Subnet4[k].Reservations,

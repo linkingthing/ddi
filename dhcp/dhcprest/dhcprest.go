@@ -674,15 +674,6 @@ func (r *PoolHandler) CreatePool(pool *RestPool) (*RestPool, error) {
 	subnetv4ID := pool.GetParent().GetID()
 	log.Println("before CreatePool, subnetv4ID:", subnetv4ID)
 
-	if len(pool.Gateway) > 0 || len(pool.DnsServer) > 0 {
-		// set dns or gateway under subnet
-		//get Restsubnetv4 or RestSubnetv6
-		//log.Println("before CreatePool, pool.DnsServer:", pool.DnsServer)
-		if err := r.UpdateSubnetv4Server(subnetv4ID, pool); err != nil {
-			return nil, err
-		}
-	}
-
 	pool2, err := PGDBConn.OrmCreatePool(subnetv4ID, pool)
 	if err != nil {
 		log.Println("OrmCreatePool error")
@@ -724,9 +715,6 @@ func (r *PoolHandler) UpdatePool(pool *RestPool) error {
 	subnetId := pool.GetParent().GetID()
 	log.Println("in UpdatePool, +++subnetId:", subnetId)
 
-	if err := r.UpdateSubnetv4Server(subnetId, pool); err != nil {
-		return err
-	}
 	pool.Subnetv4Id = subnetId
 
 	err := PGDBConn.OrmUpdatePool(subnetId, pool)
