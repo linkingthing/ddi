@@ -454,15 +454,11 @@ func (r *PoolHandler) convertSubnetv4PoolFromOrmToRest(v *dhcporm.Pool) *RestPoo
 	pool.AddressType = "resv"
 	pool.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 	pool.PoolName = v.BeginAddress + "-" + v.EndAddress
+	pool.DnsServer = v.DnsServer
+	pool.Gateway = v.Gateway
 
 	//get ormSubnetv4 from subnetv4Id
-	pgdb := NewPGDB(r.db)
-	subnetv4Id := strconv.Itoa(int(v.Subnetv4ID))
-
-	s4 := pgdb.GetSubnetv4ById(subnetv4Id)
-	pool.Gateway = s4.Gateway
-	pool.DnsServer = s4.DnsServer
-	pool.Subnetv4Id = subnetv4Id
+	pool.Subnetv4Id = strconv.Itoa(int(v.Subnetv4ID))
 	pool.MaxValidLifetime = strconv.Itoa(v.MaxValidLifetime)
 	pool.ValidLifetime = strconv.Itoa(v.ValidLifetime)
 
