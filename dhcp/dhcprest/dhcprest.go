@@ -317,22 +317,15 @@ func (s *Dhcpv4) GetSubnetv4s(search *SubnetSearch) []*RestSubnetv4 {
 
 		var subnet *RestSubnetv4
 		subnet = s.ConvertSubnetv4FromOrmToRest(&v)
-
 		subnet.SubnetTotal = "0"
-		subnet.SubnetUsage = "0.0"
-
-		//subnet.Name = ""
+		subnet.SubnetUsage = "0.00"
 		if _, ok := getUsages[v.Subnet]; ok {
 			//存在
-
 			subnet.SubnetTotal = strconv.Itoa(getUsages[v.Subnet].Total)
 			subnet.SubnetUsage = fmt.Sprintf("%.2f", getUsages[v.Subnet].Usage)
 		}
-
 		v4 = append(v4, subnet)
-		//subnetv4Front.DbS4 = *subnet
 	}
-
 	log.Println("GetSubnetv4s, v4: ", v4)
 	return v4
 }
