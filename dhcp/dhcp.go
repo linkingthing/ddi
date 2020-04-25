@@ -221,7 +221,12 @@ func (handler *KEAv4Handler) GetDhcpv4Config(service string, conf *ParseDhcpv4Co
 func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) error {
 
 	log.Print("dhcp/dhcp.go, into setDhcpv4Config()")
+
 	//fmt.Printf("conf: %+v\n", conf)
+	for _, s := range conf.Dhcp4.Subnet4 {
+		log.Println("subnetv4 id: ", s.Id)
+		log.Println("subnetv4 subnet: ", s.Subnet)
+	}
 
 	handler.mu.Lock()
 	defer handler.mu.Unlock()

@@ -109,7 +109,10 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubnetv4, error) {
-	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ")
+	//log.Println("into CreateSubnetv4, name: ", restSubnetv4.Name)
+	//log.Println("into CreateSubnetv4, ZoneName: ", restSubnetv4.ZoneName)
+	//log.Println("into CreateSubnetv4, subnet: ", restSubnetv4.Subnet)
+
 	var s4 = dhcporm.OrmSubnetv4{
 		Dhcpv4ConfId:     1,
 		Name:             restSubnetv4.Name,
@@ -276,11 +279,13 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
+	seq := 0
 	for _, v := range newSubs {
 
+		seq++
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
-		restS4.Name = v
+		restS4.Name = s4.Name + strconv.Itoa(seq)
 		restS4.Subnet = v
 		newS4, err = handler.CreateSubnetv4(&restS4)
 		if err != nil {
