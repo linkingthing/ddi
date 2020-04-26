@@ -3,15 +3,10 @@ package dhcprest
 import (
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
-
-	"github.com/linkingthing/ddi/utils"
-
-	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
-
 	"math"
 	"net"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -19,14 +14,14 @@ import (
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
 	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 )
 
 const Dhcpv4Ver string = "4"
-
 const CRDBAddr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
-
 const checkPeriod = 10
 
 var PGDBConn *PGDB
@@ -117,6 +112,10 @@ func (handler *PGDB) GetSubnetMaxId() uint32 {
 	row.Scan(&maxId)
 	log.Println("in GetSubnetMaxId, maxId: ", maxId)
 	log.Println("in GetSubnetMaxId, utils.Subnetv4MaxId: ", utils.Subnetv4MaxId)
+	if maxId < 100 {
+		log.Println("in GetSubnetMaxId, set maxId to 100")
+		maxId = 100
+	}
 	if utils.Subnetv4MaxId <= maxId {
 		utils.Subnetv4MaxId = maxId
 	}
@@ -273,18 +272,6 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	}
 	tx.Commit()
 
-	//s4 := handler.GetSubnetv4ById(id)
-	//err := db.Unscoped().Delete(s4).Error
-	//if err != nil {
-	//	log.Println("删除子网出错: ", err)
-	//	return err
-	//}
-	//query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
-	//aCLDB.ID = uint(dbId)
-	//if err := tx.Unscoped().Delete(&aCLDB).Error; err != nil {
-	//    return err
-	//}
-
 	return nil
 }
 
@@ -298,7 +285,6 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
 	for _, v := range newSubs {
-
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
 		restS4.Name = v
@@ -1042,7 +1028,7 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 		}
 		//}
 	}
-	for i, _ := range data.Nodes {
+	for i := range data.Nodes {
 		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
 	}
 	return nil

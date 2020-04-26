@@ -2,22 +2,22 @@ package main
 
 import (
 	"context"
+	"log"
 	"strconv"
 	"time"
-
-	"log"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
 
 func produce(msg kafka.Message) {
 	w := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Brokers: []string{utils.KafkaServer},
+		Topic:   utils.Dhcpv4Topic,
 	})
 
 	w.WriteMessages(context.Background(), msg)
@@ -26,8 +26,8 @@ func produce(msg kafka.Message) {
 func consumer() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Brokers: []string{utils.KafkaServer},
+		Topic:   utils.Dhcpv4Topic,
 	})
 	defer r.Close()
 

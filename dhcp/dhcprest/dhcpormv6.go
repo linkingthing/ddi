@@ -5,18 +5,13 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/linkingthing/ddi/utils"
-
-	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
-
-	"github.com/linkingthing/ddi/dhcp/agent/dhcpv6agent"
-
 	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing/ddi/pb"
-
 	"github.com/jinzhu/gorm"
-
+	"github.com/linkingthing/ddi/dhcp/agent/dhcpv6agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 )
 
 func (handler *PGDB) GetSubnetv6ByName(db *gorm.DB, name string) *dhcporm.OrmSubnetv6 {
@@ -85,6 +80,10 @@ func (handler *PGDB) GetSubnetv6MaxId() uint32 {
 	row.Scan(&maxId)
 	log.Println("in GetSubnetMaxId, maxId: ", maxId)
 	log.Println("in GetSubnetMaxId, utils.Subnetv6MaxId: ", utils.Subnetv6MaxId)
+	if maxId < 100 {
+		log.Println("in GetSubnetMaxId, set maxId to 100")
+		maxId = 100
+	}
 	if utils.Subnetv6MaxId <= maxId {
 		utils.Subnetv6MaxId = maxId
 	}

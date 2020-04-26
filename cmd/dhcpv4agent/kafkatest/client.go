@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 	kg "github.com/segmentio/kafka-go"
 )
 
@@ -34,13 +33,13 @@ const (
 
 func init() {
 	kafkaWriter = kg.NewWriter(kg.WriterConfig{
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Brokers: []string{utils.KafkaServer},
+		Topic:   utils.Dhcpv4Topic,
 	})
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Brokers: []string{utils.KafkaServer},
+		Topic:   utils.Dhcpv4Topic,
 	})
 	flag.StringVar(&cmd, "cmd", "", StartDHCPv4+"\n"+
 		StopDHCPv4)
