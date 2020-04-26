@@ -1167,6 +1167,9 @@ func (handler *PGDB) UpdateIPAddresses(ipAddresses []dhcporm.IPAddress) ([]*IPAd
 			}else{
 				ipAddresses[i].LeaseEndTime = tmp.LeaseEndTime
 			}
+			if err := tx.Model(&tmp).UpdateColumn("address_type", one.AddressType).Error; err != nil {
+				return nil, err
+			}			
 			ipAddresses[i].ID = tmp.ID
 			ipAddresses[i].MacVender = tmp.MacVender
 			ipAddresses[i].AddressType = tmp.AddressType
