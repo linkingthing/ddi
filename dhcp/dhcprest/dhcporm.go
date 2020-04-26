@@ -196,6 +196,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	//get subnet name from db
 	getOrmS4 := handler.GetSubnetv4ById(subnetv4.ID)
 	dbS4.Subnet = getOrmS4.Subnet
+	subnetv4.Subnet = getOrmS4.Subnet
 
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
