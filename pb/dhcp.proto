@@ -90,7 +90,7 @@ message stopDHCPv4Req{
 }
 
 message CreateSubnetv4Req{
-    string      id                          = 1;
+    uint32      id                          = 1;
     string      subnet                      = 2;
     repeated    Option      options         = 3;
     repeated    Reservation reservations    = 4;
@@ -194,7 +194,7 @@ message stopDHCPv6Req{
 }
 
 message CreateSubnetv6Req{
-    string      id          = 1;
+    uint32      id          = 1;
     string      subnet      = 2;
     repeated    Option      options     = 3;
     repeated    Reservation reservations    = 4;

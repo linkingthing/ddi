@@ -5,12 +5,13 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/linkingthing/ddi/utils"
+
 	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
 
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv6agent"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/pb"
 
 	"github.com/jinzhu/gorm"
@@ -76,19 +77,36 @@ func (handler *PGDB) GetSubnetv6ById(id string) *dhcporm.OrmSubnetv6 {
 	return &subnetv6
 }
 
+//get Currently maxId from Kea config
+func (handler *PGDB) GetSubnetv6MaxId() uint32 {
+	var maxId uint32
+
+	row := handler.db.Table("subnetv6s").Select("MAX(subnetId)").Row()
+	row.Scan(&maxId)
+	log.Println("in GetSubnetMaxId, maxId: ", maxId)
+	log.Println("in GetSubnetMaxId, utils.Subnetv6MaxId: ", utils.Subnetv6MaxId)
+	if utils.Subnetv6MaxId <= maxId {
+		utils.Subnetv6MaxId = maxId
+	}
+	return maxId
+}
+
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error) {
 	log.Println("into CreateSubnetv6, name, subnet, validLifetime: ")
 	var s6 = dhcporm.OrmSubnetv6{
-		Dhcpv6ConfId: 1,
-		Name:         s.Name,
-		Subnet:       s.Subnet,
-		ZoneName:     s.Name,
-		DhcpEnable:   1,
-		//ValidLifetime: s.ValidLifetime,
-		//Gateway:       s.Gateway,
-		//DhcpVer:       Dhcpv4Ver,
+		Dhcpv6ConfId:     1,
+		Name:             s.Name,
+		Subnet:           s.Subnet,
+		ZoneName:         s.Name,
+		DhcpEnable:       1,
+		ValidLifetime:    s.ValidLifetime,
+		MaxValidLifetime: s.MaxValidLifetime,
+		DnsServer:        s.DnsServer,
 	}
+	maxId := handler.GetSubnetv6MaxId()
+	s6.SubnetId = maxId + 1
+
 	if len(s6.Name) > 0 && len(s6.ZoneName) == 0 {
 		s6.ZoneName = s6.Name
 	}
@@ -103,10 +121,10 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv6Req{
-		Subnet:        s.Subnet,
-		Id:            strconv.Itoa(int(last.ID)),
-		ValidLifetime: s.ValidLifetime,
-		//Gateway:       s.Gateway,
+		Subnet:        s6.Subnet,
+		Id:            s6.SubnetId,
+		ValidLifetime: s6.ValidLifetime,
+		DnsServer:     s6.DnsServer,
 	}
 	log.Println("pb.CreateSubnetv6Req req: ", req)
 
@@ -114,7 +132,7 @@ func (handler *PGDB) CreateSubnetv6(s *RestSubnetv6) (dhcporm.OrmSubnetv6, error
 	if err != nil {
 		return last, err
 	}
-	dhcp.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6)
+	utils.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6)
 
 	log.Println(" in CreateSubnetv6, last: ", last)
 	return last, nil
@@ -170,7 +188,7 @@ func (handler *PGDB) OrmUpdateSubnetv6(subnetv6 *RestSubnetv6) error {
 		return err
 	}
 	log.Println("begin to call SendDhcpv6Cmd, update subnetv6")
-	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6); err != nil {
+	if err := utils.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6); err != nil {
 		log.Println("SendCmdDhcpv6 error, ", err)
 		return err
 	}
@@ -204,7 +222,7 @@ func (handler *PGDB) DeleteSubnetv6(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6); err != nil {
+	if err := utils.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6); err != nil {
 		log.Println("SendCmdDhcpv6 error, ", err)
 		return err
 	}
@@ -338,7 +356,7 @@ func (handler *PGDB) OrmCreatePoolv6(subnetv6_id string, r *RestPoolv6) (dhcporm
 	if err != nil {
 		return ormPoolv6, err
 	}
-	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6Pool); err != nil {
+	if err := utils.SendDhcpv6Cmd(data, dhcpv6agent.CreateSubnetv6Pool); err != nil {
 		log.Println("SendCmdDhcpv6 error, ", err)
 		return ormPoolv6, err
 	}
@@ -399,7 +417,7 @@ func (handler *PGDB) OrmUpdatePoolv6(subnetv6_id string, r *RestPoolv6) error {
 		return err
 	}
 	log.Println("begin to call SendDhcpv6Cmd, update subnetv4 pool, req: ", req)
-	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6Pool); err != nil {
+	if err := utils.SendDhcpv6Cmd(data, dhcpv6agent.UpdateSubnetv6Pool); err != nil {
 		log.Println("SendDhcpv6Cmd error, ", err)
 		return err
 	}
@@ -450,7 +468,7 @@ func (handler *PGDB) OrmDeletePoolv6(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6Pool); err != nil {
+	if err := utils.SendDhcpv6Cmd(data, dhcpv6agent.DeleteSubnetv6Pool); err != nil {
 		log.Println("SendDhcpv6Cmd error, ", err)
 		return err
 	}

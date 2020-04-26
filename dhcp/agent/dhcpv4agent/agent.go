@@ -80,8 +80,8 @@ func Dhcpv4Client() {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 
-		Brokers: []string{dhcp.KafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Brokers: []string{utils.KafkaServer},
+		Topic:   utils.Dhcpv4Topic,
 	})
 	var message kg.Message
 	ticker := time.NewTicker(checkPeriod * time.Second)

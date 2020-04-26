@@ -107,7 +107,7 @@ type SubnetConfig struct {
 	//Four4o6Subnet      string        `json:"4o6-subnet"`
 	//Authoritative     bool          `json:"authoritative"`
 	//CalculateTeeTimes bool          `json:"calculate-tee-times"`
-	Id int64 `json:"id"`
+	Id uint32 `json:"id"`
 	//MatchClientId   bool          `json:"match-client-id"`
 	//NextServer      string        `json:"next-server"`
 	OptionData []Option `json:"option-data,omitempty"`
@@ -360,19 +360,13 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		//subnetv4 = append(subnetv4, v)
 	}
 
-	id64, err := strconv.ParseInt(req.Id, 10, 64)
-	if err != nil {
-		log.Println("req.Id error")
-	}
-
-	log.Println("-- ia64: ", id64)
 	newSubnet4 := SubnetConfig{
 		ReservationMode: "all",
 		Reservations:    []Reservation{},
 		OptionData:      []Option{},
 		Subnet:          req.Subnet,
 		ValidLifetime:   json.Number(req.ValidLifetime),
-		Id:              id64,
+		Id:              req.Id,
 		//Relay: SubnetRelay{
 		//	IpAddresses: []string{},
 		//},

@@ -16,6 +16,7 @@ type OrmSubnetv6 struct {
 	Dhcpv6ConfId     uint
 	Name             string              `gorm:"column:name"`
 	Subnet           string              `gorm:"column:subnet"`
+	SubnetId         uint32              `gorm:"column:subnet_id"`
 	ValidLifetime    string              `gorm:"column:valid_life_time"`
 	MaxValidLifetime string              `gorm:"column:max_valid_life_time"`
 	Reservationv6s   []*OrmReservationv6 `gorm:"foreignkey:Subnetv6ID"`
