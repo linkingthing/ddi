@@ -287,6 +287,7 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 		var newS4 dhcporm.OrmSubnetv4
 		restS4.Name = s4.Name + strconv.Itoa(seq)
 		restS4.Subnet = v
+		restS4.DhcpEnable = 1
 		newS4, err = handler.CreateSubnetv4(&restS4)
 		if err != nil {
 			log.Println("create subnetv4 error, ", err)
