@@ -12,9 +12,10 @@ type ACL struct {
 }
 
 type EmbededACL struct {
+	gorm.Model
 	Name     string
 	Type     string
-	ID       uint `sql:"type:integer REFERENCES acls(id)"`
+	ACLID    uint `sql:"type:integer REFERENCES acls(id)"`
 	ParentID uint `sql:"type:integer REFERENCES acls(id) on update cascade on delete cascade"`
 }
 

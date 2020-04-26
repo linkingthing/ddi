@@ -314,7 +314,7 @@ func (handler *BindHandler) StopDNS() error {
 		return nil
 	}
 	var err error
-	if _, err = shell.Shell("rndc", "stop"); err != nil {
+	if _, err = shell.Shell(handler.dnsConfPath+"rndc", "stop"); err != nil {
 		return err
 	}
 	handler.quit <- 1
@@ -1452,7 +1452,7 @@ func (handler *BindHandler) rndcReconfig() error {
 	var para2 string = "-s" + "localhost"
 	var para3 string = "-p" + rndcPort
 	var para4 string = "reconfig"
-	if _, err := shell.Shell("rndc", para1, para2, para3, para4); err != nil {
+	if _, err := shell.Shell(handler.dnsConfPath+"rndc", para1, para2, para3, para4); err != nil {
 		return fmt.Errorf("rndc reconfig error, %w", err)
 	}
 	return nil
@@ -1463,7 +1463,7 @@ func (handler *BindHandler) rndcAddZone(name string, zoneFile string, viewName s
 	var para2 string = "-s" + "localhost"
 	var para3 string = "-p" + rndcPort
 	var para4 string = "addzone " + name + " in " + viewName + " { type master; file \"" + zoneFile + "\";};"
-	if _, err := shell.Shell("rndc", para1, para2, para3, para4); err != nil {
+	if _, err := shell.Shell(handler.dnsConfPath+"rndc", para1, para2, para3, para4); err != nil {
 		return err
 	}
 	return nil
@@ -1475,7 +1475,7 @@ func (handler *BindHandler) rndcDelZone(name string, zoneFile string, viewName s
 	var para2 string = "-s" + "localhost"
 	var para3 string = "-p" + rndcPort
 	var para4 string = "delzone " + name + " in " + viewName
-	if _, err := shell.Shell("rndc", para1, para2, para3, para4); err != nil {
+	if _, err := shell.Shell(handler.dnsConfPath+"rndc", para1, para2, para3, para4); err != nil {
 		return err
 	}
 	return nil
@@ -1488,7 +1488,7 @@ func (handler *BindHandler) rndcDumpJNLFile() error {
 	var para3 string = "-p" + rndcPort
 	var para4 string = "sync"
 	var para5 string = "-clean"
-	if _, err := shell.Shell("rndc", para1, para2, para3, para4, para5); err != nil {
+	if _, err := shell.Shell(handler.dnsConfPath+"rndc", para1, para2, para3, para4, para5); err != nil {
 		panic(err)
 		return err
 	}

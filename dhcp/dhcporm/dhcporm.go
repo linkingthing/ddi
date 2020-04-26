@@ -28,6 +28,7 @@ type OrmSubnetv4 struct {
 	Reservations     []OrmReservation `gorm:"foreignkey:Subnetv4ID"`
 	Pools            []Pool           `gorm:"foreignkey:Subnetv4ID"`
 	ManualAddresses  []ManualAddress  `gorm:"foreignkey:Subnetv4ID"`
+	IPAddresses      []IPAddress      `gorm:"foreignkey:Subnetv4ID"`
 	Gateway          string           `gorm:"gateway"`
 	DnsServer        string           `gorm:"dnsServer"`
 	//DhcpVer       string `gorm:"column:dhcpver"`
@@ -113,27 +114,30 @@ type ManualAddress struct {
 	Subnetv4ID uint `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }
 
-/*type AliveAddress struct {
-	IPAddress     string `gorm:"primary_key"`
-	LastAliveTime int64
-	ScanTime      int64
-	Subnetv4ID    uint `sql:"type:integer REFERENCES subnetv4s(id)"`
-}*/
-
-type Ipv6PlanedAddrTree struct {
+type IPAddress struct {
 	gorm.Model
-	Depth         int
-	Name          string
-	ParentID      uint
-	BeginSubnet   string
-	EndSubnet     string
-	BeginNodeCode int
-	EndNodeCode   int
-	MaxCode       int
-	IsLeaf        bool
-}
-
-type BitsUseFor struct {
-	Parentid uint `gorm:"primary_key"`
-	UsedFor  string
+	IP               string
+	AddressType      string
+	HostName         string
+	MacAddress       string
+	MacVender        string
+	OperSystem       string
+	NetBIOSName      string
+	InterfaceID      string
+	FingerPrint      string
+	LeaseStartTime   int64
+	LeaseEndTime     int64
+	DeviceTypeFlag   bool
+	DeviceType       string
+	BusinessFlag     bool
+	Business         string
+	ChargePersonFlag bool
+	ChargePerson     string
+	TelFlag          bool
+	Tel              string
+	DepartmentFlag   bool
+	Department       string
+	PositionFlag     bool
+	Position         string
+	Subnetv4ID       uint `sql:"type:integer REFERENCES subnetv4s(id) ON UPDATE CASCADE ON DELETE CASCADE"`
 }

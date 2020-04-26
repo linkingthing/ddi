@@ -95,7 +95,7 @@ func main() {
 	if !yamlConfig.Localhost.IsController {
 		go physicalMetrics.NodeExporter()
 	}
-	s, err := grpcserver.NewGRPCServer("localhost:8888", "/root/bindtest/", "/root/bindtest/", dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr, yamlConfig.Localhost.IsDNS, yamlConfig.Localhost.IsDHCP)
+	s, err := grpcserver.NewGRPCServer("0.0.0.0:8888", "/root/bindtest/", "/root/bindtest/", dhcp.KEADHCPv4Service, dhcp.DhcpConfigPath, utils.Dhcpv4AgentAddr, yamlConfig.Localhost.IsDNS, yamlConfig.Localhost.IsDHCP)
 	if err != nil {
 		return
 	}

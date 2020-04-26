@@ -3,13 +3,13 @@ package dhcprest
 import (
 	"fmt"
 	"log"
+	"math"
+	"net"
 	"strconv"
 	"strings"
 
 	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
 
-	"math"
-	"net"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -17,7 +17,7 @@ import (
 	"github.com/linkingthing/ddi/dhcp"
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
-	"github.com/linkingthing/ddi/ipam"
+	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
 	"github.com/linkingthing/ddi/pb"
 )
 
@@ -34,10 +34,6 @@ type PGDB struct {
 	ticker *time.Ticker
 }
 
-/*func init() {
-	PGDBConn = NewPGDB()
-}*/
-
 func NewPGDB(db *gorm.DB) *PGDB {
 	p := &PGDB{}
 	p.db = db
@@ -52,8 +48,9 @@ func NewPGDB(db *gorm.DB) *PGDB {
 	p.db.AutoMigrate(&dhcporm.OrmReservationv6{})
 	p.db.AutoMigrate(&dhcporm.Poolv6{})
 	//p.db.AutoMigrate(&dhcporm.AliveAddress{})
-	p.db.AutoMigrate(&dhcporm.Ipv6PlanedAddrTree{})
-	p.db.AutoMigrate(&dhcporm.BitsUseFor{})
+	if err := p.db.AutoMigrate(&dhcporm.IPAddress{}).Error; err != nil {
+		panic(err)
+	}
 	p.ticker = time.NewTicker(checkPeriod * time.Second)
 	return p
 }
@@ -939,329 +936,369 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 	return &newRet
 }
 
-func (handler *PGDB) CreateSubtree(data *ipam.Subtree) error {
-	tx := handler.db.Begin()
-	defer tx.Rollback()
-	if err := handler.CreateSubtreeRecursive(data, 0, tx, 0, 0); err != nil {
-		return err
-	}
-
-	tx.Commit()
-	return nil
-}
-func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, tx *gorm.DB, depth int, maxCode int) error {
-	//general subnet
-	var max byte
-	for _, v := range data.Nodes {
-		if max < v.EndNodeCode {
-			max = v.EndNodeCode
-		}
-	}
-	if data.SubtreeBitNum == 0 || (data.SubtreeBitNum > 0 && int(max)+1 > int(math.Pow(2, float64(data.SubtreeBitNum)))) {
-		var newMaxCode int
-		if int(max)+1 > len(data.Nodes)*2 {
-			newMaxCode = int(max) + 1
+func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string, mac string) ([]*IPAddress, error) {
+	log.Println("into dhcptb GetIPAddress, subNetID ", subNetID)
+	//get the reservation address
+	reservData := PGDBConn.OrmReservationList(subNetID)
+	allData := make(map[string]dhcporm.IPAddress, 255)
+	for _, a := range reservData {
+		if a.ReservType == "hw-address" || a.ReservType == "client-id" {
+			//get the stable address
+			tmp := dhcporm.IPAddress{IP: a.IpAddress, AddressType: "stable"}
+			allData[a.IpAddress] = tmp
 		} else {
-			newMaxCode = len(data.Nodes) * 2
-		}
-		var f float64
-		f = math.Log2(float64(newMaxCode))
-		if int(f*10)%10 > 0 {
-			data.SubtreeBitNum = byte(f) + 1
-		} else {
-			data.SubtreeBitNum = byte(f)
+			tmp := dhcporm.IPAddress{IP: a.IpAddress, AddressType: "reserved"}
+			allData[a.IpAddress] = tmp
 		}
 	}
-	handler.CaculateSubnet(data)
-	fmt.Println("CreateSubtreeRecursive:", data)
-	//add data to table Ipv6PlanedAddrTree
-	one := dhcporm.Ipv6PlanedAddrTree{}
-	one.Depth = depth
-	one.Name = data.Name
-	one.ParentID = parentid
-	one.BeginSubnet = data.BeginSubnet
-	one.EndSubnet = data.EndSubnet
-	one.BeginNodeCode = int(data.BeginNodeCode)
-	one.EndNodeCode = int(data.EndNodeCode)
-	one.MaxCode = maxCode
-	if len(data.Nodes) == 0 {
-		one.IsLeaf = true
-	} else {
-		one.IsLeaf = false
-	}
-	/*if data.ID != "" {
-		var num int
+	//get the pools under the subnet
+	pools := PGDBConn.OrmPoolList(subNetID)
+	var dynamicAddress []string
+	for _, pool := range pools {
+		beginNums := strings.Split(pool.BeginAddress, ".")
+		endNums := strings.Split(pool.EndAddress, ".")
 		var err error
-		if num, err = strconv.Atoi(data.ID); err != nil {
-			return err
+		var begin int
+		var end int
+		if begin, err = strconv.Atoi(string(beginNums[3])); err != nil {
+			break
 		}
-		one.ID = uint(num)
-		if err := tx.Save(&one).Error; err != nil {
-			return err
+		if end, err = strconv.Atoi(string(endNums[3])); err != nil {
+			break
 		}
-	} else {*/
-	if err := tx.Create(&one).Error; err != nil {
-		return err
+		var beginPart string
+		beginPart = beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
+		for i := begin; i <= end; i++ {
+			dynamicAddress = append(dynamicAddress, beginPart+strconv.Itoa(i))
+		}
 	}
-	//}
-	data.ID = strconv.Itoa(int(one.ID))
-	data.Depth = depth
-	//add data to table BitsUseFor
-	if data.Nodes != nil {
-		bitsUsedFor := dhcporm.BitsUseFor{}
-		bitsUsedFor.Parentid = one.ID
-		bitsUsedFor.UsedFor = data.SubtreeUseDFor
-		/*if data.ID != "" {
-			if err := tx.Save(&bitsUsedFor).Error; err != nil {
-				return err
-			}
-		} else {*/
-		if err := tx.Create(&bitsUsedFor).Error; err != nil {
-			return err
-		}
-		//}
-	}
-	for i, _ := range data.Nodes {
-		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
-	}
-	return nil
-}
-
-func (handler *PGDB) PrefixIncrementN(beginIpv6 string, prefixLength int, n int) (string, error) {
-	var ipv6Addr net.IP
-	ipv6Addr = net.ParseIP(beginIpv6)
-	if ipv6Addr == nil {
-		return "", fmt.Errorf("ipv6 adderss %v parse err!", beginIpv6)
-	}
-	var frontDest int64
-	//var frontSour int64
-	for i := 0; i < 8; i++ {
-		frontDest += int64(ipv6Addr[i]) * int64(math.Pow(2, float64((7-i)*8)))
-	}
-	frontDest += int64(n) * int64(math.Pow(2, float64(64-prefixLength)))
-	for i := 0; i < 8; i++ {
-		fmt.Println(byte(frontDest >> ((7 - i) * 8) & 0x000000FF))
-		ipv6Addr[i] = byte(frontDest >> ((7 - i) * 8) & 0x000000FF)
-	}
-	return ipv6Addr.String(), nil
-}
-
-func (handler *PGDB) CaculateSubnet(p *ipam.Subtree) error {
-	//caculate the same prefix ipv6 address between BeginSubnet and EndSubnet's ipv6 adderss.
-	var sameIpv6 string
-	var prefixLength int
-	if p.BeginNodeCode != p.EndNodeCode {
-		begin := strings.Split(p.BeginSubnet, "/")
-		if len(begin) != 2 {
-			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
-		}
-		var err error
-		if prefixLength, err = strconv.Atoi(begin[1]); err != nil {
-			return err
-		}
-		prefixLength -= int(math.Log2(float64(p.EndNodeCode - p.BeginNodeCode + 1)))
-		var beginIpv6 net.IP
-		beginIpv6 = net.ParseIP(begin[0])
-		if beginIpv6 == nil {
-			return fmt.Errorf("ip parse error: %v", begin[0])
-		}
-		end := strings.Split(p.EndSubnet, "/")
-		if len(end) != 2 {
-			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
-		}
-		var endIpv6 net.IP
-		endIpv6 = net.ParseIP(end[0])
-		if endIpv6 == nil {
-			return fmt.Errorf("ip parse error: %v", end[0])
-		}
-
-		var samePrefix net.IP
-		samePrefix = net.ParseIP("::")
-		if samePrefix == nil {
-			return fmt.Errorf("ip parse error: %v", samePrefix)
-		}
-		for i := 0; i < 16; i++ {
-			samePrefix[i] = beginIpv6[i] & endIpv6[i]
-		}
-		sameIpv6 = samePrefix.String()
-	} else {
-		s := strings.Split(p.BeginSubnet, "/")
-		if len(s) != 2 {
-			return fmt.Errorf("subnet id:", p.ID, "subnet format error!")
-		}
-		var err error
-		if prefixLength, err = strconv.Atoi(s[1]); err != nil {
-			return err
-		}
-		sameIpv6 = s[0]
-	}
-	for i, n := range p.Nodes {
-		var beginIpv6 string
-		var endIpv6 string
-		var err error
-		if beginIpv6, err = handler.PrefixIncrementN(sameIpv6, prefixLength+int(p.SubtreeBitNum), int(n.BeginNodeCode)); err != nil {
-			return err
-		}
-		if endIpv6, err = handler.PrefixIncrementN(sameIpv6, prefixLength+int(p.SubtreeBitNum), int(n.EndNodeCode)); err != nil {
-			return err
-		}
-		p.Nodes[i].BeginSubnet = beginIpv6 + "/" + strconv.Itoa(int(prefixLength+int(p.SubtreeBitNum)))
-		p.Nodes[i].EndSubnet = endIpv6 + "/" + strconv.Itoa(int(prefixLength+int(p.SubtreeBitNum)))
-	}
-	return nil
-}
-
-func (handler *PGDB) DeleteSubtree(id string) error {
-	tx := handler.db.Begin()
-	defer tx.Rollback()
-	one := dhcporm.Ipv6PlanedAddrTree{}
-	if err := tx.First(&one, id).Error; err != nil {
-		return err
-	}
-	if !one.IsLeaf {
-		var childs []dhcporm.Ipv6PlanedAddrTree
-		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
-			return err
-		}
-		for _, c := range childs {
-			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
-				return err
+	found := false
+	for _, ip := range dynamicAddress {
+		found = false
+		for _, a := range reservData {
+			if ip == a.IpAddress {
+				found = true
+				break
 			}
 		}
-	}
-	if err := tx.Unscoped().Where("parentid = ?", one.ID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
-		return err
-	}
-	//update the parent's IsLeaf to be true if it's exists.
-	if one.ParentID != 0 {
-		parent := dhcporm.Ipv6PlanedAddrTree{}
-		parent.ID = one.ParentID
-		if err := tx.Model(&parent).UpdateColumn("is_leaf", "true").Error; err != nil {
-			return err
+		if !found {
+			tmp := dhcporm.IPAddress{IP: ip, AddressType: "dynamic"}
+			allData[ip] = tmp
 		}
 	}
-	if err := tx.Unscoped().Delete(&one).Error; err != nil {
-		return err
-	}
-	tx.Commit()
-	return nil
-}
-func (handler *PGDB) DeleteOne(id string, tx *gorm.DB) error {
-	one := dhcporm.Ipv6PlanedAddrTree{}
-	if err := tx.First(&one, id).Error; err != nil {
-		return err
-	}
-	if !one.IsLeaf {
-		var childs []dhcporm.Ipv6PlanedAddrTree
-		if err := tx.Where("parent_id = ?", id).Find(&childs).Error; err != nil {
-			return err
-		}
-		for _, c := range childs {
-			if err := handler.DeleteOne(strconv.Itoa(int(c.ID)), tx); err != nil {
-				return err
-			}
-		}
-	}
-	if one.ParentID != 0 {
-		if err := tx.Unscoped().Where("parentid = ?", one.ParentID).Delete(&dhcporm.BitsUseFor{}).Error; err != nil {
-			return err
-		}
-	}
-	if err := tx.Unscoped().Delete(&one).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (handler *PGDB) GetSubtree(id string) (*ipam.Subtree, error) {
-	data := ipam.Subtree{}
-	one := dhcporm.Ipv6PlanedAddrTree{}
-	var many []dhcporm.Ipv6PlanedAddrTree
-	//var one dhcporm.Ipv6PlanedAddrTree
-	if id == "" {
-		if err := handler.db.Where("parent_id = ?", 0).Find(&many).Error; err != nil {
-			return nil, nil
-		}
-		fmt.Println(many)
-		if len(many) >= 1 {
-			id = strconv.Itoa(int(many[0].ID))
-			one = many[0]
-		} else {
-			return nil, nil
-		}
-	} else {
-		if err := handler.db.First(&one, id).Error; err != nil {
-			if err := handler.db.Where("parent_id = ?", 0).Find(&one).Error; err != nil {
-				return nil, err
-			}
-		}
-	}
-	data.ID = strconv.Itoa(int(one.ID))
-	data.Name = one.Name
-	data.BeginSubnet = one.BeginSubnet
-	data.EndSubnet = one.EndSubnet
-	data.BeginNodeCode = byte(one.BeginNodeCode)
-	data.EndNodeCode = byte(one.EndNodeCode)
-	data.SubtreeBitNum = 0
-	data.Depth = one.Depth
-	var usedFors []dhcporm.BitsUseFor
-	if err := handler.db.Where("parentid = ?", one.ID).Find(&usedFors).Error; err != nil {
+	//get manual address
+	var manuals []dhcporm.ManualAddress
+	if err := handler.db.Where("subnetv4_id = ?", subNetID).Find(&manuals).Error; err != nil {
 		return nil, err
 	}
-	if len(usedFors) >= 1 {
-		data.SubtreeUseDFor = usedFors[0].UsedFor
+	for _, v := range manuals {
+		tmp := dhcporm.IPAddress{IP: v.IpAddress, AddressType: "manual"}
+		allData[v.IpAddress] = tmp
 	}
-	var bitNum int
-	var err error
-	if !one.IsLeaf {
-		if bitNum, err = handler.GetNextTree(&data.Nodes, one.ID); err != nil {
-			return nil, err
+	//get the lease address for the subnet
+	leases,err := dhcpgrpc.GetLeases(subNetID)
+	if err!=nil{
+		return nil,err
+	}
+	for _, l := range leases {
+		var macAddr string
+		for i := 0; i < len(l.HwAddress); i++ {
+			var tmp string
+			if i==0{
+				tmp = fmt.Sprintf("%d", l.HwAddress[i])
+			}else{
+				tmp = fmt.Sprintf(":%d", l.HwAddress[i])
+			}
+			
+			macAddr += tmp
+		}
+		tmp := dhcporm.IPAddress{IP: l.IpAddress, MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
+		allData[l.IpAddress] = tmp
+	}
+	subnet := PGDBConn.GetSubnetv4ById(subNetID)
+	parts := strings.Split(subnet.Subnet, "/")
+	beginNums := strings.Split(parts[0], ".")
+	prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
+	allSubnetAddress,err := handler.GetSubnetAllAddresses(subnet.Subnet)
+	if err!= nil{
+		return nil,err
+	}
+	var num int
+	if num,err = strconv.Atoi(subNetID);err!= nil{
+		return nil,err
+	}	
+	for i,v := range allSubnetAddress{
+		if allData[v].AddressType == "" {
+			tmp := dhcporm.IPAddress{IP: v, AddressType: "unused",Subnetv4ID:uint(num)}
+			allData[prefix+strconv.Itoa(i)] = tmp
 		}
 	}
-	data.SubtreeBitNum = byte(bitNum)
-	return &data, nil
-}
-
-func (handler *PGDB) GetNextTree(p *[]ipam.Subtree, parentid uint) (int, error) {
-	var many []dhcporm.Ipv6PlanedAddrTree
-	if err := handler.db.Where("parent_id = ?", parentid).Find(&many).Error; err != nil {
-		return 0, err
+	var data []*IPAddress
+	var filterData []*IPAddress
+	var input []dhcporm.IPAddress
+	for _, v := range allData {
+		v.Subnetv4ID = uint(num)
+		input = append(input, v)
 	}
-	for _, one := range many {
-		data := ipam.Subtree{}
-		data.ID = strconv.Itoa(int(one.ID))
-		data.Name = one.Name
-		data.BeginSubnet = one.BeginSubnet
-		data.EndSubnet = one.EndSubnet
-		data.BeginNodeCode = byte(one.BeginNodeCode)
-		data.EndNodeCode = byte(one.EndNodeCode)
-		data.SubtreeBitNum = 0
-		data.Depth = one.Depth
-		var usedFors []dhcporm.BitsUseFor
-		if err := handler.db.Where("parentid = ?", one.ID).Find(&usedFors).Error; err != nil {
-			return 0, err
-		}
-		if len(usedFors) == 1 {
-			data.SubtreeUseDFor = usedFors[0].UsedFor
-		}
-		var bitNum int
-		var err error
-		if !one.IsLeaf {
-			if bitNum, err = handler.GetNextTree(&data.Nodes, one.ID); err != nil {
-				return 0, err
+	if data, err = handler.UpdateIPAddresses(input); err != nil {
+		return nil, err
+	}
+	if ip != "" {
+		for _, v := range data {
+			if v.IP == ip {
+				filterData = append(filterData, v)
 			}
 		}
-		data.SubtreeBitNum = byte(bitNum)
-		*p = append(*p, data)
+		data = filterData
+		filterData = filterData[0:0]
 	}
-	if len(many) > 0 {
-		return int(math.Log2(float64(many[0].MaxCode))), nil
-	} else {
-		return 0, nil
+
+	if hostName != "" {
+		for _, v := range data {
+			if v.HostName == hostName {
+				if v.IP == ip {
+					filterData = append(filterData, v)
+				}
+			}
+		}
+		data = filterData
+		filterData = filterData[0:0]
 	}
+	if mac != "" {
+		for _, v := range data {
+			if v.MacAddress == mac {
+				if v.IP == ip {
+					filterData = append(filterData, v)
+				}
+			}
+		}
+		data = filterData
+	}
+
+	return data, nil
 }
 
-func (handler *PGDB) SplitSubnet(p *ipam.SplitSubnet) (*ipam.SplitSubnetResult, error) {
-	data := ipam.SplitSubnetResult{}
-	return &data, nil
+func (handler *PGDB) GetSubnetAllAddresses(subnet string) ([]string, error) {
+	var all []string
+	var length int
+	splits := strings.Split(subnet, "/")
+	var ip net.IP
+	if len(splits) < 2 {
+		panic("wrong")
+	}
+	ip = net.ParseIP(string(splits[0]))
+	if ip == nil {
+		panic("wrong")
+	}
+	var err error
+	if length, err = strconv.Atoi(string(splits[1])); err != nil {
+		panic(err)
+	}
+	a := ip.To4()
+	var max int
+	max = int(math.Pow(2, float64(8-length%8)) - 1)
+	if 0 == length/8 {
+		for i := 0; i <= max; i++ {
+			for j := 1; j <= 255; j++ {
+				for k := 1; k <= 255; k++ {
+					for m := 1; m <= 255; m++ {
+						all = append(all, net.IPv4(a[0]+byte(i), a[1]+byte(j), a[2]+byte(k), a[3]+byte(m)).String())
+					}
+				}
+			}
+		}
+	}
+	if 1 == length/8 {
+		for j := 0; j <= max; j++ {
+			for k := 1; k <= 255; k++ {
+				for m := 1; m <= 255; m++ {
+					all = append(all, net.IPv4(a[0], a[1]+byte(j), a[2]+byte(k), a[3]+byte(m)).String())
+				}
+			}
+		}
+	}
+	if 2 == length/8 {
+		for k := 0; k <= max; k++ {
+			for m := 1; m <= 255; m++ {
+				all = append(all, net.IPv4(a[0], a[1], a[2]+byte(k), a[3]+byte(m)).String())
+			}
+		}
+	}
+	if 3 == length/8 {
+		for m := 0; m <= max; m++ {
+			all = append(all, net.IPv4(a[0], a[1], a[2], a[3]+byte(m)).String())
+		}
+	}
+	return all, nil
+}
+
+func (handler *PGDB) UpdateIPAddresses(ipAddresses []dhcporm.IPAddress) ([]*IPAddress, error) {
+	//create new data in the database
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	for i, one := range ipAddresses {
+		var tmp dhcporm.IPAddress
+		if err := tx.Where("ip = ?", one.IP).Find(&tmp).Error; err != nil {
+			if err := tx.Create(&ipAddresses[i]).Error; err != nil {
+				return nil, err
+			}
+		} else {
+			if one.MacAddress != "" {
+				if err := tx.Model(&tmp).UpdateColumn("mac_address", one.MacAddress).Error; err != nil {
+					return nil, err
+				}
+				ipAddresses[i].MacAddress = one.MacAddress
+			}else{
+				ipAddresses[i].MacAddress = tmp.MacAddress
+			}
+			if one.LeaseStartTime != 0 {
+				if err := tx.Model(&tmp).UpdateColumn("lease_start_time", one.LeaseStartTime).Error; err != nil {
+					return nil, err
+				}
+				ipAddresses[i].LeaseStartTime = one.LeaseStartTime
+			}else{
+				ipAddresses[i].LeaseStartTime = tmp.LeaseStartTime
+			}
+			if one.LeaseEndTime != 0 {
+				if err := tx.Model(&tmp).UpdateColumn("lease_end_time", one.LeaseEndTime).Error; err != nil {
+					return nil, err
+				}
+				ipAddresses[i].LeaseEndTime = one.LeaseEndTime
+			}else{
+				ipAddresses[i].LeaseEndTime = tmp.LeaseEndTime
+			}
+			ipAddresses[i].ID = tmp.ID
+			ipAddresses[i].MacVender = tmp.MacVender
+			ipAddresses[i].AddressType = tmp.AddressType
+			ipAddresses[i].OperSystem = tmp.OperSystem
+			ipAddresses[i].NetBIOSName = tmp.NetBIOSName
+			ipAddresses[i].HostName = tmp.HostName
+			ipAddresses[i].InterfaceID = tmp.InterfaceID
+			ipAddresses[i].FingerPrint = tmp.FingerPrint
+			ipAddresses[i].DeviceTypeFlag = tmp.DeviceTypeFlag
+			ipAddresses[i].DeviceType = tmp.DeviceType
+			ipAddresses[i].BusinessFlag = tmp.BusinessFlag
+			ipAddresses[i].Business = tmp.Business
+			ipAddresses[i].ChargePersonFlag = tmp.ChargePersonFlag
+			ipAddresses[i].ChargePerson = tmp.ChargePerson
+			ipAddresses[i].TelFlag = tmp.TelFlag
+			ipAddresses[i].Tel = tmp.Tel
+			ipAddresses[i].DepartmentFlag = tmp.DepartmentFlag
+			ipAddresses[i].Department = tmp.Department
+			ipAddresses[i].PositionFlag = tmp.PositionFlag
+			ipAddresses[i].Position = tmp.Position
+
+		}
+	}
+	tx.Commit()
+	var data []*IPAddress
+	for _, v := range ipAddresses {
+		var tmp IPAddress
+		tmp.SetID(strconv.Itoa(int(v.ID)))
+		tmp.IP = v.IP
+		tmp.MacAddress = v.MacAddress
+		tmp.MacVender = v.MacVender
+		tmp.AddressType = v.AddressType
+		tmp.OperSystem = v.OperSystem
+		tmp.NetBIOSName = v.NetBIOSName
+		tmp.HostName = v.HostName
+		tmp.InterfaceID = v.InterfaceID
+		tmp.FingerPrint = v.FingerPrint
+		tmp.LeaseStartTime = v.LeaseStartTime
+		tmp.LeaseEndTime = v.LeaseEndTime
+		tmp.DeviceTypeFlag = v.DeviceTypeFlag
+		tmp.DeviceType = v.DeviceType
+		tmp.BusinessFlag = v.BusinessFlag
+		tmp.Business = v.Business
+		tmp.ChargePersonFlag = v.ChargePersonFlag
+		tmp.ChargePerson = v.ChargePerson
+		tmp.TelFlag = v.TelFlag
+		tmp.Tel = v.Tel
+		tmp.DepartmentFlag = v.DepartmentFlag
+		tmp.Department = v.Department
+		tmp.PositionFlag = v.PositionFlag
+		tmp.Position = v.Position
+		data = append(data, &tmp)
+	}
+	return data, nil
+}
+
+func (handler *PGDB) UpdateIPAddress(one *IPAddress,subnetid string) error {
+	var tmp dhcporm.IPAddress
+	var err error
+	var num int
+	tx := handler.db.Begin()
+	defer tx.Rollback()	
+	if num, err = strconv.Atoi(one.ID); err != nil {
+		return err
+	}
+	tmp.ID = uint(num)
+	if err:=tx.First(&tmp, one.GetID()).Error;err!=nil{
+		return err
+	}
+	tmp.IP = one.IP
+	tmp.MacAddress = one.MacAddress
+	tmp.MacVender = one.MacVender
+	tmp.OperSystem = one.OperSystem
+	tmp.NetBIOSName = one.NetBIOSName
+	tmp.HostName = one.HostName
+	tmp.InterfaceID = one.InterfaceID
+	tmp.FingerPrint = one.FingerPrint
+	tmp.LeaseStartTime = one.LeaseStartTime
+	tmp.LeaseEndTime = one.LeaseEndTime
+	tmp.DeviceTypeFlag = one.DeviceTypeFlag
+	tmp.DeviceType = one.DeviceType
+	tmp.BusinessFlag = one.BusinessFlag
+	tmp.Business = one.Business
+	tmp.ChargePersonFlag = one.ChargePersonFlag
+	tmp.ChargePerson = one.ChargePerson
+	tmp.TelFlag = one.TelFlag
+	tmp.Tel = one.Tel
+	tmp.DepartmentFlag = one.DepartmentFlag
+	tmp.Department = one.Department
+	tmp.PositionFlag = one.PositionFlag
+	tmp.Position = one.Position
+	if num,err = strconv.Atoi(subnetid);err!=nil{
+		return err
+	}
+	tmp.Subnetv4ID = uint(num)
+	if err := tx.Save(&tmp).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+func (handler *PGDB) UpdateIPAttrAppend(ipAddressID string, attrAppend *IPAttrAppend) error {
+	tx := handler.db.Begin()
+	defer tx.Rollback()
+	var one dhcporm.IPAddress
+	if err := tx.First(&one, ipAddressID).Error; err != nil {
+		return err
+	}
+	one.DeviceTypeFlag = attrAppend.DeviceTypeFlag
+	one.BusinessFlag = attrAppend.BusinessFlag
+	one.ChargePersonFlag = attrAppend.ChargePersonFlag
+	one.TelFlag = attrAppend.TelFlag
+	one.DepartmentFlag = attrAppend.DepartmentFlag
+	one.PositionFlag = attrAppend.PositionFlag
+	if err := tx.Save(&one).Error; err != nil {
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+func (handler *PGDB) GetIPAttrAppend(id string) (*IPAttrAppend, error) {
+	var tmp dhcporm.IPAddress
+	if err := handler.db.First(&tmp, id).Error; err != nil {
+		return nil, err
+	}
+	var one IPAttrAppend
+	one.SetID(id)
+	one.DeviceTypeFlag = tmp.DeviceTypeFlag
+	one.BusinessFlag = tmp.BusinessFlag
+	one.ChargePersonFlag = tmp.ChargePersonFlag
+	one.TelFlag = tmp.TelFlag
+	one.DepartmentFlag = tmp.DepartmentFlag
+	one.PositionFlag = tmp.PositionFlag
+	return &one, nil
 }

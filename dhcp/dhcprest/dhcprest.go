@@ -15,6 +15,10 @@ import (
 	"github.com/zdnscloud/gorest/resource"
 )
 
+var (
+	FormatError = goresterr.ErrorCode{"Format not correct", 400}
+)
+
 func (s *Dhcpv4) ConvertV4sToV46s(v *RestSubnetv4) *RestSubnetv46 {
 
 	var v46 RestSubnetv46
@@ -836,4 +840,146 @@ func (r *ReservationHandler) DeleteReservation(rsv *RestReservation) error {
 	}
 
 	return nil
+}
+
+type IPAddressHandler struct {
+	Subnetv4s *Subnetv4s
+}
+
+func NewIPAddressHandler(s *Subnetv4s) *IPAddressHandler {
+	return &IPAddressHandler{
+		Subnetv4s: s,
+	}
+}
+
+func (h *IPAddressHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	ipAddress := ctx.Resource.(*IPAddress)
+	if err := PGDBConn.UpdateIPAddress(ipAddress,ipAddress.GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAddress, nil
+}
+
+func (h *IPAddressHandler) List(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	var err error
+	var ipAddresses []*IPAddress
+	filter := ctx.GetFilters()
+	var ip string
+	var hostName string
+	var macAddr string
+	ipAddress := ctx.Resource.(*IPAddress)
+	for _, v := range filter {
+		if v.Name == "ip" {
+			ip = v.Values[0]
+		}
+		if v.Name == "hostname" {
+			hostName = v.Values[0]
+		}
+		if v.Name == "mac" {
+			macAddr = v.Values[0]
+		}
+	}
+	if ipAddresses, err = PGDBConn.GetIPAddresses(ipAddress.GetParent().GetID(), ip, hostName, macAddr); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAddresses, nil
+}
+
+func (h *IPAddressHandler) Action(ctx *resource.Context) (interface{}, *goresterr.APIError) {
+	log.Println("into IPAddressHandler Action, ctx.Resource: ", ctx.Resource)
+
+	r := ctx.Resource
+	ipAddressData, _ := r.GetAction().Input.(*IPAddressData)
+
+	var restRet BaseJsonOptionName
+	restRet.Status = "200"
+	restRet.Message = "操作成功"
+
+	switch r.GetAction().Name {
+	case "change":
+		if ipAddressData.Oper == "tostable" {
+
+			//todo add one stable
+			changeData := ipAddressData.Data
+
+			if len(changeData.CircuitId) > 0 || len(changeData.HwAddress) > 0 {
+				//get subnetv4Id and build one restReservation object
+				subnetv4Id := changeData.Subnetv4Id
+				var restRsv RestReservation
+				restRsv.IpAddress = changeData.IpAddress
+				restRsv.CircuitId = changeData.CircuitId
+				restRsv.HwAddress = changeData.HwAddress
+				restRsv.ResvType = "stable"
+				if ormRsv, err := PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
+
+					log.Println("newly created ormRsv.ID:", ormRsv.ID)
+					restRsv := ConvertReservationFromOrmToRest(&ormRsv)
+					log.Println("tostable, ret restRsv.IpAddress:", restRsv.IpAddress)
+					return &restRsv, nil
+				}
+
+			} else {
+				log.Println("change to stable IP error, need CirtcuitId or HwAddress")
+				return nil, nil
+			}
+
+		}
+		if ipAddressData.Oper == "toresv" {
+			log.Println("in Action, oper=toresv ")
+			//todo add one resv
+			changeData := ipAddressData.Data
+			log.Println("in Action,changeData.IpAddress:", changeData.IpAddress)
+			if len(changeData.CircuitId) == 0 && len(changeData.HwAddress) == 0 {
+				//get subnetv4Id and build one restReservation object
+				subnetv4Id := changeData.Subnetv4Id
+				var restRsv RestReservation
+				restRsv.Duid = changeData.Duid
+				restRsv.Hostname = changeData.Hostname
+				restRsv.ClientId = changeData.ClientId
+				restRsv.IpAddress = changeData.IpAddress
+				restRsv.ResvType = "resv"
+
+				if ormRsv, err := PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
+					log.Println("OrmCreateReservation error, restRsv.IpAddress:", restRsv.IpAddress)
+					log.Println("newly created ormRsv.ID:", ormRsv.ID)
+					restRsv := ConvertReservationFromOrmToRest(&ormRsv)
+					log.Println("toresv, ret restRsv.IpAddress:", restRsv.IpAddress)
+					return &restRsv, nil
+				}
+
+			} else {
+				log.Println("change to reserv IP error, CirtcuitId or HwAddress should not exist")
+				return nil, nil
+			}
+		}
+	}
+
+	return restRet, nil
+}
+
+type ipAttrAppendHandler struct {
+	ipAttrAppends *Subnetv4s
+}
+
+func NewIPAttrAppendHandler(s *Subnetv4s) *ipAttrAppendHandler {
+	return &ipAttrAppendHandler{
+		ipAttrAppends: s,
+	}
+}
+
+func (h *ipAttrAppendHandler) Get(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	ipAttrAppend := ctx.Resource.(*IPAttrAppend)
+	var err error
+	if ipAttrAppend, err = PGDBConn.GetIPAttrAppend(ipAttrAppend.GetParent().GetID()); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAttrAppend, nil
+}
+
+func (h *ipAttrAppendHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
+	ipAttrAppend := ctx.Resource.(*IPAttrAppend)
+	if err := PGDBConn.UpdateIPAttrAppend(ipAttrAppend.GetParent().GetID(), ipAttrAppend); err != nil {
+		return nil, goresterr.NewAPIError(FormatError, err.Error())
+	}
+	return ipAttrAppend, nil
 }

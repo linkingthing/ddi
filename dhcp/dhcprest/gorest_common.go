@@ -22,6 +22,18 @@ import (
 )
 
 var (
+	version = resource.APIVersion{
+		Group:   "linkingthing.com",
+		Version: "example/v1",
+	}
+
+	subnetv4Kind    = resource.DefaultKindName(RestSubnetv4{})
+	ReservationKind = resource.DefaultKindName(RestReservation{})
+	PoolKind        = resource.DefaultKindName(RestPool{})
+	OptionKind      = resource.DefaultKindName(RestOption{})
+	OptionNameKind  = resource.DefaultKindName(RestOptionName{})
+	ipAddressKind   = resource.DefaultKindName(IPAddress{})
+
 	db *gorm.DB
 )
 
@@ -126,6 +138,7 @@ type RestSubnetv4 struct {
 	MaxValidLifetime      string `json:"maxValidLifetime"`
 	Reservations          []*RestReservation
 	Pools                 []*RestPool
+	IPAddresses           []*IPAddress
 	SubnetTotal           string `json:"total"`
 	SubnetUsage           string `json:"usage"`
 	Gateway               string `json:"gateway"`
@@ -939,4 +952,97 @@ func ConvertRestPool2OrmPool(r *RestPool) (o *dhcporm.Pool) {
 		DnsServer:        r.DnsServer,
 	}
 	return &ormPool
+}
+
+type IPAddress struct {
+	resource.ResourceBase `json:",inline"`
+	IP                    string `json:"ip"`
+	MacAddress            string `json:"macaddress"`
+	MacVender             string `json:"macvender"`
+	AddressType           string `json:"AddressType"`
+	OperSystem            string `json:"opersystem"`
+	NetBIOSName           string `json:"netbiosname"`
+	HostName              string `json:"hostname"`
+	InterfaceID           string `json:"interfaceid"`
+	ScanTime              int64  `json:"scantime"`
+	LastAliveTime         int64  `json:"lastalivetime"`
+	FingerPrint           string `json:"fingerprint"`
+	LeaseStartTime        int64  `json:"leasestarttime"`
+	LeaseEndTime          int64  `json:"leaseendtime"`
+	DeviceTypeFlag        bool   `json:"devicetypeflag"`
+	DeviceType            string `json:"devicetype"`
+	BusinessFlag          bool   `json:"businessflag"`
+	Business              string `json:"business"`
+	ChargePersonFlag      bool   `json:"chargepersonflag"`
+	ChargePerson          string `json:"chargeperson"`
+	TelFlag               bool   `json:"telflag"`
+	Tel                   string `json:"tel"`
+	DepartmentFlag        bool   `json:"departmentflag"`
+	Department            string `json:"department"`
+	PositionFlag          bool   `json:"positionflag"`
+	Position              string `json:"position"`
+}
+
+func (ip IPAddress) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{RestSubnetv4{}}
+}
+
+type IPAttrAppend struct {
+	resource.ResourceBase `json:",inline"`
+	DeviceTypeFlag        bool
+	BusinessFlag          bool
+	ChargePersonFlag      bool
+	TelFlag               bool
+	DepartmentFlag        bool
+	PositionFlag          bool
+}
+
+func (ipAttr IPAttrAppend) GetParents() []resource.ResourceKind {
+	return []resource.ResourceKind{IPAddress{}}
+}
+
+type ChangeData struct {
+	Subnetv4Id string `json:"subnetv4Id,omitempty"`
+	CurrType   string `json:"currType,omitempty"`
+	IpAddress  string `json:"ipAddress,omitempty"`
+	HwAddress  string `json:"hwAddress,omitempty"`
+	Hostname   string `json:"hostname,omitempty"`
+	CircuitId  string `json:"circuitId,omitempty"`
+	ClientId   string `json:"clientId,omitempty"`
+	Duid       string `json:"duid,omitempty"`
+	MacAddress string `json:"macaddress,omitempty"`
+}
+
+type IPAddressData struct {
+	resource.ResourceBase `json:",inline"`
+	Oper                  string     `json:"oper" rest:"required=true,minLen=1,maxLen=20"`
+	Data                  ChangeData `json:"data"`
+}
+
+func (r IPAddress) GetActions() []resource.Action {
+	log.Println("into IPAddress GetActions")
+	var actions []resource.Action
+
+	action := resource.Action{
+		Name:   "change",
+		Input:  &IPAddressData{},
+		Output: &IPAddressData{},
+	}
+	actions = append(actions, action)
+
+	return actions
+}
+
+func (r IPAddress) CreateAction(name string) *resource.Action {
+
+	log.Println("into IPAddress, create action")
+	switch name {
+	case "change":
+		return &resource.Action{
+			Name:  "change",
+			Input: &IPAddressData{},
+		}
+	default:
+		return nil
+	}
 }
