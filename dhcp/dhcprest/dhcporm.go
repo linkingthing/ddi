@@ -750,7 +750,7 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	subnetName := s4.Subnet
 
 	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
-	if oldPoolObj == nil {
+	if len(oldPoolObj.BeginAddress) == 0 {
 		return fmt.Errorf("Pool not exists, return")
 	}
 	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
