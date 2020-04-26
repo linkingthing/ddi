@@ -22,7 +22,7 @@ import (
 )*/
 
 type MetricsHandler struct {
-	URLPath       string
+	ConfigPath    string
 	Ticker        *time.Ticker
 	HistoryLength int
 	Period        int
@@ -32,7 +32,7 @@ type MetricsHandler struct {
 }
 
 func NewMetricsHandler(path string, length int, period int, dbPath string) *MetricsHandler {
-	instance := MetricsHandler{URLPath: path, HistoryLength: length, Period: period, dbPath: dbPath}
+	instance := MetricsHandler{ConfigPath: path, HistoryLength: length, Period: period, dbPath: dbPath}
 	instance.Ticker = time.NewTicker(time.Duration(instance.Period) * time.Second)
 	instance.dbHandler = boltoper.NewBoltHandler(instance.dbPath, "dnsmetrics.db")
 	instance.Metrics = ct.NewMetrics("dns", instance.dbHandler)
@@ -46,13 +46,13 @@ func (h *MetricsHandler) Statics() error {
 		case <-h.Ticker.C:
 			var para1 string
 			var para2 string
-			para1 = "-c" + h.URLPath + "/rndc.conf"
+			para1 = "-c" + h.ConfigPath + "/rndc.conf"
 			para2 = "stats"
-			if _, err = shell.Shell("rndc", para1, para2); err != nil {
+			if _, err = shell.Shell(h.ConfigPath+"/rndc", para1, para2); err != nil {
 				fmt.Println(err)
 			}
 			for {
-				if _, err := os.Stat(h.URLPath + "/named.stats"); err == nil {
+				if _, err := os.Stat(h.ConfigPath + "/named.stats"); err == nil {
 					break
 				}
 			}
@@ -64,7 +64,7 @@ func (h *MetricsHandler) Statics() error {
 			h.RetCodeStatics("NXDOMAIN", ct.NXDOMAINPath)
 			h.RetCodeStatics("REFUSED", ct.REFUSEDPath)
 			//remove the named.stats
-			if err := os.Remove(h.URLPath + "/named.stats"); err != nil {
+			if err := os.Remove(h.ConfigPath + "/named.stats"); err != nil {
 				return err
 			}
 		}
@@ -77,7 +77,7 @@ func (h *MetricsHandler) QueryStatics() error {
 	var para1 string
 	para1 = "Dump ---"
 	var para2 string
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	var value string
 	var err error
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
@@ -95,7 +95,7 @@ func (h *MetricsHandler) QueryStatics() error {
 	//get the num of query
 	var currQuery []byte
 	para1 = "QUERY"
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (h *MetricsHandler) MemHitStatics() error {
 	var para1 string
 	para1 = "Dump ---"
 	var para2 string
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	var value string
 	var err error
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
@@ -133,7 +133,7 @@ func (h *MetricsHandler) MemHitStatics() error {
 	}
 	//get the num of recursive query
 	para1 = "cache hits (from query)"
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (h *MetricsHandler) RecurQueryStatics() error {
 	var para1 string
 	para1 = "Dump ---"
 	var para2 string
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	var value string
 	var err error
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
@@ -179,7 +179,7 @@ func (h *MetricsHandler) RecurQueryStatics() error {
 	}
 	//get the num of recursive query
 	para1 = "queries sent"
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (h *MetricsHandler) RetCodeStatics(retCode string, table string) error {
 	var para1 string
 	para1 = "Dump ---"
 	var para2 string
-	para2 = h.URLPath + "/named.stats"
+	para2 = h.ConfigPath + "/named.stats"
 	var value string
 	var err error
 	if value, err = shell.Shell("grep", para1, para2); err != nil {
@@ -226,7 +226,7 @@ func (h *MetricsHandler) RetCodeStatics(retCode string, table string) error {
 	//get the num of RetCode
 	para1 = "-E"
 	para2 = "[0-9]+ " + retCode + "$"
-	para3 := h.URLPath + "/named.stats"
+	para3 := h.ConfigPath + "/named.stats"
 	if value, err = shell.Shell("grep", para1, para2, para3); err != nil {
 		return err
 	}

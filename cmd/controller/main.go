@@ -42,20 +42,20 @@ var (
 		Group:   "linkingthing.com",
 		Version: "example/v1",
 	}
-	checkValueLock     sync.Mutex
-	checkValues        []data
-	aCLKind            = resource.DefaultKindName(dnsapi.ACL{})
-	viewKind           = resource.DefaultKindName(dnsapi.View{})
-	zoneKind           = resource.DefaultKindName(dnsapi.Zone{})
-	rRKind             = resource.DefaultKindName(dnsapi.RR{})
-	forwardKind        = resource.DefaultKindName(dnsapi.Forward{})
-	redirectionKind    = resource.DefaultKindName(dnsapi.Redirection{})
-	defaultDNS64Kind   = resource.DefaultKindName(dnsapi.DefaultDNS64{})
-	dNS64Kind          = resource.DefaultKindName(dnsapi.DNS64{})
-	ipBlackHoleKind    = resource.DefaultKindName(dnsapi.IPBlackHole{})
-	recursiveConKind   = resource.DefaultKindName(dnsapi.RecursiveConcurrent{})
-	sortListKind       = resource.DefaultKindName(dnsapi.SortList{})
-	dividedAddressKind = resource.DefaultKindName(ipam.DividedAddress{})
+	checkValueLock   sync.Mutex
+	checkValues      []data
+	aCLKind          = resource.DefaultKindName(dnsapi.ACL{})
+	viewKind         = resource.DefaultKindName(dnsapi.View{})
+	zoneKind         = resource.DefaultKindName(dnsapi.Zone{})
+	rRKind           = resource.DefaultKindName(dnsapi.RR{})
+	forwardKind      = resource.DefaultKindName(dnsapi.Forward{})
+	redirectionKind  = resource.DefaultKindName(dnsapi.Redirection{})
+	defaultDNS64Kind = resource.DefaultKindName(dnsapi.DefaultDNS64{})
+	dNS64Kind        = resource.DefaultKindName(dnsapi.DNS64{})
+	ipBlackHoleKind  = resource.DefaultKindName(dnsapi.IPBlackHole{})
+	recursiveConKind = resource.DefaultKindName(dnsapi.RecursiveConcurrent{})
+	sortListKind     = resource.DefaultKindName(dnsapi.SortList{})
+	ipAddressKind    = resource.DefaultKindName(dhcprest.IPAddress{})
 	//scanAddressKind    = resource.DefaultKindName(ipam.ScanAddress{})
 	subtreeKind = resource.DefaultKindName(ipam.Subtree{})
 )
@@ -134,10 +134,6 @@ func main() {
 	schemas.MustImport(&version, dnsapi.Redirection{}, dnsapi.NewRedirectionHandler(state))
 	schemas.MustImport(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
 	//ipam interfaces
-	dividedAddressState := ipamapi.NewDividedAddressState()
-	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(dividedAddressState))
-	ipAttrAppendState := ipamapi.NewIPAttrAppendState()
-	schemas.MustImport(&version, ipam.IPAttrAppend{}, ipamapi.NewIPAttrAppendHandler(ipAttrAppendState))
 
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
@@ -146,6 +142,7 @@ func main() {
 	dhcpv4 := dhcprest.NewDhcpv4(db)
 	schemas.MustImport(&version, dhcprest.RestSubnetv4{}, dhcprest.NewSubnetv4Handler(dhcpv4))
 	schemas.MustImport(&version, dhcprest.RestSubnetv46{}, dhcprest.NewSubnetv46Handler(dhcpv4))
+	//schemas.MustImport(&version, .RestSubnetv46{}, ipamapi.NewSubnetv46Handler(dhcpv4))
 	subnetv4s := dhcprest.NewSubnetv4s(db)
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
@@ -155,6 +152,9 @@ func main() {
 	schemas.MustImport(&version, dhcprest.RestSubnetv6{}, dhcprest.NewSubnetv6Handler(dhcpv6))
 	subnetv6s := dhcprest.NewSubnetv6s(db)
 	schemas.MustImport(&version, dhcprest.RestPoolv6{}, dhcprest.NewPoolv6Handler(subnetv6s))
+
+	schemas.MustImport(&version, dhcprest.IPAddress{}, dhcprest.NewIPAddressHandler(subnetv4s))
+	schemas.MustImport(&version, dhcprest.IPAttrAppend{}, dhcprest.NewIPAttrAppendHandler(subnetv4s))
 	// end of dhcp model
 
 	router := gin.Default()

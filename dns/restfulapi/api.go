@@ -40,8 +40,8 @@ type View struct {
 	ACLs                  []*ACL         `json:"acls"`
 	ZoneSize              int            `json:"zonesize"`
 	Redirections          []*Redirection `json:"-"`
-	RPZSize               int            `json:"rpzsize"`
-	RedirectSize          int            `json:"redirectsize"`
+	LocalZoneSize         int            `json:"localzonesize"`
+	NXDomainSize          int            `json:"nxdomainsize"`
 	DNS64s                []*DNS64       `json:"-"`
 	DNS64Size             int            `json:"dns64size"`
 }
@@ -118,7 +118,7 @@ type Redirection struct {
 	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	DataType              string `json:"type" rest:"required=true,options=A|AAAA|CNAME"`
-	RedirectType          string `json:"redirecttype" rest:"required=true,options=rpz|redirect"`
+	RedirectType          string `json:"redirecttype" rest:"required=true,options=localzone|nxdomain"`
 	Value                 string `json:"value" rest:"required=true,minLen=1,maxLen=40"`
 }
 

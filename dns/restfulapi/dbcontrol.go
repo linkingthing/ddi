@@ -180,19 +180,20 @@ func (controller *DBController) CreateACL(aCL *ACL) (*tb.ACL, error) {
 	}
 	var err error
 	for _, v := range aCL.ACLs {
-		ip := tb.EmbededACL{Name: v.Name}
-		ip.Type = v.Type
+		acl := tb.EmbededACL{Name: v.Name}
+		acl.Type = v.Type
 		if v.Type == "ip" {
-			ip.ID = 1 //use the 1 temporary.
+			acl.ACLID = 1 //use the 1 temporary.
 		} else if v.Type == "acl" {
 			var num int
 			if num, err = strconv.Atoi(v.ACLID); err != nil {
 				return nil, err
 			}
-			ip.ID = uint(num)
+			acl.ACLID = uint(num)
 		}
-		one.ACLs = append(one.ACLs, ip)
+		one.ACLs = append(one.ACLs, acl)
 	}
+	fmt.Println("create acl:", one)
 	if err := tx.Create(&one).Error; err != nil {
 		return nil, err
 	}
@@ -283,7 +284,7 @@ func (controller *DBController) GetACL(id string) (*ACL, error) {
 	for _, v := range acls {
 		var one EmbededACL
 		one.Name = v.Name
-		one.ACLID = strconv.Itoa(int(v.ID))
+		one.ACLID = strconv.Itoa(int(v.ACLID))
 		one.Type = v.Type
 		aCL.ACLs = append(aCL.ACLs, one)
 	}
@@ -329,13 +330,13 @@ func (controller *DBController) UpdateACL(aCL *ACL) error {
 		ip := tb.EmbededACL{Name: v.Name}
 		ip.Type = v.Type
 		if v.Type == "ip" {
-			ip.ID = 1 //use the 1 temporary.
+			ip.ACLID = 1 //use the 1 temporary.
 		} else if v.Type == "acl" {
 			var num int
 			if num, err = strconv.Atoi(v.ACLID); err != nil {
 				return err
 			}
-			ip.ID = uint(num)
+			ip.ACLID = uint(num)
 		}
 		one.ACLs = append(one.ACLs, ip)
 	}
@@ -671,14 +672,14 @@ func (controller *DBController) GetView(id string) (*View, error) {
 	}
 	view.ZoneSize = len(zones)
 	var redirections []tb.Redirection
-	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "rpz").Find(&redirections).Error; err != nil {
+	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "localzone").Find(&redirections).Error; err != nil {
 		return nil, err
 	}
-	view.RPZSize = len(redirections)
-	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "redirect").Find(&redirections).Error; err != nil {
+	view.LocalZoneSize = len(redirections)
+	if err := tx.Where("view_id = ?", id).Where("redirect_type = ?", "nxdomain").Find(&redirections).Error; err != nil {
 		return nil, err
 	}
-	view.RedirectSize = len(redirections)
+	view.NXDomainSize = len(redirections)
 	var dns64s []tb.DNS64
 	if err := tx.Where("view_id = ?", id).Find(&dns64s).Error; err != nil {
 		return nil, err
