@@ -108,7 +108,7 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 func (handler *PGDB) GetSubnetMaxId() uint32 {
 	var maxId uint32
 
-	row := handler.db.Table("subnetv4s").Select("MAX(subnetId)").Row()
+	row := handler.db.Table("subnetv4s").Select("MAX(subnet_id)").Row()
 	row.Scan(&maxId)
 	log.Println("in GetSubnetMaxId, maxId: ", maxId)
 	log.Println("in GetSubnetMaxId, utils.Subnetv4MaxId: ", utils.Subnetv4MaxId)
