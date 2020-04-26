@@ -84,45 +84,68 @@ type DHCPv4Conf struct {
 	Dhcp4 Dhcpv4Config
 }
 type Dhcpv4Config struct {
-	Authoritative bool   `json:"authoritative,omitempty"`
-	BootFileName  string `json:"boot-file-name,omitempty"`
-	//ClientClasses map[string]interface{} `json:"client-classes"`
-	ControlSocket ControlSocket  `json:"control-socket,omitempty"`
-	OptionData    []Option       `json:"option-data,omitempty"`
-	Subnet4       []SubnetConfig `json:"subnet4"`
-
-	//T1Percent json.Number `json:"t1-percent"`
-	//T2Percent json.Number `json:"t2-percent"`
-	ValidLifetime json.Number `json:"valid-lifetime,omitempty"`
+	Authoritative bool                   `json:"authoritative,omitempty"`
+	BootFileName  string                 `json:"boot-file-name,omitempty"`
+	LeaseDb       StoreDb                `json:"lease-database,omitempty"`
+	HostsDb       []StoreDb              `json:"hosts-databases,omitempty"`
+	Interfaces    InterfacesConfig       `json:"interfaces-config,omitempty"`
+	ClientClasses map[string]interface{} `json:"client-classes,omitempty"`
+	ControlSocket ControlSocket          `json:"control-socket,omitempty"`
+	OptionData    []Option               `json:"option-data,omitempty"`
+	Subnet4       []SubnetConfig         `json:"subnet4,omitempty"`
+	T1Percent     json.Number            `json:"t1-percent,omitempty"`
+	T2Percent     json.Number            `json:"t2-percent,omitempty"`
+	ValidLifetime json.Number            `json:"valid-lifetime,omitempty"`
+	Loggers       []LogConfig            `json:"loggers,omitempty"`
+}
+type LogConfig struct {
+	Debuglevel    int          `json:"debuglevel,omitempty"`
+	Name          string       `json:"name,omitempty"`
+	OutputOptions []OutputPath `json:"output_options,omitempty"`
+	Severity      string       `json:"severity,omitempty"`
+}
+type OutputPath struct {
+	Output string `json:"output,omitempty"`
+}
+type InterfacesConfig struct {
+	Interfaces []string `json:"interfaces,omitempty"`
+	Redetect   bool     `json:"re-detect,omitempty"`
 }
 
+type StoreDb struct {
+	Host     string `json:"host,omitempty"`
+	Name     string `json:"name,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"password,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Type     string `json:"type,omitempty"`
+}
 type ControlSocket struct {
 	SocketName string `json:"socket-name,omitempty"`
 	SocketType string `json:"socket-type,omitempty"`
 }
 
 type SubnetConfig struct {
-	//Four4o6Interface   string        `json:"4o6-interface"`
-	//Four4o6InterfaceId string        `json:"4o6-interface-id"`
-	//Four4o6Subnet      string        `json:"4o6-subnet"`
-	//Authoritative     bool          `json:"authoritative"`
-	//CalculateTeeTimes bool          `json:"calculate-tee-times"`
-	Id uint32 `json:"id"`
-	//MatchClientId   bool          `json:"match-client-id"`
-	//NextServer      string        `json:"next-server"`
-	OptionData []Option `json:"option-data,omitempty"`
-	Pools      []Pool   `json:"pools,omitempty"`
-	//RebindTimer     json.Number   `json:"rebind-timer"`
-	//Relay           SubnetRelay   `json:"relay"`
-	//RenewTimer      json.Number   `json:"renew-timer"`
-	ReservationMode string        `json:"reservation-mode"`
-	Reservations    []Reservation `json:"reservations"`
-	Subnet          string        `json:"subnet"`
-
-	//T1Percent float64 `json:"t1-percent"`
-	//T2Percent float64 `json:"t2-percent"`
-	ValidLifetime    json.Number `json:"valid-lifetime,omitempty"`
-	MaxValidLifetime json.Number `json:"max-valid-lifetime,omitempty"`
+	Four4o6Interface   string      `json:"4o6-interface,omitempty"`
+	Four4o6InterfaceId string      `json:"4o6-interface-id,omitempty"`
+	Four4o6Subnet      string      `json:"4o6-subnet,omitempty"`
+	Authoritative      bool        `json:"authoritative,omitempty"`
+	CalculateTeeTimes  bool        `json:"calculate-tee-times,omitempty"`
+	Id                 uint32      `json:"id,omitempty"`
+	MatchClientId      bool        `json:"match-client-id,omitempty"`
+	NextServer         string      `json:"next-server,omitempty"`
+	OptionData         []Option    `json:"option-data,omitempty"`
+	Pools              []Pool      `json:"pools,omitempty"`
+	RebindTimer        json.Number `json:"rebind-timer,omitempty"`
+	//Relay              SubnetRelay   `json:"relay,omitempty"`
+	RenewTimer       json.Number   `json:"renew-timer,omitempty"`
+	ReservationMode  string        `json:"reservation-mode,omitempty"`
+	Reservations     []Reservation `json:"reservations,omitempty"`
+	Subnet           string        `json:"subnet,omitempty"`
+	T1Percent        float64       `json:"t1-percent,omitempty"`
+	T2Percent        float64       `json:"t2-percent,omitempty"`
+	ValidLifetime    json.Number   `json:"valid-lifetime,omitempty"`
+	MaxValidLifetime json.Number   `json:"max-valid-lifetime,omitempty"`
 }
 type SubnetRelay struct {
 	IpAddresses []string `json:"ip-addresses"`
@@ -137,8 +160,8 @@ type Option struct {
 	Space      string `json:"space,omitempty"`
 }
 type Pool struct {
-	OptionData []*Option `json:"option-data"`
-	Pool       string    `json:"pool"`
+	OptionData []*Option `json:"option-data,omitempty"`
+	Pool       string    `json:"pool,omitempty"`
 }
 type Reservation struct {
 	BootFileName string `json:"boot-file-name,omitempty"`
@@ -235,7 +258,6 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 		log.Println("json.Marshal error: ", err)
 	}
 
-	//log.Println("postStr: ", postStr)
 	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
 		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
 	log.Println("curlCmd: ", curlCmd)
@@ -257,32 +279,6 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	//log.Print(curlCmd)
 	//log.Print("print r")
 	//log.Print(r)
-
-	// todo 正则匹配successful.
-
-	//param1 := "-X" + "POST"
-	//param2 := "-H" + "\"Content-Type: application/json\""
-	//param3 := "-d" + "' " + string(postStr) + "'"
-	//param4 := "http://" + DhcpHost + ":" + DhcpPort
-	////param5 := "2>/dev/null"
-	//if ret, err := shell.Shell("curl", param1, param2, param3, param4); err != nil {
-	//	log.Print("shell err")
-	//	log.Print(err)
-	//	return err
-	//} else {
-	//	log.Print("shell ok")
-	//	log.Print(ret)
-	//
-	//var r curlRet
-	//	if err := json.Unmarshal([]byte(ret), &r); err != nil {
-	//		log.Print("err != nil")
-	//		log.Print(err)
-	//	} else {
-	//		log.Print("err == nil")
-	//		log.Print(r)
-	//	}
-	//
-	//}
 
 	KeaDhcpv4Conf = postStr
 
@@ -541,9 +537,9 @@ func (handler *KEAv4Handler) CreateSubnetv4Pool(req pb.CreateSubnetv4PoolReq) er
 			p.OptionData = ops
 			conf.Arguments.Dhcp4.Subnet4[k].Pools = append(conf.Arguments.Dhcp4.Subnet4[k].Pools, p)
 
-			//log.Println("begin subnet\n")
-			//log.Println(conf.Arguments.Dhcp4)
-			//log.Println("end subnet\n")
+			log.Println("begin subnet\n")
+			log.Println(conf.Arguments.Dhcp4)
+			log.Println("end subnet\n")
 
 			err = handler.setDhcpv4Config(KEADHCPv4Service, &conf.Arguments)
 			if err != nil {
