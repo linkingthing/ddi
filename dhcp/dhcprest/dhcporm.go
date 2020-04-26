@@ -34,10 +34,6 @@ type PGDB struct {
 	ticker *time.Ticker
 }
 
-/*func init() {
-	PGDBConn = NewPGDB()
-}*/
-
 func NewPGDB(db *gorm.DB) *PGDB {
 	p := &PGDB{}
 	p.db = db
@@ -179,6 +175,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	//get subnet name from db
 	getOrmS4 := handler.GetSubnetv4ById(subnetv4.ID)
 	dbS4.Subnet = getOrmS4.Subnet
+	subnetv4.Subnet = getOrmS4.Subnet // subnet couldn't be changed, change rest subnetv4's subnet to original one
 
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
@@ -285,7 +282,7 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 		seq++
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
-		restS4.Name = s4.Name + strconv.Itoa(seq)
+		restS4.Name = s4.Name + "_" + strconv.Itoa(seq)
 		restS4.Subnet = v
 		restS4.DhcpEnable = 1
 		newS4, err = handler.CreateSubnetv4(&restS4)
@@ -314,10 +311,21 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 	var ormS4 dhcporm.OrmSubnetv4
 	var err error
 
+	newName := "" //get name of merged subnet
 	//get subnets which will be merged
 	for _, s4ID := range s4IDs {
 		s4Obj := handler.GetSubnetv4ById(s4ID)
 		s4Objs = append(s4Objs, s4Obj)
+		if len(newName) == 0 {
+			names := strings.Split(s4Obj.Name, "_")
+
+			if len(names) > 0 {
+				newName = s4Obj.Name[0 : len(s4Obj.Name)-len(names[1])-1]
+			} else {
+				newName = s4Obj.Name
+			}
+
+		}
 
 		// 1 delete every subnet which will be merged
 		if err = handler.DeleteSubnetv4(s4ID); err != nil {
@@ -329,8 +337,9 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 
 	// 2 create new subnet with subnet: newSubnet, if some properties will be heritated further, fill them
 	restS4 := RestSubnetv4{}
-	restS4.Name = newSubnet
+	restS4.Name = newName
 	restS4.Subnet = newSubnet
+	restS4.DhcpEnable = 1
 	ormS4, err = handler.CreateSubnetv4(&restS4)
 	if err != nil {
 		log.Println("create subnetv4 error, ", err)
@@ -1027,7 +1036,7 @@ func (handler *PGDB) CreateSubtreeRecursive(data *ipam.Subtree, parentid uint, t
 		}
 		//}
 	}
-	for i, _ := range data.Nodes {
+	for i := range data.Nodes {
 		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
 	}
 	return nil

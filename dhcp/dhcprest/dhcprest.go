@@ -117,7 +117,7 @@ func NewDhcpv4(db *gorm.DB) *Dhcpv4 {
 //}
 
 func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
-	log.Println("into CreateSubnetv4, subnetv4: ", subnetv4)
+	//log.Println("into CreateSubnetv4, subnetv4: ", subnetv4)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -147,15 +147,11 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
 }
 
 func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *RestSubnetv4) error {
-	log.Println("into dhcp/dhcprest/UpdateSubnetv4")
-	//log.Println("in UpdateSubnetv4(), subnetv4 ID: ", subnetv4.ID)
-	//log.Println("in UpdateSubnetv4(), subnetv4 name: ", subnetv4.Name)
-	//log.Println("in UpdateSubnetv4(), subnetv4 subnet: ", subnetv4.Subnet)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if c := s.getSubnetv4ById(subnetv4.ID); c == nil {
+	if c := s.getSubnetv4ById(subnetv4.ID); len(c.Subnet) == 0 {
 		return fmt.Errorf("subnet %s not exist", subnetv4.ID)
 	}
 
@@ -165,7 +161,6 @@ func (s *Dhcpv4) UpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	}
 
 	subnetv4.CreationTimestamp = resource.ISOTime(subnetv4.GetCreationTimestamp())
-	log.Println("subnetv4.CreationTimestamp ", subnetv4.CreationTimestamp)
 
 	return nil
 }
@@ -194,10 +189,10 @@ func (s *Dhcpv4) SplitSubnetv4(s4 *RestSubnetv4, newMask int) ([]*RestSubnetv4, 
 	var err error
 
 	ormS4 := PGDBConn.GetSubnetv4ById(s4.GetID())
-	log.Println("ormS4.subnet: ", ormS4.Subnet)
+	//log.Println("ormS4.subnet: ", ormS4.Subnet)
 
 	out := strings.Split(ormS4.Subnet, "/")
-	//log.Println("out: ", out)
+
 	curMask := 0
 	if len(out) > 0 {
 
