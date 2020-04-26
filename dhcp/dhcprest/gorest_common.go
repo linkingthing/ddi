@@ -23,8 +23,8 @@ import (
 
 var (
 	version = resource.APIVersion{
-		Group:   "linkingthing",
-		Version: "dhcp/v1",
+		Group:   "linkingthing.com",
+		Version: "example/v1",
 	}
 
 	subnetv4Kind    = resource.DefaultKindName(RestSubnetv4{})
@@ -149,8 +149,8 @@ type RestSubnetv46 struct {
 
 type RestSubnetv4 struct {
 	resource.ResourceBase `json:"embedded,inline"`
-	Name                  string `json:"name,omitempty" rest:"required=true,minLen=1,maxLen=255"`
-	Subnet                string `json:"subnet,omitempty" rest:"required=true,minLen=1,maxLen=255"`
+	Name                  string `json:"name,omitempty" rest:"minLen=1,maxLen=255"`
+	Subnet                string `json:"subnet,omitempty" rest:"minLen=1,maxLen=255"`
 	SubnetId              string `json:"subnet_id"`
 	ValidLifetime         string `json:"validLifetime"`
 	MaxValidLifetime      string `json:"maxValidLifetime"`
@@ -445,6 +445,7 @@ func (s *Dhcpv4) ConvertSubnetv4FromOrmToRest(v *dhcporm.OrmSubnetv4) *RestSubne
 	v4.Name = v.Name
 	v4.SubnetId = strconv.Itoa(int(v.ID))
 	v4.ValidLifetime = v.ValidLifetime
+	v4.MaxValidLifetime = v.MaxValidLifetime
 	v4.Reservations = ConvertReservationsFromOrmToRest(v.Reservations)
 	v4.CreationTimestamp = resource.ISOTime(v.CreatedAt)
 

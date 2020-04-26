@@ -135,6 +135,11 @@ func main() {
 	schemas.MustImport(&version, dnsapi.DNS64{}, dnsapi.NewDNS64Handler(state))
 	//ipam interfaces
 
+	// web socket server, consume kafka topic prom and check ping/pong msg
+	port := utils.WebSocket_Port
+	go metric.SocketServer(port)
+	log.Println("Starting dhcp gorest controller")
+
 	// start of dhcp model
 	dhcprest.PGDBConn = dhcprest.NewPGDB(db)
 	defer dhcprest.PGDBConn.Close()

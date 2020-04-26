@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
@@ -16,20 +17,22 @@ const (
 	StopCharacter = "\r\n\r\n"
 )
 
-func SocketClient(ip string, port int) {
-	addr := strings.Join([]string{ip, strconv.Itoa(port)}, ":")
+func SocketClient(parentIp string, ip string, port int, role string) {
+	addr := strings.Join([]string{parentIp, strconv.Itoa(port)}, ":")
 	conn, err := net.Dial("tcp", addr)
 
 	if err != nil {
+		log.Println("err != nil")
 		log.Fatalln(err)
 		os.Exit(1)
 	}
 
 	defer conn.Close()
 
-	conn.Write([]byte(ip))
+	msg := ip + "_" + role
+	conn.Write([]byte(msg))
 	conn.Write([]byte(StopCharacter))
-	log.Printf("Send: %s", message)
+	log.Printf("Send: %s", msg)
 
 	buff := make([]byte, 128)
 	n, _ := conn.Read(buff)
@@ -40,9 +43,20 @@ func SocketClient(ip string, port int) {
 func main() {
 
 	//get promServer from yaml config file
-	ip := config.GetLocalIP("/etc/vanguard/vanguard.conf")
+	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
+	ip := yamlConfig.Localhost.IP
+	parentIp := yamlConfig.Localhost.ParentIP
+	role := yamlConfig.Localhost.Role
+	if yamlConfig.Localhost.IsDHCP {
+		role = "dhcp"
+	} else if yamlConfig.Localhost.IsDNS {
+		role = "dns"
+	}
 	port := utils.WebSocket_Port
 
-	SocketClient(ip, port)
+	for {
+		SocketClient(parentIp, ip, port, role)
+		time.Sleep(5 * time.Second)
+	}
 
 }

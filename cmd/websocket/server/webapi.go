@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/linkingthing/ddi/utils"
-	"github.com/linkingthing/ddi/utils/config"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -13,6 +11,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/linkingthing/ddi/utils"
+	"github.com/linkingthing/ddi/utils/config"
 )
 
 type Metric struct {
@@ -50,9 +52,9 @@ type Usage struct {
 	Qps  string `json:"qps"`
 }
 
-type NodeType struct {
-	nodeType map[string]utils.PromRole
-}
+//type NodeType struct {
+//	nodeType map[string]utils.PromRole
+//}
 
 type Hosts struct {
 	Nodes map[string]utils.PromRole `json:"nodes"`
@@ -436,13 +438,23 @@ func List_server(w http.ResponseWriter, r *http.Request) {
 
 	result.Status = config.STATUS_SUCCCESS
 	result.Message = config.MSG_OK
-	for _, s := range utils.OnlinePromHosts {
+	for ip, s := range utils.OnlinePromHosts {
+		hbTime := s.HbTime
+		log.Println("hbTime: ", hbTime)
+		log.Println("time now: ", time.Now().Unix())
+		log.Println("2*checkDuration: ", int64(2*checkDuration/time.Second))
+
+		if time.Now().Unix()-s.HbTime > int64(2*checkDuration/time.Second) {
+			log.Println("host changed to offline, host ip: ", s.IP)
+			s.State = 0 // 离线
+			utils.OnlinePromHosts[ip] = s
+		}
 		result.Data = append(result.Data, s)
 	}
 
-	log.Println("+++ result")
-	log.Println(result)
-	log.Println("--- result")
+	//log.Println("+++ result")
+	//log.Println(result)
+	//log.Println("--- result")
 	bytes, _ := json.Marshal(result)
 	//fmt.Fprint(w, string(bytes))
 	w.Write([]byte(bytes))
