@@ -318,14 +318,16 @@ func (handler *PGDB) OrmMergeSubnetv4(s4IDs []string, newSubnet string) (*dhcpor
 		s4Objs = append(s4Objs, s4Obj)
 		if len(newName) == 0 {
 			names := strings.Split(s4Obj.Name, "_")
+			log.Println("in OrmMergeSubnetv4, s4Obj.Name: ", s4Obj.Name)
+			log.Println("in OrmMergeSubnetv4, names: ", names)
 
-			if len(names) > 0 {
+			if len(names) > 1 {
 				newName = s4Obj.Name[0 : len(s4Obj.Name)-len(names[1])-1]
 			} else {
 				newName = s4Obj.Name
 			}
-
 		}
+		log.Println("in OrmMergeSubnetv4, newName: ", newName)
 
 		// 1 delete every subnet which will be merged
 		if err = handler.DeleteSubnetv4(s4ID); err != nil {
