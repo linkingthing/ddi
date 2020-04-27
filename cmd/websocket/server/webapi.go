@@ -442,15 +442,21 @@ func List_server(w http.ResponseWriter, r *http.Request) {
 	yamlConfig := config.GetConfig("/etc/vanguard/vanguard.conf")
 
 	for ip, s := range utils.OnlinePromHosts {
+		log.Println("s.HbTime now: ", s.HbTime)
+		timeDiff := time.Now().Unix() - s.HbTime
+		log.Println("in List_server timeDiff: ", timeDiff)
 
+		dur := int64(2 * checkDuration / time.Second)
+		log.Println("in List_server dur: ", dur)
 		if time.Now().Unix()-s.HbTime > int64(2*checkDuration/time.Second) {
 			log.Println("host changed to offline, host ip: ", s.IP)
 			s.State = 0 // 离线
 			utils.OnlinePromHosts[ip] = s
 		}
 
-		if yamlConfig.Localhost.IsController == true && yamlConfig.Localhost.IP == s.IP {
+		if s.State == 0 && yamlConfig.Localhost.IsController == true && yamlConfig.Localhost.IP == s.IP {
 			// this host is controller, set status to online
+			log.Println("is controller is true and localhostip == s.IP, change status=1")
 			s.State = 1
 		}
 		result.Data = append(result.Data, s)

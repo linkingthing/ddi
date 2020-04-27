@@ -19,7 +19,7 @@ const (
 	Message       = "Pong"
 	StopCharacter = "\r\n\r\n"
 	//checkDuration = 24 * time.Hour
-	checkDuration = 24 * time.Second
+	checkDuration = 5 * time.Second
 )
 
 func SocketServer(port int) {
