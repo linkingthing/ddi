@@ -16,7 +16,6 @@ import (
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
 	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
-	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
 	"github.com/linkingthing/ddi/utils"
 )
