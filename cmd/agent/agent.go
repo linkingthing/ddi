@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	"io/ioutil"
+	"strconv"
+
 	"github.com/golang/protobuf/proto"
 	physicalMetrics "github.com/linkingthing/ddi/cmd/metrics"
 	"github.com/linkingthing/ddi/cmd/node"
@@ -16,8 +19,6 @@ import (
 	"github.com/linkingthing/ddi/utils/grpcserver"
 	kg "github.com/segmentio/kafka-go"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"strconv"
 )
 
 const (
@@ -307,7 +308,7 @@ func dhcpClient(conn *grpc.ClientConn, kafkaServer string) {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 		Brokers: []string{kafkaServer},
-		Topic:   dhcp.Dhcpv4Topic,
+		Topic:   utils.Dhcpv4Topic,
 	})
 	var KafkaOffsetDhcpv4 int64
 	size, err := ioutil.ReadFile(KafkaOffsetFileDhcpv4)

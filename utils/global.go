@@ -24,4 +24,7 @@ var (
 	Dhcpv6AgentAddr = "localhost:8899"
 	GrpcServer      = "127.0.0.1:8888"
 	DhcpHost        = "10.0.0.31"
+
+	Subnetv4MaxId uint32 = 0
+	Subnetv6MaxId uint32 = 0
 )

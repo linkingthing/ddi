@@ -7,9 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-
-	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
-
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -18,13 +15,14 @@ import (
 	"github.com/linkingthing/ddi/dhcp/agent/dhcpv4agent"
 	"github.com/linkingthing/ddi/dhcp/dhcporm"
 	dhcpgrpc "github.com/linkingthing/ddi/dhcp/grpc"
+	dnsapi "github.com/linkingthing/ddi/dns/restfulapi"
+	"github.com/linkingthing/ddi/ipam"
 	"github.com/linkingthing/ddi/pb"
+	"github.com/linkingthing/ddi/utils"
 )
 
 const Dhcpv4Ver string = "4"
-
 const CRDBAddr = "postgresql://maxroach@localhost:26257/ddi?ssl=true&sslmode=require&sslrootcert=/root/cockroach-v19.2.0/certs/ca.crt&sslkey=/root/cockroach-v19.2.0/certs/client.maxroach.key&sslcert=/root/cockroach-v19.2.0/certs/client.maxroach.crt"
-
 const checkPeriod = 10
 
 var PGDBConn *PGDB
@@ -104,12 +102,31 @@ func (handler *PGDB) GetSubnetv4ById(id string) *dhcporm.OrmSubnetv4 {
 	return &subnetv4
 }
 
+//get Currently maxId from Kea config
+func (handler *PGDB) GetSubnetMaxId() uint32 {
+	var maxId uint32
+
+	row := handler.db.Table("subnetv4s").Select("MAX(subnet_id)").Row()
+	row.Scan(&maxId)
+	log.Println("in GetSubnetMaxId, maxId: ", maxId)
+	log.Println("in GetSubnetMaxId, utils.Subnetv4MaxId: ", utils.Subnetv4MaxId)
+	if maxId < 100 {
+		log.Println("in GetSubnetMaxId, set maxId to 100")
+		maxId = 100
+	}
+	if utils.Subnetv4MaxId <= maxId {
+		utils.Subnetv4MaxId = maxId
+	}
+	return maxId
+}
+
 //return (new inserted id, error)
 func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubnetv4, error) {
 	log.Println("into CreateSubnetv4, name, subnet, validLifetime: ")
+
 	var s4 = dhcporm.OrmSubnetv4{
-		Dhcpv4ConfId:     1,
 		Name:             restSubnetv4.Name,
+		SubnetId:         0,
 		Subnet:           restSubnetv4.Subnet,
 		ValidLifetime:    restSubnetv4.ValidLifetime,
 		MaxValidLifetime: restSubnetv4.MaxValidLifetime,
@@ -119,6 +136,9 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 		ZoneName:         restSubnetv4.ZoneName,
 		//DhcpVer:       Dhcpv4Ver,
 	}
+	maxId := handler.GetSubnetMaxId()
+	s4.SubnetId = maxId + 1
+
 	if len(s4.Name) > 0 && len(s4.ZoneName) == 0 {
 		s4.ZoneName = s4.Name
 	}
@@ -135,18 +155,19 @@ func (handler *PGDB) CreateSubnetv4(restSubnetv4 *RestSubnetv4) (dhcporm.OrmSubn
 	//send msg to kafka queue, which is read by dhcp server
 	req := pb.CreateSubnetv4Req{
 		Subnet:        restSubnetv4.Subnet,
-		Id:            restSubnetv4.ID,
+		Id:            s4.SubnetId,
 		ValidLifetime: restSubnetv4.ValidLifetime,
 		Gateway:       restSubnetv4.Gateway,
 		DnsServer:     restSubnetv4.DnsServer,
 	}
 	log.Println("pb.CreateSubnetv4Req req.id: ", req.Id)
+	log.Println("pb.CreateSubnetv4Req req.Subnet: ", req.Subnet)
 
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return last, err
 	}
-	dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
+	utils.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4)
 
 	log.Println(" in CreateSubnetv4, last: ", last)
 	return last, nil
@@ -173,6 +194,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 	//get subnet name from db
 	getOrmS4 := handler.GetSubnetv4ById(subnetv4.ID)
 	dbS4.Subnet = getOrmS4.Subnet
+	subnetv4.Subnet = getOrmS4.Subnet
 
 	//added for new zone handler
 	if subnetv4.DnsEnable > 0 {
@@ -207,7 +229,7 @@ func (handler *PGDB) OrmUpdateSubnetv4(subnetv4 *RestSubnetv4) error {
 		return err
 	}
 
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
@@ -243,23 +265,11 @@ func (handler *PGDB) DeleteSubnetv4(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
 	tx.Commit()
-
-	//s4 := handler.GetSubnetv4ById(id)
-	//err := db.Unscoped().Delete(s4).Error
-	//if err != nil {
-	//	log.Println("删除子网出错: ", err)
-	//	return err
-	//}
-	//query := db.Unscoped().Where("id = ? ", dbId).Delete(dhcporm.OrmSubnetv4{})
-	//aCLDB.ID = uint(dbId)
-	//if err := tx.Unscoped().Delete(&aCLDB).Error; err != nil {
-	//    return err
-	//}
 
 	return nil
 }
@@ -274,7 +284,6 @@ func (handler *PGDB) OrmSplitSubnetv4(s4 *dhcporm.OrmSubnetv4, newMask int) ([]*
 	// compute how many new subnets should be created
 	newSubs := getSegs(s4.Subnet, newMask)
 	for _, v := range newSubs {
-
 		restS4 := RestSubnetv4{}
 		var newS4 dhcporm.OrmSubnetv4
 		restS4.Name = v
@@ -439,7 +448,7 @@ func (handler *PGDB) OrmCreateReservation(subnetv4_id string, r *RestReservation
 	if err != nil {
 		return ormRsv, err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Reservation); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Reservation); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return ormRsv, err
 	}
@@ -504,7 +513,7 @@ func (handler *PGDB) OrmUpdateReservation(subnetv4_id string, r *RestReservation
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Reservation); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Reservation); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return err
 	}
@@ -549,7 +558,7 @@ func (handler *PGDB) OrmDeleteReservation(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Reservation); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Reservation); err != nil {
 		log.Println("SendDhcpCmd error, ", err)
 		return err
 	}
@@ -722,7 +731,7 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (*dhcporm.Po
 	if err != nil {
 		return ormPool, err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Pool); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.CreateSubnetv4Pool); err != nil {
 		log.Println("SendCmdDhcpv4 error, ", err)
 		return ormPool, err
 	}
@@ -739,7 +748,7 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	subnetName := s4.Subnet
 
 	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
-	if oldPoolObj == nil {
+	if len(oldPoolObj.BeginAddress) == 0 {
 		return fmt.Errorf("Pool not exists, return")
 	}
 	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
@@ -777,7 +786,7 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 		return err
 	}
 	log.Println("begin to call SendDhcpCmd, update subnetv4 pool, req: ", req)
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Pool); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.UpdateSubnetv4Pool); err != nil {
 		log.Println("SendDhcpCmd error, ", err)
 		return err
 	}
@@ -820,7 +829,7 @@ func (handler *PGDB) OrmDeletePool(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := dhcp.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Pool); err != nil {
+	if err := utils.SendDhcpCmd(data, dhcpv4agent.DeleteSubnetv4Pool); err != nil {
 		log.Println("SendDhcpCmd error, ", err)
 		return err
 	}
@@ -1052,6 +1061,7 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		data = filterData
 		filterData = filterData[0:0]
 	}
+<<<<<<< HEAD
 
 	if hostName != "" {
 		for _, v := range data {
@@ -1073,6 +1083,10 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 			}
 		}
 		data = filterData
+=======
+	for i := range data.Nodes {
+		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
+>>>>>>> dev-dhcp-20200426-xieqc
 	}
 
 	return data, nil

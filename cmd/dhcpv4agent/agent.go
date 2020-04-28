@@ -62,7 +62,7 @@ func dhcpClient() {
 
 	kafkaReader = kg.NewReader(kg.ReaderConfig{
 		Brokers: []string{utils.KafkaServerProm},
-		Topic:   dhcp.Dhcpv4Topic,
+		Topic:   utils.Dhcpv4Topic,
 		//StartOffset: 95,
 	})
 	var KafkaOffsetDhcpv4 int64
