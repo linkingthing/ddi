@@ -1004,7 +1004,12 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		allData[v.IpAddress] = tmp
 	}
 	//get the lease address for the subnet
-	leases,err := dhcpgrpc.GetLeases(subNetID)
+	//first get the corespoding SubnetId in the table OrmSubnetv4
+	var subnetv4 dhcporm.OrmSubnetv4
+	if err:=handler.db.First(&subnetv4,subNetID).Error;err!=nil{
+		return nil,err
+	}
+	leases,err := dhcpgrpc.GetLeases(strconv.Itoa(int(subnetv4.SubnetId)))
 	if err!=nil{
 		return nil,err
 	}
@@ -1013,9 +1018,9 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		for i := 0; i < len(l.HwAddress); i++ {
 			var tmp string
 			if i==0{
-				tmp = fmt.Sprintf("%d", l.HwAddress[i])
+				tmp = fmt.Sprintf("%X", l.HwAddress[i])
 			}else{
-				tmp = fmt.Sprintf(":%d", l.HwAddress[i])
+				tmp = fmt.Sprintf(":%X", l.HwAddress[i])
 			}
 			
 			macAddr += tmp
