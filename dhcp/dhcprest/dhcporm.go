@@ -1061,7 +1061,6 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		data = filterData
 		filterData = filterData[0:0]
 	}
-<<<<<<< HEAD
 
 	if hostName != "" {
 		for _, v := range data {
@@ -1083,10 +1082,7 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 			}
 		}
 		data = filterData
-=======
-	for i := range data.Nodes {
-		handler.CreateSubtreeRecursive(&data.Nodes[i], one.ID, tx, depth+1, int(math.Pow(2, float64(data.SubtreeBitNum))))
->>>>>>> dev-dhcp-20200426-xieqc
+
 	}
 
 	return data, nil
