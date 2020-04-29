@@ -279,8 +279,53 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 	//log.Print(curlCmd)
 	//log.Print("print r")
 	//log.Print(r)
+	confFile := "/usr/local/etc/kea/kea-dhcp4.conf"
+	if err := handler.WriteDhcpv4Config(service, &confFile); err != nil {
+
+		errStr := "write dhcpv4 config Error, confFile: " + confFile
+		log.Println(errStr)
+		return fmt.Errorf(errStr)
+	}
 
 	KeaDhcpv4Conf = postStr
+
+	return nil
+}
+func (handler *KEAv4Handler) WriteDhcpv4Config(service string, conf *string) error {
+	log.Println("into WriteDhcpv4Config")
+	postData := map[string]interface{}{
+		"command": "config-set",
+		"service": []string{service},
+		"arguments": map[string]interface{}{
+			"filename": "/usr/local/etc/kea/kea-dhcp4.conf",
+		},
+	}
+	postStr, err := json.Marshal(postData)
+	if err != nil {
+		log.Println("json.Marshal error: ", err)
+	}
+	curlCmd := "curl -X POST -H \"Content-Type: application/json\" -d '" +
+		string(postStr) + "' http://" + utils.DhcpHost + ":" + DhcpPort + " 2>/dev/null"
+	log.Println("curlCmd: ", curlCmd)
+	var cmdRet CmdRet
+	str, err := cmd(curlCmd)
+	if err != nil {
+		log.Println("cmd Error, err: ", err)
+		return err
+	}
+
+	log.Println("cmd ret: ", str)
+	if err := json.Unmarshal([]byte(str[1:len(str)-1]), &cmdRet); err != nil {
+		log.Println("cmd unmarshal Error, err: ", err)
+		return err
+	}
+	if cmdRet.Result != 0 {
+		log.Println("set dhcpv4 config Error, err: ", cmdRet.Text)
+		return fmt.Errorf(cmdRet.Text)
+	}
+	//log.Print(curlCmd)
+	//log.Print("print r")
+	//log.Print(r)
 
 	return nil
 }
