@@ -115,7 +115,7 @@ type Forward struct {
 
 type Redirection struct {
 	resource.ResourceBase `json:",inline"`
-	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=20"`
+	Name                  string `json:"name" rest:"required=true,minLen=1,maxLen=254"`
 	TTL                   uint   `json:"ttl" rest:"required=true"`
 	DataType              string `json:"type" rest:"required=true,options=A|AAAA|CNAME"`
 	RedirectType          string `json:"redirecttype" rest:"required=true,options=localzone|nxdomain"`
