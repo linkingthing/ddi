@@ -19,6 +19,15 @@ var (
 	FormatError = goresterr.ErrorCode{"Format not correct", 400}
 )
 
+
+const (
+    HW_ADDRESS      string = "hw-address" 
+    DUID      string = "duid" 
+    CLIENT_ID      string = "client-id" 
+	CIRCUIT_ID      string = "circuit-id" 
+	FLEX_ID      string = "flex-id"
+)
+
 func (s *Dhcpv4) ConvertV4sToV46s(v *RestSubnetv4) *RestSubnetv46 {
 
 	var v46 RestSubnetv46
@@ -909,7 +918,7 @@ func (h *IPAddressHandler) Action(ctx *resource.Context) (interface{}, *gorester
 				restRsv.IpAddress = changeData.IpAddress
 				restRsv.CircuitId = changeData.CircuitId
 				restRsv.HwAddress = changeData.HwAddress
-				restRsv.ResvType = "stable"
+				restRsv.ResvType = HW_ADDRESS
 				if ormRsv, err := PGDBConn.OrmCreateReservation(subnetv4Id, &restRsv); err != nil {
 
 					log.Println("newly created ormRsv.ID:", ormRsv.ID)
