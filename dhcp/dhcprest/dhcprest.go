@@ -143,7 +143,7 @@ func (s *Dhcpv4) CreateSubnetv4(subnetv4 *RestSubnetv4) error {
 
 	// set newly inserted id
 	subnetv4.ID = strconv.Itoa(int(s4.ID))
-	subnetv4.SubnetId = strconv.Itoa(int(s4.ID))
+	subnetv4.SubnetId = strconv.Itoa(int(s4.SubnetId))
 	subnetv4.SetCreationTimestamp(s4.CreatedAt)
 	log.Println("newly inserted id: ", s4.ID)
 
@@ -854,7 +854,7 @@ func NewIPAddressHandler(s *Subnetv4s) *IPAddressHandler {
 
 func (h *IPAddressHandler) Update(ctx *resource.Context) (resource.Resource, *goresterr.APIError) {
 	ipAddress := ctx.Resource.(*IPAddress)
-	if err := PGDBConn.UpdateIPAddress(ipAddress,ipAddress.GetParent().GetID()); err != nil {
+	if err := PGDBConn.UpdateIPAddress(ipAddress, ipAddress.GetParent().GetID()); err != nil {
 		return nil, goresterr.NewAPIError(FormatError, err.Error())
 	}
 	return ipAddress, nil

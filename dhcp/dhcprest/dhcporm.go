@@ -741,13 +741,15 @@ func (handler *PGDB) OrmCreatePool(subnetv4_id string, r *RestPool) (*dhcporm.Po
 }
 
 func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
-
+	log.Println("Into OrmUpdatePool, subnetv4_id: ", subnetv4_id)
 	//get subnetv4 name
 	s4 := handler.GetSubnetv4ById(subnetv4_id)
 	subnetName := s4.Subnet
 
 	oldPoolObj := handler.OrmGetPool(subnetv4_id, r.GetID())
-	if len(oldPoolObj.BeginAddress) == 0 {
+	if oldPoolObj == nil {
+		log.Println("Pool not exists, subnetv4_id: ", subnetv4_id)
+		log.Println("Pool not exists, pool.id: ", r.ID)
 		return fmt.Errorf("Pool not exists, return")
 	}
 	oldPoolName := oldPoolObj.BeginAddress + "-" + oldPoolObj.EndAddress
@@ -766,6 +768,10 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 	tx := handler.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&ormPool).Error; err != nil {
+		return err
+	}
+	if err := handler.OrmDeletePool(r.GetID()); err != nil {
+		log.Println("OrmDeletePool error, r.id: ", r.GetID())
 		return err
 	}
 	//send kafka msg
