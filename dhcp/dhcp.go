@@ -294,7 +294,7 @@ func (handler *KEAv4Handler) setDhcpv4Config(service string, conf *DHCPv4Conf) e
 func (handler *KEAv4Handler) WriteDhcpv4Config(service string, conf *string) error {
 	log.Println("into WriteDhcpv4Config")
 	postData := map[string]interface{}{
-		"command": "config-set",
+		"command": "config-write",
 		"service": []string{service},
 		"arguments": map[string]interface{}{
 			"filename": "/usr/local/etc/kea/kea-dhcp4.conf",
@@ -414,10 +414,8 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 	}
 	log.Println("new subnetv4 id: ", newSubnet4.Id)
 	newSubnet4.Pools = []Pool{}
-	//subnetv4 = append(subnetv4, newSubnet4)
-	//log.Println("---subnetv4: ", subnetv4)
 	options := []Option{}
-	log.Println("req.gateway: ", req.Gateway)
+
 	if len(req.Gateway) > 0 {
 		option := Option{
 			Name: "routers",
@@ -425,7 +423,6 @@ func (handler *KEAv4Handler) CreateSubnetv4(req pb.CreateSubnetv4Req) error {
 		}
 
 		options = append(options, option)
-
 	}
 	if len(req.DnsServer) > 0 {
 		option := Option{
