@@ -9,8 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/linkingthing/ddi/cmd/websocket/server"
 	"github.com/linkingthing/ddi/dhcp/dhcprest"
-	"github.com/linkingthing/ddi/ipam"
-	ipamapi "github.com/linkingthing/ddi/ipam/restfulapi"
 	"github.com/linkingthing/ddi/utils"
 	"github.com/linkingthing/ddi/utils/config"
 	"github.com/zdnscloud/gorest"
@@ -51,9 +49,6 @@ func main() {
 	schemas.MustImport(&version, dhcprest.RestReservation{}, dhcprest.NewReservationHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestPool{}, dhcprest.NewPoolHandler(subnetv4s))
 	schemas.MustImport(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(subnetv4s))
-
-	devidedAddressState := ipamapi.NewDividedAddressState()
-	schemas.MustImport(&version, ipam.DividedAddress{}, ipamapi.NewDividedAddressHandler(devidedAddressState))
 
 	//state := dhcprest.NewOptionNamesState()
 	//err = schemas.Import(&version, dhcprest.RestOptionName{}, dhcprest.NewOptionNameHandler(state))
