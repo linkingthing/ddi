@@ -832,6 +832,7 @@ func (handler *KEAv4Handler) GetLeases(req pb.GetLeasesReq) (*pb.GetLeasesResp, 
 	if err := handler.db.Where("subnet_id = ?", req.Subnetid).Find(&ls).Error; err != nil {
 		return nil, err
 	}
+	t:=time.Now().Unix()
 	var resp pb.GetLeasesResp
 	for _, l := range ls {
 		var address string
@@ -841,7 +842,10 @@ func (handler *KEAv4Handler) GetLeases(req pb.GetLeasesReq) (*pb.GetLeasesResp, 
 		tmp.HwAddress = l.Hwaddr
 		tmp.ValidLifetime = l.ValidLifetime
 		tmp.Expire = l.Expire.Unix()
-		resp.Leases = append(resp.Leases, &tmp)
+		if tmp.Expire > t{
+			resp.Leases = append(resp.Leases, &tmp)
+		}
+		
 	}
 	return &resp, nil
 }
