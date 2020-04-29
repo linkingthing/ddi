@@ -764,14 +764,12 @@ func (handler *PGDB) OrmUpdatePool(subnetv4_id string, r *RestPool) error {
 		DnsServer:        r.DnsServer,
 	}
 
+	ormPool.ID = ConvertStringToUint(r.GetID())
+
 	log.Println(" *** begin to save db, pool.ID: ", r.GetID(), ", pool.subnetv4id: ", ormPool.Subnetv4ID)
 	tx := handler.db.Begin()
 	defer tx.Rollback()
 	if err := tx.Save(&ormPool).Error; err != nil {
-		return err
-	}
-	if err := handler.OrmDeletePool(r.GetID()); err != nil {
-		log.Println("OrmDeletePool error, r.id: ", r.GetID())
 		return err
 	}
 	//send kafka msg
