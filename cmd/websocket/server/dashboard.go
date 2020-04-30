@@ -299,9 +299,12 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 	//log.Println(result)
 	//log.Println("--- result")
 
-	bytes, _ := json.Marshal(result)
+	bytes, err := json.Marshal(result)
+	if err != nil {
+		log.Println("json marshal error: ", err)
+	}
 	//fmt.Fprint(w, string(bytes))
-	w.Write([]byte(bytes))
+	w.Write(bytes)
 
 }
 
