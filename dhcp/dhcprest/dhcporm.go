@@ -950,22 +950,23 @@ func (handler *PGDB) GetOptionNameStatistics() *BaseJsonOptionName {
 
 func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string, mac string) ([]*IPAddress, error) {
 	log.Println("into dhcptb GetIPAddress, subNetID ", subNetID)
-	//get the reservation address
-	reservData := PGDBConn.OrmReservationList(subNetID)
 	allData := make(map[string]dhcporm.IPAddress, 255)
-	for _, a := range reservData {
-		if a.ReservType == "hw-address" || a.ReservType == "client-id" {
-			//get the stable address
-			tmp := dhcporm.IPAddress{IP: a.IpAddress, AddressType: "stable"}
-			allData[a.IpAddress] = tmp
-		} else {
-			tmp := dhcporm.IPAddress{IP: a.IpAddress, AddressType: "reserved"}
-			allData[a.IpAddress] = tmp
-		}
+	//get the unused address	
+	subnet := PGDBConn.GetSubnetv4ById(subNetID)
+	allSubnetAddress,err := handler.GetSubnetAllAddresses(subnet.Subnet)
+	if err!= nil{
+		return nil,err
 	}
+	var num int
+	if num,err = strconv.Atoi(subNetID);err!= nil{
+		return nil,err
+	}	
+	for _,v := range allSubnetAddress{
+		tmp := dhcporm.IPAddress{IP: v, AddressType: "unused",Subnetv4ID:uint(num)}
+		allData[v] = tmp	
+	}	
 	//get the pools under the subnet
 	pools := PGDBConn.OrmPoolList(subNetID)
-	var dynamicAddress []string
 	for _, pool := range pools {
 		beginNums := strings.Split(pool.BeginAddress, ".")
 		endNums := strings.Split(pool.EndAddress, ".")
@@ -981,34 +982,17 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		var beginPart string
 		beginPart = beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
 		for i := begin; i <= end; i++ {
-			dynamicAddress = append(dynamicAddress, beginPart+strconv.Itoa(i))
+			tmp := dhcporm.IPAddress{IP: beginPart+strconv.Itoa(i), AddressType: "dynamic"}
+			allData[beginPart+strconv.Itoa(i)] = tmp
 		}
-	}
-	found := false
-	for _, ip := range dynamicAddress {
-		found = false
-		for _, a := range reservData {
-			if ip == a.IpAddress {
-				found = true
-				break
-			}
-		}
-		if !found {
-			tmp := dhcporm.IPAddress{IP: ip, AddressType: "dynamic"}
-			allData[ip] = tmp
-		}
-	}
-	//get manual address
-	var manuals []dhcporm.ManualAddress
-	if err := handler.db.Where("subnetv4_id = ?", subNetID).Find(&manuals).Error; err != nil {
-		return nil, err
-	}
-	for _, v := range manuals {
-		tmp := dhcporm.IPAddress{IP: v.IpAddress, AddressType: "manual"}
-		allData[v.IpAddress] = tmp
 	}
 	//get the lease address for the subnet
-	leases,err := dhcpgrpc.GetLeases(subNetID)
+	//first get the corespoding SubnetId in the table OrmSubnetv4
+	var subnetv4 dhcporm.OrmSubnetv4
+	if err:=handler.db.First(&subnetv4,subNetID).Error;err!=nil{
+		return nil,err
+	}
+	leases,err := dhcpgrpc.GetLeases(strconv.Itoa(int(subnetv4.SubnetId)))
 	if err!=nil{
 		return nil,err
 	}
@@ -1017,34 +1001,29 @@ func (handler *PGDB) GetIPAddresses(subNetID string, ip string, hostName string,
 		for i := 0; i < len(l.HwAddress); i++ {
 			var tmp string
 			if i==0{
-				tmp = fmt.Sprintf("%d", l.HwAddress[i])
+				tmp = fmt.Sprintf("%X", l.HwAddress[i])
 			}else{
-				tmp = fmt.Sprintf(":%d", l.HwAddress[i])
+				tmp = fmt.Sprintf(":%X", l.HwAddress[i])
 			}
 			
 			macAddr += tmp
 		}
 		tmp := dhcporm.IPAddress{IP: l.IpAddress, MacAddress: macAddr, AddressType: "lease", LeaseStartTime: l.Expire - int64(l.ValidLifetime), LeaseEndTime: l.Expire}
 		allData[l.IpAddress] = tmp
-	}
-	subnet := PGDBConn.GetSubnetv4ById(subNetID)
-	parts := strings.Split(subnet.Subnet, "/")
-	beginNums := strings.Split(parts[0], ".")
-	prefix := beginNums[0] + "." + beginNums[1] + "." + beginNums[2] + "."
-	allSubnetAddress,err := handler.GetSubnetAllAddresses(subnet.Subnet)
-	if err!= nil{
-		return nil,err
-	}
-	var num int
-	if num,err = strconv.Atoi(subNetID);err!= nil{
-		return nil,err
 	}	
-	for i,v := range allSubnetAddress{
-		if allData[v].AddressType == "" {
-			tmp := dhcporm.IPAddress{IP: v, AddressType: "unused",Subnetv4ID:uint(num)}
-			allData[prefix+strconv.Itoa(i)] = tmp
-		}
+	//get the reservation address
+	reservData := PGDBConn.OrmReservationList(subNetID)
+	for _, a := range reservData {
+		if a.ReservType == HW_ADDRESS || a.ReservType == CLIENT_ID {
+			//get the stable address
+			tmp := dhcporm.IPAddress{IP: a.IpAddress, AddressType: "stable"}
+			allData[a.IpAddress] = tmp
+		} 
 	}
+	for k,v :=range allData{
+	fmt.Println("allData:",k,v.AddressType)
+	}
+	//filter
 	var data []*IPAddress
 	var filterData []*IPAddress
 	var input []dhcporm.IPAddress
@@ -1112,8 +1091,8 @@ func (handler *PGDB) GetSubnetAllAddresses(subnet string) ([]string, error) {
 	max = int(math.Pow(2, float64(8-length%8)) - 1)
 	if 0 == length/8 {
 		for i := 0; i <= max; i++ {
-			for j := 1; j <= 255; j++ {
-				for k := 1; k <= 255; k++ {
+			for j := 0; j <= 255; j++ {
+				for k := 0; k <= 255; k++ {
 					for m := 1; m <= 255; m++ {
 						all = append(all, net.IPv4(a[0]+byte(i), a[1]+byte(j), a[2]+byte(k), a[3]+byte(m)).String())
 					}
@@ -1123,8 +1102,8 @@ func (handler *PGDB) GetSubnetAllAddresses(subnet string) ([]string, error) {
 	}
 	if 1 == length/8 {
 		for j := 0; j <= max; j++ {
-			for k := 1; k <= 255; k++ {
-				for m := 1; m <= 255; m++ {
+			for k := 0; k <= 255; k++ {
+				for m := 0; m <= 255; m++ {
 					all = append(all, net.IPv4(a[0], a[1]+byte(j), a[2]+byte(k), a[3]+byte(m)).String())
 				}
 			}
@@ -1138,7 +1117,7 @@ func (handler *PGDB) GetSubnetAllAddresses(subnet string) ([]string, error) {
 		}
 	}
 	if 3 == length/8 {
-		for m := 0; m <= max; m++ {
+		for m := 1; m <= max; m++ {
 			all = append(all, net.IPv4(a[0], a[1], a[2], a[3]+byte(m)).String())
 		}
 	}
