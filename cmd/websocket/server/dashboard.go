@@ -284,11 +284,16 @@ func DashDhcpAssign(w http.ResponseWriter, r *http.Request) {
 		stat.Total = stats[string(v.Id)]["total"]
 		stat.Used = stats[string(v.Id)]["used"]
 		stat.Free = stat.Total - stat.Used
-		stat.Usage, err = strconv.ParseFloat(fmt.Sprintf("%.2f",
-			(float64(stat.Used)/float64(stat.Total)*100)), 64)
-		if err != nil {
-			log.Println("DHCP利用率计算错误 ", err)
+		if stat.Used == 0 || stat.Total == 0 {
+			stat.Usage = 0
+		} else {
+			stat.Usage, err = strconv.ParseFloat(fmt.Sprintf("%.2f",
+				(float64(stat.Used)/float64(stat.Total)*100)), 64)
+			if err != nil {
+				log.Println("DHCP利用率计算错误 ", err)
+			}
 		}
+
 		//stat.Total = assignMap[string(v.Id)].Total
 		//stat.Used = assignMap[string(v.Id)].Used
 		assignMap[string(v.Id)] = stat
