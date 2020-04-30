@@ -393,7 +393,7 @@ func nodeDashDns(c *gin.Context) {
 	metric.GetDashDns(c.Writer, c.Request)
 }
 func nodeDashDhcpAssign(c *gin.Context) {
-	metric.GetDashDns(c.Writer, c.Request)
+	metric.DashDhcpAssign(c.Writer, c.Request)
 }
 
 func getKafkaMsg() {
