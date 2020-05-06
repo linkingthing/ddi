@@ -13,7 +13,7 @@ const ConnStr string = "user=%s password=%s host=%s port=%d database=%s sslmode=
 
 var globalResources []resource.Resource
 
-func RegisterResource(resources ...resource.Resource) {
+func RegisterResources(resources ...resource.Resource) {
 	globalResources = append(globalResources, resources...)
 }
 
