@@ -21,8 +21,8 @@ require (
 	github.com/prometheus/node_exporter v1.0.0-rc.0.0.20200302152451-0107bc794204
 	github.com/segmentio/kafka-go v0.3.5
 	github.com/sirupsen/logrus v1.5.0
-	github.com/zdnscloud/cement v0.0.0-20200408042856-804e1eee17df
-	github.com/zdnscloud/gorest v0.0.0-20200325112020-a9978d1165e7
+	github.com/zdnscloud/cement v0.0.0-20200503120134-aa381f4206fe
+	github.com/zdnscloud/gorest v0.0.0-20200506015237-6b492a91b719
 	golang.org/x/tools v0.0.0-20200425043458-8463f397d07c // indirect
 	google.golang.org/grpc v1.28.1
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
