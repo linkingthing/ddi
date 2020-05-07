@@ -1317,7 +1317,13 @@ func (controller *DBController) CreateRedirection(rd *Redirection, viewID string
 	if err := tx.Last(&tbrd).Error; err != nil {
 		return nil, err
 	}
-	req := pb.CreateRedirectionReq{ID: strconv.Itoa(int(tbrd.ID)), ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: rd.RedirectType, Value: rd.Value}
+	var redirectType string
+	if rd.RedirectType == "localzone"{
+		redirectType = "rpz"
+	}else if rd.RedirectType == "nxdomain"{
+		redirectType = "redirect"
+	}
+	req := pb.CreateRedirectionReq{ID: strconv.Itoa(int(tbrd.ID)), ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: redirectType, Value: rd.Value}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return nil, err
@@ -1345,7 +1351,13 @@ func (controller *DBController) DeleteRedirection(id string, viewID string) erro
 	if err := tx.Unscoped().Delete(&rd).Error; err != nil {
 		return err
 	}
-	req := pb.DeleteRedirectionReq{ID: id, ViewID: viewID, RedirectType: rd.RedirectType}
+	var redirectType string
+	if rd.RedirectType == "localzone"{
+		redirectType = "rpz"
+	}else if rd.RedirectType == "nxdomain"{
+		redirectType = "redirect"
+	}	
+	req := pb.DeleteRedirectionReq{ID: id, ViewID: viewID, RedirectType: redirectType}
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err
@@ -1361,20 +1373,15 @@ func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string
 	tx := controller.db.Begin()
 	defer tx.Rollback()
 	var view tb.View
-	var num int
 	var err error
-	if num, err = strconv.Atoi(viewID); err != nil {
-		return err
-	}
-	view.ID = uint(num)
-	if err := tx.First(&view).Error; err != nil {
+	if err := tx.First(&view,viewID).Error; err != nil {
 		return fmt.Errorf("the id %s of view does not exists!")
 	}
 	var one tb.Redirection
-	if num, err = strconv.Atoi(rd.ID); err != nil {
-		return err
+	if err := tx.First(&one,rd.ID).Error; err != nil {
+		return fmt.Errorf("the id %s of view does not exists!")
 	}
-	one.ID = uint(num)
+	var oldRedirectType = one.RedirectType
 	one.Name = rd.Name
 	one.TTL = rd.TTL
 	one.DataType = rd.DataType
@@ -1384,14 +1391,33 @@ func (controller *DBController) UpdateRedirection(rd *Redirection, viewID string
 	if err := tx.Save(&view).Error; err != nil {
 		return err
 	}
-	req := pb.UpdateRedirectionReq{ID: rd.ID, ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: rd.RedirectType, IP: rd.Value}
-	data, err := proto.Marshal(&req)
+	var redirectType string
+	if oldRedirectType == "localzone"{
+		redirectType = "rpz"
+	}else if oldRedirectType == "nxdomain"{
+		redirectType = "redirect"
+	}	
+	deleteReq := pb.DeleteRedirectionReq{ID: rd.ID, ViewID: viewID, RedirectType: redirectType}
+	data, err := proto.Marshal(&deleteReq)
 	if err != nil {
 		return err
 	}
-	if err := kfkcli.KafkaClient.SendCmd(data, UPDATEREDIRECTION); err != nil {
+	if err := kfkcli.KafkaClient.SendCmd(data, DELETEREDIRECTION); err != nil {
 		return err
 	}
+	if rd.RedirectType == "localzone"{
+		redirectType = "rpz"
+	}else if rd.RedirectType == "nxdomain"{
+		redirectType = "redirect"
+	}		
+    createReq := pb.CreateRedirectionReq{ID: rd.ID, ViewID: viewID, Name: rd.Name, TTL: strconv.Itoa(int(rd.TTL)), DataType: rd.DataType, RedirectType: redirectType, Value: rd.Value}
+	data, err = proto.Marshal(&createReq)
+	if err != nil {
+		return err
+	}
+	if err := kfkcli.KafkaClient.SendCmd(data, CREATEREDIRECTION); err != nil {
+		return err
+	}	
 	tx.Commit()
 	return nil
 }
