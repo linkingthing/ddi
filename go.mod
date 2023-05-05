@@ -8,9 +8,9 @@ require (
 	github.com/ben-han-cn/g53 v0.0.0-20200412091110-86b554517afd
 	github.com/ben-han-cn/kvzoo v0.0.0-20191109225302-5dc1198904af
 	github.com/boltdb/bolt v1.3.1 // indirect
-	github.com/gin-gonic/gin v1.6.2
+	github.com/gin-gonic/gin v1.9.0
 	github.com/go-kit/kit v0.10.0
-	github.com/golang/protobuf v1.4.0
+	github.com/golang/protobuf v1.5.0
 	github.com/jinzhu/gorm v1.9.12
 	github.com/lib/pq v1.3.0
 	github.com/lifei6671/gocaptcha v0.0.0-20190301083731-c467a25bc100
@@ -23,7 +23,6 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/zdnscloud/cement v0.0.0-20200408042856-804e1eee17df
 	github.com/zdnscloud/gorest v0.0.0-20200325112020-a9978d1165e7
-	golang.org/x/tools v0.0.0-20200425043458-8463f397d07c // indirect
 	google.golang.org/grpc v1.28.1
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/yaml.v2 v2.2.8
